@@ -42,19 +42,25 @@ export function configureAuth(newConfig: Partial<AuthConfig>): void {
  * Argon2id configuration following OWASP recommendations
  * https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
  */
-const ARGON2_OPTIONS: argon2.Options = {
+const ARGON2_OPTIONS = {
   type: argon2.argon2id,
   memoryCost: 65536, // 64 MB
   timeCost: 3,
   parallelism: 4,
   hashLength: 32,
-};
+} as const;
 
 /**
  * Hash a password using Argon2id
  */
 export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, ARGON2_OPTIONS);
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 65536,
+    timeCost: 3,
+    parallelism: 4,
+    hashLength: 32,
+  });
 }
 
 /**
@@ -211,7 +217,7 @@ export function decodeToken(token: string): jose.JWTPayload | null {
 
 function parseExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([smhd])$/);
-  if (!match) return 900; // default 15 minutes
+  if (!match || !match[1] || !match[2]) return 900; // default 15 minutes
 
   const value = parseInt(match[1], 10);
   const unit = match[2];

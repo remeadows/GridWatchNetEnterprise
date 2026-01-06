@@ -24,7 +24,7 @@ declare module 'fastify' {
 export function createAuthMiddleware() {
   return async function authenticate(
     request: FastifyRequest,
-    reply: FastifyReply
+    _reply: FastifyReply
   ): Promise<void> {
     const authHeader = request.headers.authorization;
 
@@ -58,7 +58,7 @@ export function createAuthMiddleware() {
 export function createRoleMiddleware(...allowedRoles: UserRole[]) {
   return async function checkRole(
     request: FastifyRequest,
-    reply: FastifyReply
+    _reply: FastifyReply
   ): Promise<void> {
     if (!request.user) {
       throw new UnauthorizedError('Authentication required');
@@ -108,7 +108,7 @@ export async function authPlugin(
   fastify.decorateRequest('user', null);
 
   // Global auth hook
-  fastify.addHook('onRequest', async (request, reply) => {
+  fastify.addHook('onRequest', async (request, _reply) => {
     // Skip auth for excluded routes
     const path = request.routeOptions?.url || request.url;
     if (exclude.some((pattern) => path.startsWith(pattern))) {

@@ -28,7 +28,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@netnynja/shared-types": "workspace:*",
+    "@netnynja/shared-types": "*",
     "argon2": "^0.31.2",
     "jose": "^5.2.0",
     "zod": "^3.22.4"

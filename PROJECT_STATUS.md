@@ -1,8 +1,8 @@
 # NetNynja Enterprise - Project Status
 
 **Last Updated**: 2026-01-06
-**Current Phase**: Phase 2 - Unified Authentication
-**Overall Progress**: ▓▓▓░░░░░░░ 25%
+**Current Phase**: Phase 3 - API Gateway Consolidation
+**Overall Progress**: ▓▓▓▓░░░░░░ 35%
 
 ---
 
@@ -19,7 +19,7 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | 0 | Repository Setup | ✅ Complete | Week 1-2 |
 | 1 | Shared Infrastructure | ✅ Complete | Week 3-4 |
 | 2 | Unified Authentication | ✅ Complete | Week 5-6 |
-| 3 | API Gateway Consolidation | ⬜ Not Started | Week 7-9 |
+| 3 | API Gateway Consolidation | 🔄 In Progress | Week 7-9 |
 | 4 | Frontend Unification | ⬜ Not Started | Week 10-12 |
 | 5 | IPAM Migration | ⬜ Not Started | Week 13-15 |
 | 6 | NPM Integration | ⬜ Not Started | Week 16-18 |
@@ -105,18 +105,44 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 ## Phase 3: API Gateway Consolidation
 
 ### Objectives
-- [ ] Create unified Fastify gateway in `apps/gateway/`
-- [ ] Route structure: `/api/v1/ipam/*`, `/api/v1/npm/*`, `/api/v1/stig/*`
-- [ ] OpenAPI/Swagger documentation
-- [ ] Rate limiting per tenant/user
-- [ ] Request validation with Zod
-- [ ] OpenTelemetry instrumentation
+- [x] Create unified Fastify gateway in `apps/gateway/`
+- [x] Route structure: `/api/v1/ipam/*`, `/api/v1/npm/*`, `/api/v1/stig/*`
+- [x] OpenAPI/Swagger documentation
+- [x] Rate limiting per tenant/user
+- [x] Request validation with Zod
+- [x] OpenTelemetry instrumentation
+
+### Technical Decisions
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Gateway Framework | Fastify 4.x | Performance, TypeScript support, plugin ecosystem |
+| Documentation | OpenAPI 3.1 via @fastify/swagger | Industry standard, auto-generated |
+| Rate Limiting | Redis-backed @fastify/rate-limit | Distributed, per-user/tenant limits |
+| Validation | Zod schemas | Runtime type safety, TypeScript integration |
+| Tracing | OpenTelemetry SDK | Vendor-neutral, comprehensive instrumentation |
 
 ### Deliverables
-- [ ] Single gateway handling all API routes
-- [ ] Auto-generated OpenAPI spec
-- [ ] Rate limiting configuration
-- [ ] Request/response logging to Loki
+- [x] Single gateway handling all API routes
+- [x] Auto-generated OpenAPI spec at /docs
+- [x] Rate limiting configuration (100 req/min default)
+- [ ] Request/response logging to Loki (pending integration test)
+
+### API Routes Implemented
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `/healthz`, `/livez`, `/readyz` | GET | Health checks |
+| `/api/v1/auth/*` | POST, GET | Authentication (proxy to auth-service) |
+| `/api/v1/ipam/networks` | GET, POST | Network management |
+| `/api/v1/ipam/networks/:id` | GET, PUT, DELETE | Network CRUD |
+| `/api/v1/ipam/networks/:id/addresses` | GET | IP addresses in network |
+| `/api/v1/npm/devices` | GET, POST | Device monitoring |
+| `/api/v1/npm/devices/:id` | GET, DELETE | Device CRUD |
+| `/api/v1/npm/devices/:id/metrics` | GET | Device metrics |
+| `/api/v1/npm/alerts` | GET | Active alerts |
+| `/api/v1/stig/benchmarks` | GET | STIG benchmarks |
+| `/api/v1/stig/assets` | GET, POST | Asset management |
+| `/api/v1/stig/assets/:id/findings` | GET | Compliance findings |
+| `/api/v1/stig/compliance/summary` | GET | Compliance summary |
 
 ---
 
@@ -321,3 +347,14 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 - Failed login tracking and account lockout protection
 - Comprehensive audit logging to PostgreSQL
 - RBAC middleware for Fastify (requireAuth, requireAdmin, requireOperator)
+
+#### Phase 3: API Gateway Consolidation (In Progress)
+- Unified Fastify gateway (`apps/gateway/`) with plugin architecture
+- OpenAPI 3.1 documentation via @fastify/swagger at `/docs`
+- Rate limiting with Redis backend (100 req/min default)
+- IPAM routes: networks CRUD, IP address listing
+- NPM routes: devices CRUD, metrics, alerts
+- STIG routes: benchmarks, assets, findings, compliance summary
+- OpenTelemetry instrumentation for distributed tracing
+- Centralized error handling with consistent API response format
+- Auth integration via proxy to auth-service
