@@ -18,6 +18,10 @@ declare module 'fastify' {
   interface FastifyRequest {
     user?: JWTPayload;
   }
+  interface FastifyInstance {
+    requireAuth: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requireRole: (...roles: UserRole[]) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
 }
 
 export interface AuthPluginOptions {
@@ -39,6 +43,32 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, option
 
   // Decorate request with user
   fastify.decorateRequest('user', null);
+
+  // Decorate fastify with auth helpers
+  fastify.decorate('requireAuth', async function requireAuthHandler(
+    request: FastifyRequest,
+    _reply: FastifyReply
+  ): Promise<void> {
+    if (!request.user) {
+      throw new UnauthorizedError('Authentication required');
+    }
+  });
+
+  fastify.decorate('requireRole', function requireRoleFactory(...allowedRoles: UserRole[]) {
+    return async function checkRole(
+      request: FastifyRequest,
+      _reply: FastifyReply
+    ): Promise<void> {
+      if (!request.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+      if (!allowedRoles.includes(request.user.role)) {
+        throw new ForbiddenError(
+          `Access denied. Required roles: ${allowedRoles.join(', ')}`
+        );
+      }
+    };
+  });
 
   // Global auth hook - attempts to authenticate but doesn't require it
   fastify.addHook('onRequest', async (request: FastifyRequest) => {

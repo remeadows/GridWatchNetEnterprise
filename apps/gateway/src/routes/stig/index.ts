@@ -8,14 +8,15 @@ import { pool } from '../../db';
 import { logger } from '../../logger';
 
 // Zod schemas
-const assetSchema = z.object({
-  hostname: z.string().min(1).max(255),
-  ipAddress: z.string().ip().optional(),
-  assetType: z.enum(['workstation', 'server', 'network_device', 'database', 'application', 'other']),
-  operatingSystem: z.string().max(100).optional(),
-  fqdn: z.string().max(255).optional(),
-  macAddress: z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/).optional(),
-  notes: z.string().optional(),
+const targetSchema = z.object({
+  name: z.string().min(1).max(255),
+  ipAddress: z.string().ip(),
+  platform: z.string().max(100),
+  osVersion: z.string().max(100).optional(),
+  connectionType: z.enum(['ssh', 'netmiko', 'winrm', 'api']),
+  credentialId: z.string().max(255).optional(),
+  port: z.number().int().min(1).max(65535).optional(),
+  isActive: z.boolean().default(true),
 });
 
 const querySchema = z.object({
@@ -28,11 +29,11 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
   // Require authentication for all STIG routes
   fastify.addHook('preHandler', fastify.requireAuth);
 
-  // List STIG benchmarks
+  // List STIG definitions (benchmarks)
   fastify.get('/benchmarks', {
     schema: {
       tags: ['STIG - Benchmarks'],
-      summary: 'List available STIG benchmarks',
+      summary: 'List available STIG definitions',
       security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
@@ -52,10 +53,10 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       : '';
     const searchParam = query.search ? `%${query.search}%` : null;
 
-    const countQuery = `SELECT COUNT(*) FROM stig.benchmarks ${searchCondition}`;
+    const countQuery = `SELECT COUNT(*) FROM stig.definitions ${searchCondition}`;
     const dataQuery = `
-      SELECT id, stig_id, title, version, release_date, description, created_at, updated_at
-      FROM stig.benchmarks
+      SELECT id, stig_id, title, version, release_date, platform, description, created_at, updated_at
+      FROM stig.definitions
       ${searchCondition}
       ORDER BY title
       LIMIT $1 OFFSET $2
@@ -78,6 +79,7 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
         title: row.title,
         version: row.version,
         releaseDate: row.release_date,
+        platform: row.platform,
         description: row.description,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -91,11 +93,11 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // Get benchmark by ID
+  // Get definition by ID
   fastify.get('/benchmarks/:id', {
     schema: {
       tags: ['STIG - Benchmarks'],
-      summary: 'Get STIG benchmark by ID',
+      summary: 'Get STIG definition by ID',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -109,14 +111,14 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
 
     const result = await pool.query(
-      `SELECT id, stig_id, title, version, release_date, description, created_at, updated_at
-       FROM stig.benchmarks WHERE id = $1`,
+      `SELECT id, stig_id, title, version, release_date, platform, description, created_at, updated_at
+       FROM stig.definitions WHERE id = $1`,
       [id]
     );
 
     if (result.rows.length === 0) {
       reply.status(404);
-      return { success: false, error: { code: 'NOT_FOUND', message: 'Benchmark not found' } };
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Definition not found' } };
     }
 
     const row = result.rows[0];
@@ -128,6 +130,7 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
         title: row.title,
         version: row.version,
         releaseDate: row.release_date,
+        platform: row.platform,
         description: row.description,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -135,11 +138,11 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // List assets
+  // List targets (assets)
   fastify.get('/assets', {
     schema: {
       tags: ['STIG - Assets'],
-      summary: 'List assets',
+      summary: 'List audit targets',
       security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
@@ -155,16 +158,16 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     const offset = (query.page - 1) * query.limit;
 
     const searchCondition = query.search
-      ? `WHERE hostname ILIKE $3 OR ip_address::text ILIKE $3`
+      ? `WHERE name ILIKE $3 OR ip_address::text ILIKE $3`
       : '';
     const searchParam = query.search ? `%${query.search}%` : null;
 
-    const countQuery = `SELECT COUNT(*) FROM stig.assets ${searchCondition}`;
+    const countQuery = `SELECT COUNT(*) FROM stig.targets ${searchCondition}`;
     const dataQuery = `
-      SELECT id, hostname, ip_address, asset_type, operating_system, fqdn, created_at, updated_at
-      FROM stig.assets
+      SELECT id, name, ip_address, platform, os_version, connection_type, port, is_active, last_audit, created_at, updated_at
+      FROM stig.targets
       ${searchCondition}
-      ORDER BY hostname
+      ORDER BY name
       LIMIT $1 OFFSET $2
     `;
 
@@ -181,11 +184,14 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: dataResult.rows.map((row) => ({
         id: row.id,
-        hostname: row.hostname,
+        name: row.name,
         ipAddress: row.ip_address,
-        assetType: row.asset_type,
-        operatingSystem: row.operating_system,
-        fqdn: row.fqdn,
+        platform: row.platform,
+        osVersion: row.os_version,
+        connectionType: row.connection_type,
+        port: row.port,
+        isActive: row.is_active,
+        lastAudit: row.last_audit,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
@@ -198,35 +204,36 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // Create asset
+  // Create target
   fastify.post('/assets', {
     schema: {
       tags: ['STIG - Assets'],
-      summary: 'Create a new asset',
+      summary: 'Create a new audit target',
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['hostname', 'assetType'],
+        required: ['name', 'ipAddress', 'platform', 'connectionType'],
         properties: {
-          hostname: { type: 'string' },
+          name: { type: 'string' },
           ipAddress: { type: 'string' },
-          assetType: { type: 'string', enum: ['workstation', 'server', 'network_device', 'database', 'application', 'other'] },
-          operatingSystem: { type: 'string' },
-          fqdn: { type: 'string' },
-          macAddress: { type: 'string' },
-          notes: { type: 'string' },
+          platform: { type: 'string' },
+          osVersion: { type: 'string' },
+          connectionType: { type: 'string', enum: ['ssh', 'netmiko', 'winrm', 'api'] },
+          credentialId: { type: 'string' },
+          port: { type: 'number' },
+          isActive: { type: 'boolean' },
         },
       },
     },
     preHandler: [fastify.requireRole('admin', 'operator')],
   }, async (request, reply) => {
-    const body = assetSchema.parse(request.body);
+    const body = targetSchema.parse(request.body);
 
     const result = await pool.query(
-      `INSERT INTO stig.assets (hostname, ip_address, asset_type, operating_system, fqdn, mac_address, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, hostname, ip_address, asset_type, operating_system, fqdn, created_at, updated_at`,
-      [body.hostname, body.ipAddress, body.assetType, body.operatingSystem, body.fqdn, body.macAddress, body.notes]
+      `INSERT INTO stig.targets (name, ip_address, platform, os_version, connection_type, credential_id, port, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, name, ip_address, platform, os_version, connection_type, port, is_active, created_at, updated_at`,
+      [body.name, body.ipAddress, body.platform, body.osVersion, body.connectionType, body.credentialId, body.port, body.isActive]
     );
 
     const row = result.rows[0];
@@ -235,22 +242,24 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        hostname: row.hostname,
+        name: row.name,
         ipAddress: row.ip_address,
-        assetType: row.asset_type,
-        operatingSystem: row.operating_system,
-        fqdn: row.fqdn,
+        platform: row.platform,
+        osVersion: row.os_version,
+        connectionType: row.connection_type,
+        port: row.port,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
     };
   });
 
-  // Delete asset
+  // Delete target
   fastify.delete('/assets/:id', {
     schema: {
       tags: ['STIG - Assets'],
-      summary: 'Delete an asset',
+      summary: 'Delete an audit target',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -265,23 +274,23 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
 
     const result = await pool.query(
-      'DELETE FROM stig.assets WHERE id = $1 RETURNING id',
+      'DELETE FROM stig.targets WHERE id = $1 RETURNING id',
       [id]
     );
 
     if (result.rows.length === 0) {
       reply.status(404);
-      return { success: false, error: { code: 'NOT_FOUND', message: 'Asset not found' } };
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Target not found' } };
     }
 
     reply.status(204).send();
   });
 
-  // Get compliance findings for an asset
+  // Get audit results for a target
   fastify.get('/assets/:id/findings', {
     schema: {
       tags: ['STIG - Compliance'],
-      summary: 'Get compliance findings for an asset',
+      summary: 'Get audit results for a target',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -293,8 +302,8 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       querystring: {
         type: 'object',
         properties: {
-          status: { type: 'string', enum: ['open', 'not_a_finding', 'not_applicable', 'not_reviewed'] },
-          severity: { type: 'string', enum: ['CAT I', 'CAT II', 'CAT III'] },
+          status: { type: 'string', enum: ['pass', 'fail', 'not_applicable', 'not_reviewed', 'error'] },
+          severity: { type: 'string', enum: ['high', 'medium', 'low'] },
         },
       },
     },
@@ -303,13 +312,14 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     const query = querySchema.parse(request.query);
     const offset = (query.page - 1) * query.limit;
 
+    // Get audit results for the target via audit_jobs
     const result = await pool.query(
-      `SELECT f.id, f.rule_id, r.rule_title, r.severity, f.status, f.finding_details,
-              f.comments, f.reviewed_by, f.reviewed_at, f.created_at, f.updated_at
-       FROM stig.findings f
-       JOIN stig.rules r ON f.rule_id = r.id
-       WHERE f.asset_id = $1
-       ORDER BY r.severity, r.rule_id
+      `SELECT ar.id, ar.rule_id, ar.title, ar.severity, ar.status, ar.finding_details,
+              ar.comments, ar.checked_at, j.name as job_name, j.completed_at as job_completed_at
+       FROM stig.audit_results ar
+       JOIN stig.audit_jobs j ON ar.job_id = j.id
+       WHERE j.target_id = $1
+       ORDER BY ar.severity, ar.rule_id
        LIMIT $2 OFFSET $3`,
       [id, query.limit, offset]
     );
@@ -319,15 +329,14 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       data: result.rows.map((row) => ({
         id: row.id,
         ruleId: row.rule_id,
-        ruleTitle: row.rule_title,
+        title: row.title,
         severity: row.severity,
         status: row.status,
         findingDetails: row.finding_details,
         comments: row.comments,
-        reviewedBy: row.reviewed_by,
-        reviewedAt: row.reviewed_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
+        checkedAt: row.checked_at,
+        jobName: row.job_name,
+        jobCompletedAt: row.job_completed_at,
       })),
     };
   });
@@ -342,41 +351,43 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, reply) => {
     const result = await pool.query(`
       SELECT
-        COUNT(DISTINCT a.id) as total_assets,
-        COUNT(f.id) as total_findings,
-        COUNT(CASE WHEN f.status = 'open' THEN 1 END) as open_findings,
-        COUNT(CASE WHEN f.status = 'not_a_finding' THEN 1 END) as compliant_findings,
-        COUNT(CASE WHEN f.status = 'not_applicable' THEN 1 END) as not_applicable,
-        COUNT(CASE WHEN f.status = 'not_reviewed' THEN 1 END) as not_reviewed,
-        COUNT(CASE WHEN r.severity = 'CAT I' AND f.status = 'open' THEN 1 END) as cat1_open,
-        COUNT(CASE WHEN r.severity = 'CAT II' AND f.status = 'open' THEN 1 END) as cat2_open,
-        COUNT(CASE WHEN r.severity = 'CAT III' AND f.status = 'open' THEN 1 END) as cat3_open
-      FROM stig.assets a
-      LEFT JOIN stig.findings f ON a.id = f.asset_id
-      LEFT JOIN stig.rules r ON f.rule_id = r.id
+        COUNT(DISTINCT t.id) as total_targets,
+        COUNT(ar.id) as total_results,
+        COUNT(CASE WHEN ar.status = 'fail' THEN 1 END) as failed_checks,
+        COUNT(CASE WHEN ar.status = 'pass' THEN 1 END) as passed_checks,
+        COUNT(CASE WHEN ar.status = 'not_applicable' THEN 1 END) as not_applicable,
+        COUNT(CASE WHEN ar.status = 'not_reviewed' THEN 1 END) as not_reviewed,
+        COUNT(CASE WHEN ar.status = 'error' THEN 1 END) as errors,
+        COUNT(CASE WHEN ar.severity = 'high' AND ar.status = 'fail' THEN 1 END) as high_severity_fails,
+        COUNT(CASE WHEN ar.severity = 'medium' AND ar.status = 'fail' THEN 1 END) as medium_severity_fails,
+        COUNT(CASE WHEN ar.severity = 'low' AND ar.status = 'fail' THEN 1 END) as low_severity_fails
+      FROM stig.targets t
+      LEFT JOIN stig.audit_jobs j ON t.id = j.target_id
+      LEFT JOIN stig.audit_results ar ON j.id = ar.job_id
     `);
 
     const row = result.rows[0];
-    const totalFindings = parseInt(row.total_findings, 10) || 1;
-    const compliantFindings = parseInt(row.compliant_findings, 10);
-    const complianceScore = totalFindings > 0
-      ? Math.round((compliantFindings / totalFindings) * 100)
-      : 0;
+    const totalResults = parseInt(row.total_results, 10) || 0;
+    const passedChecks = parseInt(row.passed_checks, 10);
+    const complianceScore = totalResults > 0
+      ? Math.round((passedChecks / totalResults) * 100)
+      : 100;
 
     return {
       success: true,
       data: {
-        totalAssets: parseInt(row.total_assets, 10),
-        totalFindings: totalFindings,
-        openFindings: parseInt(row.open_findings, 10),
-        compliantFindings: compliantFindings,
+        totalTargets: parseInt(row.total_targets, 10),
+        totalResults: totalResults,
+        failedChecks: parseInt(row.failed_checks, 10),
+        passedChecks: passedChecks,
         notApplicable: parseInt(row.not_applicable, 10),
         notReviewed: parseInt(row.not_reviewed, 10),
+        errors: parseInt(row.errors, 10),
         complianceScore,
         bySeverity: {
-          catI: { open: parseInt(row.cat1_open, 10) },
-          catII: { open: parseInt(row.cat2_open, 10) },
-          catIII: { open: parseInt(row.cat3_open, 10) },
+          high: { failed: parseInt(row.high_severity_fails, 10) },
+          medium: { failed: parseInt(row.medium_severity_fails, 10) },
+          low: { failed: parseInt(row.low_severity_fails, 10) },
         },
       },
     };

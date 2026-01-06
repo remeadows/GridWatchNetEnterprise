@@ -71,7 +71,8 @@ export async function checkHealth(): Promise<boolean> {
   try {
     await pool.query('SELECT 1');
     return true;
-  } catch {
+  } catch (error) {
+    logger.error({ error }, 'Database health check failed');
     return false;
   }
 }

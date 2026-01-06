@@ -15,6 +15,7 @@ import authPlugin from './plugins/auth';
 import swaggerPlugin from './plugins/swagger';
 import errorHandlerPlugin from './plugins/error-handler';
 import rateLimitPlugin from './plugins/rate-limit';
+import lokiLoggingPlugin from './plugins/loki-logging';
 import healthRoutes from './routes/health';
 import authRoutes from './routes/auth';
 import ipamRoutes from './routes/ipam';
@@ -59,6 +60,11 @@ async function start(): Promise<void> {
     await fastify.register(authPlugin);
     await fastify.register(swaggerPlugin);
     await fastify.register(rateLimitPlugin);
+    await fastify.register(lokiLoggingPlugin, {
+      excludePaths: ['/healthz', '/livez', '/readyz', '/docs'],
+      logRequestBody: false,
+      logResponseBody: false,
+    });
 
     // Register health check routes (no prefix)
     await fastify.register(healthRoutes);
@@ -96,7 +102,15 @@ async function start(): Promise<void> {
       `NetNynja Gateway listening on ${config.HOST}:${config.PORT}`
     );
   } catch (error) {
-    logger.fatal({ error }, 'Failed to start gateway');
+    const err = error as Error;
+    logger.fatal({
+      error: {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      }
+    }, 'Failed to start gateway');
+    console.error('Gateway startup error:', err);
     process.exit(1);
   }
 }

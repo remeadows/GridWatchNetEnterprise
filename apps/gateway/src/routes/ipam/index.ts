@@ -9,11 +9,12 @@ import { logger } from '../../logger';
 
 // Zod schemas
 const networkSchema = z.object({
-  cidr: z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/),
+  network: z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/),
   name: z.string().min(1).max(255),
   description: z.string().optional(),
   vlanId: z.number().int().min(1).max(4094).optional(),
-  locationId: z.string().uuid().optional(),
+  location: z.string().max(255).optional(),
+  gateway: z.string().ip().optional(),
 });
 
 const querySchema = z.object({
@@ -46,16 +47,16 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const offset = (query.page - 1) * query.limit;
 
     const searchCondition = query.search
-      ? `WHERE name ILIKE $3 OR cidr::text ILIKE $3`
+      ? `WHERE name ILIKE $3 OR network::text ILIKE $3`
       : '';
     const searchParam = query.search ? `%${query.search}%` : null;
 
     const countQuery = `SELECT COUNT(*) FROM ipam.networks ${searchCondition}`;
     const dataQuery = `
-      SELECT id, cidr, name, description, vlan_id, location_id, created_at, updated_at
+      SELECT id, network, name, description, vlan_id, location, gateway, is_active, created_at, updated_at
       FROM ipam.networks
       ${searchCondition}
-      ORDER BY cidr
+      ORDER BY network
       LIMIT $1 OFFSET $2
     `;
 
@@ -72,11 +73,13 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: dataResult.rows.map((row) => ({
         id: row.id,
-        cidr: row.cidr,
+        network: row.network,
         name: row.name,
         description: row.description,
         vlanId: row.vlan_id,
-        locationId: row.location_id,
+        location: row.location,
+        gateway: row.gateway,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
@@ -107,7 +110,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
 
     const result = await pool.query(
-      `SELECT id, cidr, name, description, vlan_id, location_id, created_at, updated_at
+      `SELECT id, network, name, description, vlan_id, location, gateway, is_active, created_at, updated_at
        FROM ipam.networks WHERE id = $1`,
       [id]
     );
@@ -122,11 +125,13 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        cidr: row.cidr,
+        network: row.network,
         name: row.name,
         description: row.description,
         vlanId: row.vlan_id,
-        locationId: row.location_id,
+        location: row.location,
+        gateway: row.gateway,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -141,13 +146,14 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['cidr', 'name'],
+        required: ['network', 'name'],
         properties: {
-          cidr: { type: 'string' },
+          network: { type: 'string' },
           name: { type: 'string' },
           description: { type: 'string' },
           vlanId: { type: 'number' },
-          locationId: { type: 'string', format: 'uuid' },
+          location: { type: 'string' },
+          gateway: { type: 'string' },
         },
       },
     },
@@ -156,10 +162,10 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const body = networkSchema.parse(request.body);
 
     const result = await pool.query(
-      `INSERT INTO ipam.networks (cidr, name, description, vlan_id, location_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, cidr, name, description, vlan_id, location_id, created_at, updated_at`,
-      [body.cidr, body.name, body.description, body.vlanId, body.locationId]
+      `INSERT INTO ipam.networks (network, name, description, vlan_id, location, gateway)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, network, name, description, vlan_id, location, gateway, is_active, created_at, updated_at`,
+      [body.network, body.name, body.description, body.vlanId, body.location, body.gateway]
     );
 
     const row = result.rows[0];
@@ -168,11 +174,13 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        cidr: row.cidr,
+        network: row.network,
         name: row.name,
         description: row.description,
         vlanId: row.vlan_id,
-        locationId: row.location_id,
+        location: row.location,
+        gateway: row.gateway,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -202,9 +210,9 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const values: unknown[] = [];
     let paramIndex = 1;
 
-    if (body.cidr) {
-      updates.push(`cidr = $${paramIndex++}`);
-      values.push(body.cidr);
+    if (body.network) {
+      updates.push(`network = $${paramIndex++}`);
+      values.push(body.network);
     }
     if (body.name) {
       updates.push(`name = $${paramIndex++}`);
@@ -218,9 +226,13 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       updates.push(`vlan_id = $${paramIndex++}`);
       values.push(body.vlanId);
     }
-    if (body.locationId !== undefined) {
-      updates.push(`location_id = $${paramIndex++}`);
-      values.push(body.locationId);
+    if (body.location !== undefined) {
+      updates.push(`location = $${paramIndex++}`);
+      values.push(body.location);
+    }
+    if (body.gateway !== undefined) {
+      updates.push(`gateway = $${paramIndex++}`);
+      values.push(body.gateway);
     }
 
     if (updates.length === 0) {
@@ -232,7 +244,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const result = await pool.query(
       `UPDATE ipam.networks SET ${updates.join(', ')}, updated_at = NOW()
        WHERE id = $${paramIndex}
-       RETURNING id, cidr, name, description, vlan_id, location_id, created_at, updated_at`,
+       RETURNING id, network, name, description, vlan_id, location, gateway, is_active, created_at, updated_at`,
       values
     );
 
@@ -246,11 +258,13 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        cidr: row.cidr,
+        network: row.network,
         name: row.name,
         description: row.description,
         vlanId: row.vlan_id,
-        locationId: row.location_id,
+        location: row.location,
+        gateway: row.gateway,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -308,15 +322,15 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     const offset = (query.page - 1) * query.limit;
 
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM ipam.ip_addresses WHERE network_id = $1',
+      'SELECT COUNT(*) FROM ipam.addresses WHERE network_id = $1',
       [id]
     );
 
     const dataResult = await pool.query(
-      `SELECT id, ip_address, hostname, mac_address, status, assigned_to, notes, created_at, updated_at
-       FROM ipam.ip_addresses
+      `SELECT id, address, hostname, fqdn, mac_address, status, device_type, description, last_seen, discovered_at, created_at, updated_at
+       FROM ipam.addresses
        WHERE network_id = $1
-       ORDER BY ip_address
+       ORDER BY address
        LIMIT $2 OFFSET $3`,
       [id, query.limit, offset]
     );
@@ -325,12 +339,15 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: dataResult.rows.map((row) => ({
         id: row.id,
-        ipAddress: row.ip_address,
+        address: row.address,
         hostname: row.hostname,
+        fqdn: row.fqdn,
         macAddress: row.mac_address,
         status: row.status,
-        assignedTo: row.assigned_to,
-        notes: row.notes,
+        deviceType: row.device_type,
+        description: row.description,
+        lastSeen: row.last_seen,
+        discoveredAt: row.discovered_at,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),

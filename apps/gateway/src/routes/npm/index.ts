@@ -9,15 +9,15 @@ import { logger } from '../../logger';
 
 // Zod schemas
 const deviceSchema = z.object({
-  hostname: z.string().min(1).max(255),
+  name: z.string().min(1).max(255),
   ipAddress: z.string().ip(),
-  deviceType: z.enum(['router', 'switch', 'firewall', 'server', 'access_point', 'other']),
+  deviceType: z.string().max(100).optional(),
   vendor: z.string().max(100).optional(),
   model: z.string().max(100).optional(),
-  snmpCommunity: z.string().optional(),
   snmpVersion: z.enum(['v1', 'v2c', 'v3']).default('v2c'),
-  pollingInterval: z.number().int().min(30).max(3600).default(300),
-  enabled: z.boolean().default(true),
+  sshEnabled: z.boolean().default(false),
+  pollInterval: z.number().int().min(30).max(3600).default(60),
+  isActive: z.boolean().default(true),
 });
 
 const querySchema = z.object({
@@ -62,7 +62,7 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
     let paramIndex = 3;
 
     if (query.search) {
-      conditions.push(`(hostname ILIKE $${paramIndex} OR ip_address::text ILIKE $${paramIndex})`);
+      conditions.push(`(name ILIKE $${paramIndex} OR ip_address::text ILIKE $${paramIndex})`);
       params.push(`%${query.search}%`);
       paramIndex++;
     }
@@ -76,11 +76,11 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
 
     const countQuery = `SELECT COUNT(*) FROM npm.devices ${whereClause}`;
     const dataQuery = `
-      SELECT id, hostname, ip_address, device_type, vendor, model, status,
-             last_poll_at, polling_interval, enabled, created_at, updated_at
+      SELECT id, name, ip_address, device_type, vendor, model, status,
+             last_poll, poll_interval, is_active, created_at, updated_at
       FROM npm.devices
       ${whereClause}
-      ORDER BY hostname
+      ORDER BY name
       LIMIT $1 OFFSET $2
     `;
 
@@ -93,15 +93,15 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: dataResult.rows.map((row) => ({
         id: row.id,
-        hostname: row.hostname,
+        name: row.name,
         ipAddress: row.ip_address,
         deviceType: row.device_type,
         vendor: row.vendor,
         model: row.model,
         status: row.status,
-        lastPollAt: row.last_poll_at,
-        pollingInterval: row.polling_interval,
-        enabled: row.enabled,
+        lastPoll: row.last_poll,
+        pollInterval: row.poll_interval,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
@@ -132,8 +132,8 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
 
     const result = await pool.query(
-      `SELECT id, hostname, ip_address, device_type, vendor, model, status,
-              snmp_version, polling_interval, enabled, last_poll_at, created_at, updated_at
+      `SELECT id, name, ip_address, device_type, vendor, model, status,
+              snmp_version, ssh_enabled, poll_interval, is_active, last_poll, created_at, updated_at
        FROM npm.devices WHERE id = $1`,
       [id]
     );
@@ -148,16 +148,17 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        hostname: row.hostname,
+        name: row.name,
         ipAddress: row.ip_address,
         deviceType: row.device_type,
         vendor: row.vendor,
         model: row.model,
         status: row.status,
         snmpVersion: row.snmp_version,
-        pollingInterval: row.polling_interval,
-        enabled: row.enabled,
-        lastPollAt: row.last_poll_at,
+        sshEnabled: row.ssh_enabled,
+        pollInterval: row.poll_interval,
+        isActive: row.is_active,
+        lastPoll: row.last_poll,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -172,17 +173,17 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['hostname', 'ipAddress', 'deviceType'],
+        required: ['name', 'ipAddress'],
         properties: {
-          hostname: { type: 'string' },
+          name: { type: 'string' },
           ipAddress: { type: 'string' },
-          deviceType: { type: 'string', enum: ['router', 'switch', 'firewall', 'server', 'access_point', 'other'] },
+          deviceType: { type: 'string' },
           vendor: { type: 'string' },
           model: { type: 'string' },
-          snmpCommunity: { type: 'string' },
           snmpVersion: { type: 'string', enum: ['v1', 'v2c', 'v3'] },
-          pollingInterval: { type: 'number' },
-          enabled: { type: 'boolean' },
+          sshEnabled: { type: 'boolean' },
+          pollInterval: { type: 'number' },
+          isActive: { type: 'boolean' },
         },
       },
     },
@@ -191,10 +192,10 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
     const body = deviceSchema.parse(request.body);
 
     const result = await pool.query(
-      `INSERT INTO npm.devices (hostname, ip_address, device_type, vendor, model, snmp_community, snmp_version, polling_interval, enabled)
+      `INSERT INTO npm.devices (name, ip_address, device_type, vendor, model, snmp_version, ssh_enabled, poll_interval, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, hostname, ip_address, device_type, vendor, model, status, polling_interval, enabled, created_at, updated_at`,
-      [body.hostname, body.ipAddress, body.deviceType, body.vendor, body.model, body.snmpCommunity, body.snmpVersion, body.pollingInterval, body.enabled]
+       RETURNING id, name, ip_address, device_type, vendor, model, status, poll_interval, is_active, created_at, updated_at`,
+      [body.name, body.ipAddress, body.deviceType, body.vendor, body.model, body.snmpVersion, body.sshEnabled, body.pollInterval, body.isActive]
     );
 
     const row = result.rows[0];
@@ -203,14 +204,14 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
       success: true,
       data: {
         id: row.id,
-        hostname: row.hostname,
+        name: row.name,
         ipAddress: row.ip_address,
         deviceType: row.device_type,
         vendor: row.vendor,
         model: row.model,
         status: row.status,
-        pollingInterval: row.polling_interval,
-        enabled: row.enabled,
+        pollInterval: row.poll_interval,
+        isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -249,10 +250,12 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Get device metrics
+  // NOTE: Metrics are stored in VictoriaMetrics, not PostgreSQL
+  // This endpoint provides a placeholder until VictoriaMetrics integration is complete
   fastify.get('/devices/:id/metrics', {
     schema: {
       tags: ['NPM - Metrics'],
-      summary: 'Get metrics for a device',
+      summary: 'Get metrics for a device (VictoriaMetrics integration pending)',
       security: [{ bearerAuth: [] }],
       params: {
         type: 'object',
@@ -274,38 +277,32 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string };
     const query = metricsQuerySchema.parse(request.query);
 
+    // Verify device exists
+    const deviceResult = await pool.query(
+      'SELECT id, name FROM npm.devices WHERE id = $1',
+      [id]
+    );
+
+    if (deviceResult.rows.length === 0) {
+      reply.status(404);
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Device not found' } };
+    }
+
     // Default to last hour
     const endTime = query.endTime || new Date();
     const startTime = query.startTime || new Date(endTime.getTime() - 3600000);
 
-    const conditions = ['device_id = $1', 'collected_at >= $2', 'collected_at <= $3'];
-    const params: unknown[] = [id, startTime, endTime];
-
-    if (query.metricType) {
-      conditions.push('metric_type = $4');
-      params.push(query.metricType);
-    }
-
-    const result = await pool.query(
-      `SELECT metric_type, metric_value, collected_at
-       FROM npm.metrics
-       WHERE ${conditions.join(' AND ')}
-       ORDER BY collected_at DESC
-       LIMIT 1000`,
-      params
-    );
-
+    // TODO: Integrate with VictoriaMetrics for actual metrics
+    // For now, return empty metrics array
     return {
       success: true,
       data: {
         deviceId: id,
+        deviceName: deviceResult.rows[0].name,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        metrics: result.rows.map((row) => ({
-          type: row.metric_type,
-          value: row.metric_value,
-          collectedAt: row.collected_at,
-        })),
+        metrics: [],
+        _note: 'VictoriaMetrics integration pending - metrics will be available once collectors are running',
       },
     };
   });
@@ -322,7 +319,7 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
           page: { type: 'number', minimum: 1, default: 1 },
           limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
           severity: { type: 'string', enum: ['critical', 'warning', 'info'] },
-          acknowledged: { type: 'boolean' },
+          status: { type: 'string', enum: ['active', 'acknowledged', 'resolved'] },
         },
       },
     },
@@ -331,12 +328,18 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
     const offset = (query.page - 1) * query.limit;
 
     const result = await pool.query(
-      `SELECT a.id, a.device_id, d.hostname, a.alert_type, a.severity, a.message,
-              a.acknowledged, a.acknowledged_by, a.acknowledged_at, a.created_at
+      `SELECT a.id, a.device_id, d.name as device_name, a.severity, a.message, a.status,
+              a.details, a.acknowledged_by, a.acknowledged_at, a.triggered_at, a.resolved_at
        FROM npm.alerts a
        LEFT JOIN npm.devices d ON a.device_id = d.id
-       WHERE a.resolved_at IS NULL
-       ORDER BY a.severity DESC, a.created_at DESC
+       WHERE a.status = 'active'
+       ORDER BY
+         CASE a.severity
+           WHEN 'critical' THEN 1
+           WHEN 'warning' THEN 2
+           ELSE 3
+         END,
+         a.triggered_at DESC
        LIMIT $1 OFFSET $2`,
       [query.limit, offset]
     );
@@ -346,14 +349,15 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
       data: result.rows.map((row) => ({
         id: row.id,
         deviceId: row.device_id,
-        hostname: row.hostname,
-        alertType: row.alert_type,
+        deviceName: row.device_name,
         severity: row.severity,
         message: row.message,
-        acknowledged: row.acknowledged,
+        status: row.status,
+        details: row.details,
         acknowledgedBy: row.acknowledged_by,
         acknowledgedAt: row.acknowledged_at,
-        createdAt: row.created_at,
+        triggeredAt: row.triggered_at,
+        resolvedAt: row.resolved_at,
       })),
     };
   });

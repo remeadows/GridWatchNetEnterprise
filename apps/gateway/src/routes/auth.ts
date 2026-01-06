@@ -40,9 +40,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
             data: {
               type: 'object',
               properties: {
-                accessToken: { type: 'string' },
-                refreshToken: { type: 'string' },
-                expiresIn: { type: 'number' },
+                tokens: {
+                  type: 'object',
+                  properties: {
+                    accessToken: { type: 'string' },
+                    refreshToken: { type: 'string' },
+                    expiresIn: { type: 'number' },
+                  },
+                },
                 user: {
                   type: 'object',
                   properties: {
@@ -50,6 +55,10 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
                     username: { type: 'string' },
                     email: { type: 'string' },
                     role: { type: 'string' },
+                    isActive: { type: 'boolean' },
+                    lastLogin: { type: 'string' },
+                    createdAt: { type: 'string' },
+                    updatedAt: { type: 'string' },
                   },
                 },
               },
