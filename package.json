@@ -11,6 +11,7 @@
   },
   "workspaces": [
     "packages/*",
+    "services/*",
     "apps/gateway",
     "apps/web-ui"
   ],
@@ -36,6 +37,7 @@
     "docker:ipam": "docker compose --profile ipam up -d",
     "docker:npm": "docker compose --profile npm up -d",
     "docker:stig": "docker compose --profile stig up -d",
+    "auth:dev": "npm run dev -w services/auth-service",
     "security:audit": "npm audit && turbo run security:audit"
   },
   "devDependencies": {
