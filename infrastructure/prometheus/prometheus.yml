@@ -1,0 +1,119 @@
+# NetNynja Enterprise - Prometheus Configuration
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'netnynja-enterprise'
+    env: 'development'
+
+# Alertmanager configuration (if enabled)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+
+  # API Gateway
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:3001']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # PostgreSQL (via postgres_exporter if added)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: /metrics
+    # Redis doesn't expose metrics natively; use redis_exporter if needed
+
+  # NATS
+  - job_name: 'nats'
+    static_configs:
+      - targets: ['nats:8222']
+    metrics_path: /metrics
+
+  # VictoriaMetrics
+  - job_name: 'victoriametrics'
+    static_configs:
+      - targets: ['victoriametrics:8428']
+    metrics_path: /metrics
+
+  # Loki
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+    metrics_path: /metrics
+
+  # Jaeger
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+    metrics_path: /metrics
+
+  # IPAM Services
+  - job_name: 'ipam-scanner'
+    static_configs:
+      - targets: ['ipam-scanner:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # NPM Services
+  - job_name: 'npm-collector'
+    static_configs:
+      - targets: ['npm-collector:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'npm-alerts'
+    static_configs:
+      - targets: ['npm-alerts:8080']
+    metrics_path: /metrics
+
+  # STIG Services
+  - job_name: 'stig-collector'
+    static_configs:
+      - targets: ['stig-collector:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'stig-reports'
+    static_configs:
+      - targets: ['stig-reports:8080']
+    metrics_path: /metrics
+
+  # Docker containers (via cAdvisor if added)
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+
+  # Node exporter for host metrics (if added)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+
+# Remote write to VictoriaMetrics for long-term storage
+remote_write:
+  - url: http://victoriametrics:8428/api/v1/write
+    queue_config:
+      max_samples_per_send: 10000
+      batch_send_deadline: 5s
+      capacity: 100000

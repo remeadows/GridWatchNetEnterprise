@@ -1,0 +1,47 @@
+{
+  "name": "@netnynja/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared TypeScript types for NetNynja Enterprise",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ipam": {
+      "import": "./dist/ipam/index.mjs",
+      "require": "./dist/ipam/index.js",
+      "types": "./dist/ipam/index.d.ts"
+    },
+    "./npm": {
+      "import": "./dist/npm/index.mjs",
+      "require": "./dist/npm/index.js",
+      "types": "./dist/npm/index.d.ts"
+    },
+    "./stig": {
+      "import": "./dist/stig/index.mjs",
+      "require": "./dist/stig/index.js",
+      "types": "./dist/stig/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}

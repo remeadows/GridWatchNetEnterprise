@@ -1,0 +1,151 @@
+# NetNynja Enterprise - Promtail Configuration
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: netnynja
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+
+scrape_configs:
+  # Docker container logs
+  - job_name: containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: containerlogs
+          __path__: /var/lib/docker/containers/*/*log
+
+    pipeline_stages:
+      # Parse Docker JSON log format
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            attrs:
+      - json:
+          expressions:
+            tag:
+          source: attrs
+      - regex:
+          expression: (?P<container_name>(?:[a-zA-Z0-9][a-zA-Z0-9_.-]+))
+          source: tag
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+      - labels:
+          stream:
+          container_name:
+      - output:
+          source: output
+
+  # Docker container logs via Docker socket
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only keep containers with netnynja label or name prefix
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(netnynja-.*)'
+        action: keep
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+      - source_labels: ['__meta_docker_network_name']
+        target_label: 'network'
+
+    pipeline_stages:
+      # Parse JSON logs from application containers
+      - match:
+          selector: '{container=~"netnynja-gateway|netnynja-web-ui"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  msg: msg
+                  timestamp: time
+                  trace_id: trace_id
+                  span_id: span_id
+                  request_id: request_id
+            - labels:
+                level:
+                trace_id:
+                span_id:
+            - timestamp:
+                source: timestamp
+                format: RFC3339
+
+      # Parse Python structured logs
+      - match:
+          selector: '{container=~"netnynja-ipam.*|netnynja-npm.*|netnynja-stig.*"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  event: event
+                  timestamp: timestamp
+                  trace_id: trace_id
+                  span_id: span_id
+                  module: logger
+            - labels:
+                level:
+                module:
+                trace_id:
+                span_id:
+            - timestamp:
+                source: timestamp
+                format: RFC3339
+
+      # Drop health check logs to reduce noise
+      - match:
+          selector: '{container=~"netnynja-.*"}'
+          stages:
+            - drop:
+                expression: '.*GET /health.*'
+                drop_counter_reason: healthcheck
+
+      # Add application label based on container name
+      - match:
+          selector: '{container=~"netnynja-.*"}'
+          stages:
+            - regex:
+                expression: 'netnynja-(?P<app>[a-z]+).*'
+                source: container
+            - labels:
+                app:
+
+  # System logs (optional, host-mounted)
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/syslog
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<host>\S+)\s+(?P<program>\S+?)(\[(?P<pid>\d+)\])?\s*:\s*(?P<message>.*)$'
+      - labels:
+          host:
+          program:
+      - timestamp:
+          source: timestamp
+          format: 'Jan _2 15:04:05'
+          location: Local
+
+# Limits
+limits_config:
+  readline_rate_enabled: true
+  readline_rate: 100
+  readline_burst: 1000

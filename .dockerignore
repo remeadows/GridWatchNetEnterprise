@@ -1,0 +1,98 @@
+# ===========================================
+# NetNynja Enterprise - Docker Ignore
+# ===========================================
+
+# ===========================================
+# Git
+# ===========================================
+.git/
+.gitignore
+.gitattributes
+
+# ===========================================
+# Documentation
+# ===========================================
+*.md
+!README.md
+docs/
+CHANGELOG*
+LICENSE*
+
+# ===========================================
+# Environment & Secrets
+# ===========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ===========================================
+# Dependencies (rebuilt in container)
+# ===========================================
+node_modules/
+.pnp/
+.pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.poetry/
+*.egg-info/
+
+# ===========================================
+# Build Outputs
+# ===========================================
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+.turbo/
+
+# ===========================================
+# IDE & Editor
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===========================================
+# OS Files
+# ===========================================
+.DS_Store
+Thumbs.db
+
+# ===========================================
+# Testing
+# ===========================================
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+playwright-report/
+test-results/
+tests/
+
+# ===========================================
+# CI/CD
+# ===========================================
+.github/
+.gitlab-ci.yml
+.circleci/
+Jenkinsfile
+
+# ===========================================
+# Development
+# ===========================================
+*.log
+docker-compose.yml
+docker-compose.override.yml
+Makefile
+*.local.*

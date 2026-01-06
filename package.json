@@ -1,0 +1,59 @@
+{
+  "name": "netnynja-enterprise",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NetNynja Enterprise - Unified Network Management Platform",
+  "author": "NetNynja Team",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/gateway",
+    "apps/web-ui"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "prepare": "husky install",
+    "db:migrate": "npm run db:migrate -w apps/gateway",
+    "db:rollback": "npm run db:rollback -w apps/gateway",
+    "db:seed": "npm run db:seed -w apps/gateway",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:infra": "docker compose --profile infra up -d",
+    "docker:ipam": "docker compose --profile ipam up -d",
+    "docker:npm": "docker compose --profile npm up -d",
+    "docker:stig": "docker compose --profile stig up -d",
+    "security:audit": "npm audit && turbo run security:audit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "packageManager": "npm@10.2.5"
+}

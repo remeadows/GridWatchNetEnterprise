@@ -1,0 +1,256 @@
+[tool.poetry]
+name = "netnynja-enterprise"
+version = "0.1.0"
+description = "NetNynja Enterprise - Python Services"
+authors = ["NetNynja Team"]
+readme = "README.md"
+packages = [
+    { include = "shared", from = "services" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Async Framework
+asyncio = "^3.4.3"
+uvloop = "^0.19.0"
+
+# Database
+asyncpg = "^0.29.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.23"}
+alembic = "^1.13.0"
+
+# Redis
+redis = {extras = ["hiredis"], version = "^5.0.1"}
+
+# NATS
+nats-py = "^2.6.0"
+
+# HTTP Client
+httpx = "^0.25.2"
+aiohttp = "^3.9.1"
+
+# Security
+argon2-cffi = "^23.1.0"
+cryptography = "^41.0.7"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+
+# Validation
+pydantic = "^2.5.2"
+pydantic-settings = "^2.1.0"
+
+# Network Tools
+dnspython = "^2.4.2"
+python-nmap = "^0.7.1"
+asyncssh = "^2.14.1"
+netmiko = "^4.2.0"
+pysnmp = "^4.4.12"
+
+# Reporting
+reportlab = "^4.0.7"
+matplotlib = "^3.8.2"
+jinja2 = "^3.1.2"
+
+# Observability
+opentelemetry-api = "^1.21.0"
+opentelemetry-sdk = "^1.21.0"
+opentelemetry-exporter-otlp = "^1.21.0"
+opentelemetry-instrumentation-asyncpg = "^0.42b0"
+opentelemetry-instrumentation-redis = "^0.42b0"
+opentelemetry-instrumentation-httpx = "^0.42b0"
+prometheus-client = "^0.19.0"
+structlog = "^23.2.0"
+
+# Utilities
+python-dotenv = "^1.0.0"
+click = "^8.1.7"
+rich = "^13.7.0"
+tenacity = "^8.2.3"
+
+# HashiCorp Vault
+hvac = "^2.1.0"
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = "^7.4.3"
+pytest-asyncio = "^0.23.2"
+pytest-cov = "^4.1.0"
+pytest-xdist = "^3.5.0"
+hypothesis = "^6.92.1"
+faker = "^21.0.0"
+testcontainers = "^3.7.1"
+
+# Linting & Formatting
+black = "^23.12.1"
+ruff = "^0.1.8"
+mypy = "^1.7.1"
+
+# Type stubs
+types-redis = "^4.6.0"
+types-python-jose = "^3.3.4"
+
+# Development
+ipython = "^8.19.0"
+watchfiles = "^0.21.0"
+
+[tool.poetry.group.ipam]
+optional = true
+
+[tool.poetry.group.ipam.dependencies]
+# IPAM-specific dependencies (if any)
+
+[tool.poetry.group.npm]
+optional = true
+
+[tool.poetry.group.npm.dependencies]
+# NPM-specific dependencies
+pysnmp-lextudio = "^5.0.34"
+
+[tool.poetry.group.stig]
+optional = true
+
+[tool.poetry.group.stig.dependencies]
+# STIG-specific dependencies
+lxml = "^5.0.0"
+defusedxml = "^0.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ============================================
+# Tool Configuration
+# ============================================
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | node_modules
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "C4",     # flake8-comprehensions
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+    "ARG",    # flake8-unused-arguments
+    "SIM",    # flake8-simplify
+    "S",      # flake8-bandit (security)
+    "A",      # flake8-builtins
+    "COM",    # flake8-commas
+    "DTZ",    # flake8-datetimez
+    "T10",    # flake8-debugger
+    "EXE",    # flake8-executable
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "Q",      # flake8-quotes
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "RUF",    # Ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by black)
+    "B008",   # function call in argument defaults
+    "S101",   # use of assert (needed for tests)
+    "S104",   # possible binding to all interfaces
+    "S105",   # hardcoded password (false positives)
+    "S106",   # hardcoded password (false positives)
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**/*.py" = ["S101", "ARG", "PLR2004"]
+"**/conftest.py" = ["ARG"]
+
+[tool.ruff.isort]
+known-first-party = ["shared", "ipam", "npm", "stig"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "nats.*",
+    "asyncssh.*",
+    "netmiko.*",
+    "pysnmp.*",
+    "reportlab.*",
+    "hvac.*",
+    "testcontainers.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+addopts = [
+    "-ra",
+    "-q",
+    "--strict-markers",
+    "--strict-config",
+    "-p", "no:warnings",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+]
+
+[tool.coverage.run]
+source = ["apps", "services"]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true

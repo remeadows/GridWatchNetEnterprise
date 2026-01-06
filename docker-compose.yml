@@ -1,0 +1,486 @@
+# NetNynja Enterprise - Docker Compose Development Environment
+# Usage:
+#   Full stack:     docker compose up -d
+#   IPAM only:      docker compose --profile ipam up -d
+#   NPM only:       docker compose --profile npm up -d
+#   STIG only:      docker compose --profile stig up -d
+#   Infrastructure: docker compose --profile infra up -d
+
+name: netnynja-enterprise
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  # ============================================
+  # SHARED INFRASTRUCTURE
+  # ============================================
+  
+  postgres:
+    image: postgres:15-alpine
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-netnynja}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      POSTGRES_DB: ${POSTGRES_DB:-netnynja}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-netnynja}"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?Redis password required}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  nats:
+    image: nats:2.10-alpine
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-nats
+    restart: unless-stopped
+    command: 
+      - "--jetstream"
+      - "--store_dir=/data"
+      - "--http_port=8222"
+    volumes:
+      - nats_data:/data
+      - ./infrastructure/nats/nats.conf:/etc/nats/nats.conf:ro
+    ports:
+      - "4222:4222"   # Client connections
+      - "8222:8222"   # HTTP monitoring
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  vault:
+    image: hashicorp/vault:1.15
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_TOKEN:-netnynja-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    ports:
+      - "8200:8200"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "vault", "status"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  # ============================================
+  # OBSERVABILITY STACK
+  # ============================================
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.93.0
+    profiles: ["infra", "npm", "stig"]
+    container_name: netnynja-victoriametrics
+    restart: unless-stopped
+    command:
+      - "--storageDataPath=/victoria-metrics-data"
+      - "--retentionPeriod=90d"
+      - "--httpListenAddr=:8428"
+    volumes:
+      - victoriametrics_data:/victoria-metrics-data
+    ports:
+      - "8428:8428"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8428/health"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  loki:
+    image: grafana/loki:2.9.0
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./infrastructure/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-promtail
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - loki
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    profiles: ["infra", "ipam", "npm", "stig"]
+    container_name: netnynja-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Grafana password required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - victoriametrics
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  # ============================================
+  # APPLICATION SERVICES
+  # ============================================
+
+  gateway:
+    build:
+      context: ./apps/gateway
+      dockerfile: Dockerfile
+      target: development
+    profiles: ["ipam", "npm", "stig"]
+    container_name: netnynja-gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_TOKEN:-netnynja-dev-token}
+      JAEGER_ENDPOINT: http://jaeger:4318/v1/traces
+    volumes:
+      - ./apps/gateway/src:/app/src:ro
+      - ./packages:/packages:ro
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  web-ui:
+    build:
+      context: ./apps/web-ui
+      dockerfile: Dockerfile
+      target: development
+    profiles: ["ipam", "npm", "stig"]
+    container_name: netnynja-web-ui
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001
+    volumes:
+      - ./apps/web-ui/src:/app/src:ro
+      - ./packages/shared-ui:/packages/shared-ui:ro
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gateway
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  # ============================================
+  # IPAM SERVICES
+  # ============================================
+
+  ipam-scanner:
+    build:
+      context: ./apps/ipam
+      dockerfile: Dockerfile
+      target: scanner
+    profiles: ["ipam"]
+    container_name: netnynja-ipam-scanner
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./apps/ipam/src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    # Scanner needs network access for discovery
+    network_mode: host
+    extra_hosts:
+      - "postgres:127.0.0.1"
+      - "redis:127.0.0.1"
+      - "nats:127.0.0.1"
+
+  # ============================================
+  # NPM SERVICES
+  # ============================================
+
+  npm-collector:
+    build:
+      context: ./apps/npm
+      dockerfile: Dockerfile
+      target: collector
+    profiles: ["npm"]
+    container_name: netnynja-npm-collector
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VICTORIAMETRICS_URL: http://victoriametrics:8428
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./apps/npm/collectors:/app/collectors:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      victoriametrics:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  npm-alerts:
+    build:
+      context: ./apps/npm
+      dockerfile: Dockerfile
+      target: alerts
+    profiles: ["npm"]
+    container_name: netnynja-npm-alerts
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./apps/npm/alerts:/app/alerts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  # ============================================
+  # STIG MANAGER SERVICES
+  # ============================================
+
+  stig-collector:
+    build:
+      context: ./apps/stig
+      dockerfile: Dockerfile
+      target: collector
+    profiles: ["stig"]
+    container_name: netnynja-stig-collector
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./apps/stig/collectors:/app/collectors:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  stig-reports:
+    build:
+      context: ./apps/stig
+      dockerfile: Dockerfile
+      target: reports
+    profiles: ["stig"]
+    container_name: netnynja-stig-reports
+    restart: unless-stopped
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-netnynja}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-netnynja}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      NATS_URL: nats://nats:4222
+      VAULT_ADDR: http://vault:8200
+    volumes:
+      - ./apps/stig/reports:/app/reports:ro
+      - stig_reports:/app/output
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+  # ============================================
+  # REVERSE PROXY (Production)
+  # ============================================
+
+  nginx:
+    image: nginx:1.25-alpine
+    profiles: ["prod"]
+    container_name: netnynja-nginx
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - gateway
+      - web-ui
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "nginx", "-t"]
+    logging: *default-logging
+    networks:
+      - netnynja-network
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  postgres_data:
+    name: netnynja-postgres-data
+  redis_data:
+    name: netnynja-redis-data
+  nats_data:
+    name: netnynja-nats-data
+  victoriametrics_data:
+    name: netnynja-victoriametrics-data
+  prometheus_data:
+    name: netnynja-prometheus-data
+  loki_data:
+    name: netnynja-loki-data
+  grafana_data:
+    name: netnynja-grafana-data
+  stig_reports:
+    name: netnynja-stig-reports
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  netnynja-network:
+    name: netnynja-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
