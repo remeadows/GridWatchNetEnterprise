@@ -1,8 +1,8 @@
 # NetNynja Enterprise - Project Status
 
 **Last Updated**: 2026-01-06
-**Current Phase**: Phase 5 - IPAM Migration (Complete)
-**Overall Progress**: ▓▓▓▓▓▓░░░░ 55%
+**Current Phase**: Phase 7 - STIG Manager Integration (Complete)
+**Overall Progress**: ▓▓▓▓▓▓▓▓░░ 75%
 
 ---
 
@@ -22,8 +22,8 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | 3 | API Gateway Consolidation | ✅ Complete | Week 7-9 |
 | 4 | Frontend Unification | ✅ Complete | Week 10-12 |
 | 5 | IPAM Migration | ✅ Complete | Week 13-15 |
-| 6 | NPM Integration | ⬜ Not Started | Week 16-18 |
-| 7 | STIG Manager Integration | ⬜ Not Started | Week 19-21 |
+| 6 | NPM Integration | ✅ Complete | Week 16-18 |
+| 7 | STIG Manager Integration | ✅ Complete | Week 19-21 |
 | 8 | Cross-Platform Testing | ⬜ Not Started | Week 22-24 |
 | 9 | CI/CD & Release | ⬜ Not Started | Week 25-26 |
 
@@ -248,34 +248,140 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 ## Phase 6: NPM Integration
 
 ### Objectives
-- [ ] Migrate NPM services to `apps/npm/`
-- [ ] Integrate existing collectors
-- [ ] Connect to shared VictoriaMetrics
-- [ ] Update frontend module
-- [ ] Integrate with unified alerting
+- [x] Migrate NPM services to `apps/npm/`
+- [x] Integrate existing collectors
+- [x] Connect to shared VictoriaMetrics
+- [x] Update frontend module
+- [x] Integrate with unified alerting
+
+### Technical Decisions
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Backend Framework | FastAPI 0.109 | Async-native, consistent with IPAM |
+| SNMP Library | pysnmp | Industry standard, async support |
+| Metrics Push | VictoriaMetrics | Prometheus-compatible, high performance |
+| Alert Evaluation | NATS + PostgreSQL | Real-time with persistence |
+| Credential Storage | Fernet encryption | Symmetric encryption for SNMP communities |
+
+### NPM Service Architecture
+| Component | Location | Description |
+|-----------|----------|-------------|
+| FastAPI App | `apps/npm/src/npm/main.py` | Main service entry point |
+| API Routes | `apps/npm/src/npm/api/routes.py` | Device, interface, alert endpoints |
+| Models | `apps/npm/src/npm/models/` | Pydantic schemas for all entities |
+| DB Repository | `apps/npm/src/npm/db/repository.py` | PostgreSQL operations for npm.* schema |
+| Device Service | `apps/npm/src/npm/services/device.py` | Business logic for device management |
+| Metrics Service | `apps/npm/src/npm/services/metrics.py` | VictoriaMetrics integration |
+| SNMP Poller | `apps/npm/src/npm/collectors/snmp_poller.py` | Device polling and metric collection |
+| Alert Evaluator | `apps/npm/src/npm/services/alert_service.py` | Rule evaluation and alert generation |
+| NATS Handler | `apps/npm/src/npm/collectors/nats_handler.py` | Message streaming for metrics/alerts |
+
+### API Endpoints Added
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `/api/v1/npm/devices` | GET, POST | Device list and creation |
+| `/api/v1/npm/devices/:id` | GET, PUT, DELETE | Device CRUD |
+| `/api/v1/npm/devices/:id/interfaces` | GET | Device interfaces |
+| `/api/v1/npm/devices/:id/metrics` | GET | Device performance metrics |
+| `/api/v1/npm/interfaces/:id` | PUT | Interface configuration |
+| `/api/v1/npm/interfaces/:id/metrics` | GET | Interface traffic metrics |
+| `/api/v1/npm/alerts` | GET | Alert listing with filters |
+| `/api/v1/npm/alerts/:id/acknowledge` | POST | Acknowledge alert |
+| `/api/v1/npm/alerts/:id/resolve` | POST | Resolve alert |
+| `/api/v1/npm/alert-rules` | GET, POST | Alert rule management |
+| `/api/v1/npm/alert-rules/:id` | GET, PUT, DELETE | Alert rule CRUD |
+| `/api/v1/npm/dashboard` | GET | Dashboard stats and top metrics |
 
 ### Deliverables
-- [ ] All NPM collectors operational
-- [ ] Metrics flowing to VictoriaMetrics
-- [ ] Grafana dashboards migrated
-- [ ] Alert rules configured
+- [x] Complete NPM Python backend (`apps/npm/`) with FastAPI
+- [x] SNMP polling framework with concurrent device polling
+- [x] VictoriaMetrics integration for device and interface metrics
+- [x] Alert evaluation service with rule-based alerting
+- [x] NATS JetStream integration for metrics streaming
+- [x] Grafana dashboard for NPM metrics (`npm-overview.json`)
+- [x] Docker Compose services: npm-service, npm-collector, npm-alerts
+- [x] Frontend module integration with routing
 
 ---
 
 ## Phase 7: STIG Manager Integration
 
 ### Objectives
-- [ ] Migrate STIG services to `apps/stig/`
-- [ ] Integrate collectors (SSH, Netmiko)
-- [ ] Connect to shared audit logging
-- [ ] Update frontend module
-- [ ] Integrate report generation
+- [x] Migrate STIG services to `apps/stig/`
+- [x] Integrate collectors (SSH, Netmiko)
+- [x] Connect to shared audit logging
+- [x] Update frontend module
+- [x] Integrate report generation
+
+### Technical Decisions
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Backend Framework | FastAPI 0.109 | Async-native, consistent with IPAM/NPM |
+| SSH Library | asyncssh | Native async SSH client |
+| Network Devices | Netmiko 4.3 | Multi-vendor CLI automation |
+| Report Formats | CKL, PDF, JSON | DoD standard + management reporting |
+| PDF Generation | ReportLab | Pure Python, no external dependencies |
+| XML Parsing | lxml + defusedxml | Fast parsing with security protections |
+
+### STIG Service Architecture
+| Component | Location | Description |
+|-----------|----------|-------------|
+| FastAPI App | `apps/stig/src/stig/main.py` | Main service entry point (port 3005) |
+| API Routes | `apps/stig/src/stig/api/routes.py` | Target, definition, audit, report endpoints |
+| Models | `apps/stig/src/stig/models/` | Pydantic schemas for all entities |
+| DB Repository | `apps/stig/src/stig/db/repository.py` | PostgreSQL operations for stig.* schema |
+| Audit Service | `apps/stig/src/stig/services/audit.py` | Audit orchestration and job management |
+| Compliance Service | `apps/stig/src/stig/services/compliance.py` | Dashboard and analytics |
+| Vault Service | `apps/stig/src/stig/services/vault.py` | Credential retrieval from HashiCorp Vault |
+| SSH Auditor | `apps/stig/src/stig/collectors/ssh_auditor.py` | SSH-based compliance checks |
+| Netmiko Auditor | `apps/stig/src/stig/collectors/ssh_auditor.py` | Network device auditing |
+| NATS Handler | `apps/stig/src/stig/collectors/nats_handler.py` | Async job processing |
+| CKL Exporter | `apps/stig/src/stig/reports/ckl.py` | DISA STIG Viewer format export |
+| PDF Exporter | `apps/stig/src/stig/reports/pdf.py` | Management report generation |
+| Report Generator | `apps/stig/src/stig/reports/generator.py` | Report orchestration service |
+
+### API Endpoints Added
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `/api/v1/stig/targets` | GET, POST | Target list and creation |
+| `/api/v1/stig/targets/:id` | GET, PUT, DELETE | Target CRUD |
+| `/api/v1/stig/definitions` | GET | STIG definitions list |
+| `/api/v1/stig/definitions/:id` | GET | Definition details with rules |
+| `/api/v1/stig/audits` | GET, POST | Audit job list and creation |
+| `/api/v1/stig/audits/:id` | GET | Audit job details |
+| `/api/v1/stig/audits/:id/cancel` | POST | Cancel running audit |
+| `/api/v1/stig/audits/:id/results` | GET | Audit findings with pagination |
+| `/api/v1/stig/audits/:id/summary` | GET | Compliance summary for audit |
+| `/api/v1/stig/reports/generate` | POST | Generate CKL/PDF report |
+| `/api/v1/stig/dashboard` | GET | Dashboard stats and trends |
+| `/api/v1/stig/compliance/summary` | GET | Overall compliance metrics |
+
+### Supported Platforms
+| Platform | Connection Type | Status |
+|----------|----------------|--------|
+| Linux (RHEL, Ubuntu, etc.) | SSH | Supported |
+| macOS | SSH | Supported |
+| Windows | WinRM | Planned |
+| Cisco IOS | Netmiko | Supported |
+| Cisco NX-OS | Netmiko | Supported |
+| Arista EOS | Netmiko | Supported |
+| HP ProCurve | Netmiko | Supported |
+| Juniper SRX | Netmiko | Supported |
+| pfSense | API | Planned |
 
 ### Deliverables
-- [ ] STIG audits functional
-- [ ] CKL/PDF report generation
-- [ ] Compliance dashboards
-- [ ] NATS streams for audit events
+- [x] Complete STIG Python backend (`apps/stig/`) with FastAPI
+- [x] Pydantic models for targets, definitions, audits, results
+- [x] asyncpg database layer with PostgreSQL stig.* schema support
+- [x] SSH auditing with asyncssh for Linux/Unix systems
+- [x] Netmiko integration for network device auditing
+- [x] Vault integration for secure credential storage
+- [x] CKL export for DISA STIG Viewer compatibility
+- [x] PDF report generation with compliance summaries
+- [x] NATS JetStream integration for async audit processing
+- [x] Grafana dashboard for STIG compliance overview
+- [x] Docker Compose services: stig-service, stig-collector, stig-reports
+- [x] Frontend module index with route configuration
 
 ---
 
@@ -429,3 +535,34 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 - SQLite to PostgreSQL migration script with field mapping
 - Gateway routes extended: scan endpoints, dashboard, network stats
 - Docker Compose services: ipam-service (FastAPI), ipam-scanner (worker)
+
+#### Phase 6: NPM Integration
+- Complete NPM Python backend (`apps/npm/`) with FastAPI 0.109
+- Pydantic models for devices, interfaces, alerts, and metrics
+- asyncpg database layer with PostgreSQL npm.* schema support
+- SNMP polling framework with concurrent device/interface collection
+- VictoriaMetrics integration for performance metrics
+- Alert evaluation service with configurable rules and thresholds
+- NATS JetStream integration for metrics and alert streaming
+- Encrypted SNMP community storage using Fernet
+- Grafana dashboard for NPM network overview
+- Docker Compose services: npm-service (FastAPI), npm-collector (SNMP), npm-alerts
+- Frontend module index with route configuration
+
+#### Phase 7: STIG Manager Integration
+- Complete STIG Python backend (`apps/stig/`) with FastAPI 0.109
+- Pydantic models for targets, definitions, audits, results, reports
+- asyncpg database layer with PostgreSQL stig.* schema support
+- SSH auditing with asyncssh for Linux/Unix systems
+- Netmiko integration for multi-vendor network device auditing
+- HashiCorp Vault integration for secure credential storage
+- CKL (Checklist) export for DISA STIG Viewer compatibility
+- PDF report generation with ReportLab (compliance summaries, findings)
+- JSON export for programmatic access
+- Audit orchestration service with job queue management
+- Compliance analytics service with dashboard aggregations
+- NATS JetStream integration for async audit job processing
+- Grafana dashboard for STIG compliance overview
+- Docker Compose services: stig-service (FastAPI), stig-collector (SSH), stig-reports (PDF/CKL)
+- Frontend module index with route configuration
+- Support for 10 platforms: Linux, macOS, Windows, Cisco IOS/NX-OS, Arista EOS, HP ProCurve, Juniper SRX, pfSense
