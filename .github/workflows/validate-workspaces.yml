@@ -1,0 +1,185 @@
+# NetNynja Enterprise - npm Workspaces Validation
+#
+# This workflow validates npm workspaces across all supported platforms:
+# - macOS (latest)
+# - Ubuntu (latest) - for Linux/RHEL compatibility testing
+# - Windows (latest)
+
+name: Validate Workspaces
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "packages/*/package.json"
+      - "apps/*/package.json"
+      - "services/*/package.json"
+      - "turbo.json"
+      - ".github/workflows/validate-workspaces.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "packages/*/package.json"
+      - "apps/*/package.json"
+      - "services/*/package.json"
+      - "turbo.json"
+  workflow_dispatch:
+
+jobs:
+  validate-workspaces:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ["20.x", "22.x"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Display environment info
+        run: |
+          echo "Node version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "OS: ${{ runner.os }}"
+        shell: bash
+
+      - name: Validate package.json structure
+        run: |
+          echo "Checking package.json workspaces configuration..."
+          node -e "
+            const pkg = require('./package.json');
+            if (!pkg.workspaces) {
+              console.error('ERROR: No workspaces field in package.json');
+              process.exit(1);
+            }
+            console.log('Workspaces configured:', pkg.workspaces);
+            if (!pkg.engines || !pkg.engines.node || !pkg.engines.npm) {
+              console.warn('WARNING: No engines constraints defined');
+            }
+            console.log('Engines:', pkg.engines);
+          "
+        shell: bash
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # Skip native module builds that might fail on CI
+          npm_config_ignore_scripts: false
+
+      - name: List workspaces
+        run: npm ls --workspaces --depth=0
+        shell: bash
+
+      - name: Verify workspace symlinks
+        run: |
+          echo "Checking workspace symlinks in node_modules..."
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            const workspaces = [
+              '@netnynja/shared-types',
+              '@netnynja/shared-auth',
+              '@netnynja/shared-ui',
+              '@netnynja/gateway',
+              '@netnynja/web-ui',
+              '@netnynja/auth-service'
+            ];
+
+            let errors = 0;
+            for (const ws of workspaces) {
+              const wsPath = path.join('node_modules', ws);
+              if (fs.existsSync(wsPath)) {
+                const stat = fs.lstatSync(wsPath);
+                if (stat.isSymbolicLink()) {
+                  console.log('✓ ' + ws + ' is a symlink (workspace link)');
+                } else if (stat.isDirectory()) {
+                  // On Windows, npm may use junctions or copies
+                  const pkgPath = path.join(wsPath, 'package.json');
+                  if (fs.existsSync(pkgPath)) {
+                    console.log('✓ ' + ws + ' exists (directory/junction)');
+                  } else {
+                    console.error('✗ ' + ws + ' missing package.json');
+                    errors++;
+                  }
+                }
+              } else {
+                console.error('✗ ' + ws + ' not found in node_modules');
+                errors++;
+              }
+            }
+
+            if (errors > 0) {
+              console.error('\\n' + errors + ' workspace(s) not properly linked');
+              process.exit(1);
+            }
+            console.log('\\nAll workspace packages properly linked');
+          "
+        shell: bash
+
+      - name: Build shared packages
+        run: npm run build --workspaces --if-present
+        shell: bash
+
+      - name: Type check workspaces
+        run: npm run typecheck --workspaces --if-present
+        shell: bash
+        continue-on-error: true # May fail without full setup
+
+      - name: Test clean scripts (cross-platform)
+        run: |
+          echo "Testing clean commands..."
+          npm run clean --workspace=packages/shared-types --if-present || true
+          echo "Clean command executed"
+        shell: bash
+
+      - name: Verify turbo configuration
+        run: |
+          echo "Validating turbo.json..."
+          node -e "
+            const turbo = require('./turbo.json');
+            const requiredTasks = ['build', 'dev', 'test', 'lint', 'typecheck'];
+
+            console.log('Pipeline tasks:', Object.keys(turbo.pipeline || {}));
+
+            for (const task of requiredTasks) {
+              if (!turbo.pipeline || !turbo.pipeline[task]) {
+                console.warn('WARNING: Pipeline task \"' + task + '\" not defined');
+              } else {
+                console.log('✓ Pipeline task \"' + task + '\" configured');
+              }
+            }
+          "
+        shell: bash
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true # Don't fail on audit issues
+
+  summary:
+    needs: validate-workspaces
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check validation results
+        run: |
+          if [ "${{ needs.validate-workspaces.result }}" == "success" ]; then
+            echo "✅ Workspace validation passed on all platforms"
+          else
+            echo "❌ Workspace validation failed on one or more platforms"
+            exit 1
+          fi

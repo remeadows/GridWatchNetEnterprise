@@ -1,0 +1,89 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# NetNynja Enterprise - Commit Message Hook
+#
+# This hook validates commit messages follow the Conventional Commits format:
+# https://www.conventionalcommits.org/
+#
+# Format: <type>(<scope>): <subject>
+#
+# Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+# Scope: optional, e.g., gateway, ipam, npm, stig, ui, auth, infra
+#
+# Examples:
+#   feat(ipam): add network scanning feature
+#   fix(gateway): resolve authentication timeout
+#   docs: update API documentation
+#   chore(deps): update dependencies
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Skip merge commits
+if echo "$COMMIT_MSG" | grep -qE '^Merge'; then
+    exit 0
+fi
+
+# Skip revert commits
+if echo "$COMMIT_MSG" | grep -qE '^Revert'; then
+    exit 0
+fi
+
+# Skip fixup/squash commits
+if echo "$COMMIT_MSG" | grep -qE '^(fixup|squash)!'; then
+    exit 0
+fi
+
+# Conventional commit pattern
+PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([a-zA-Z0-9_-]+\))?(!)?: .{1,100}'
+
+if ! echo "$COMMIT_MSG" | head -1 | grep -qE "$PATTERN"; then
+    echo ""
+    echo "❌ Invalid commit message format!"
+    echo ""
+    echo "Commit message must follow Conventional Commits format:"
+    echo "  <type>(<scope>): <subject>"
+    echo ""
+    echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo "Scope: optional - gateway, ipam, npm, stig, ui, auth, infra, etc."
+    echo ""
+    echo "Examples:"
+    echo "  feat(ipam): add network scanning feature"
+    echo "  fix(gateway): resolve authentication timeout"
+    echo "  docs: update API documentation"
+    echo "  chore(deps): update dependencies"
+    echo ""
+    echo "Your message: $COMMIT_MSG"
+    echo ""
+    exit 1
+fi
+
+# Check subject line length (max 72 chars recommended, 100 hard limit)
+SUBJECT=$(echo "$COMMIT_MSG" | head -1)
+SUBJECT_LENGTH=${#SUBJECT}
+
+if [ "$SUBJECT_LENGTH" -gt 100 ]; then
+    echo ""
+    echo "❌ Commit subject line too long!"
+    echo "   Maximum: 100 characters"
+    echo "   Your subject: $SUBJECT_LENGTH characters"
+    echo ""
+    exit 1
+fi
+
+if [ "$SUBJECT_LENGTH" -gt 72 ]; then
+    echo "⚠️  Note: Subject line is $SUBJECT_LENGTH chars (>72), consider shortening"
+fi
+
+# Check for period at end of subject (not recommended)
+if echo "$SUBJECT" | grep -qE '\.$'; then
+    echo "⚠️  Note: Subject line should not end with a period"
+fi
+
+# Check for uppercase first letter after type
+if ! echo "$SUBJECT" | grep -qE '^[a-z]+(\([a-zA-Z0-9_-]+\))?: [a-z]'; then
+    echo "⚠️  Note: Subject should start with lowercase letter after the type prefix"
+fi
+
+echo "✅ Commit message format is valid"

@@ -1,0 +1,116 @@
+# ===========================================
+# NetNynja Enterprise - Trivy Configuration
+# ===========================================
+# Configuration for Trivy vulnerability scanner
+# Place this file in the project root as trivy.yaml
+# or specify with --config flag
+
+# ===========================================
+# Severity Settings
+# ===========================================
+severity:
+  - CRITICAL
+  - HIGH
+
+# Exit with error code 1 if vulnerabilities found
+exit-code: 1
+
+# ===========================================
+# Vulnerability Database
+# ===========================================
+db:
+  # Skip DB update if it's been updated within 12 hours
+  skip-update: false
+  # Download DB from remote
+  download-only: false
+
+# ===========================================
+# Cache Settings
+# ===========================================
+cache:
+  # Cache directory
+  dir: ~/.cache/trivy
+
+# ===========================================
+# Ignore Settings
+# ===========================================
+# Ignore unfixed vulnerabilities (no patch available)
+ignore-unfixed: true
+
+# Ignore file patterns
+skip-files:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/node_modules/**"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
+
+skip-dirs:
+  - node_modules
+  - .git
+  - vendor
+  - __pycache__
+  - .pytest_cache
+  - dist
+  - build
+
+# ===========================================
+# Vulnerability Ignore Rules
+# ===========================================
+# Use .trivyignore file for per-project ignores
+# Format in .trivyignore:
+#   CVE-XXXX-YYYY  # Comment explaining why
+#   CVE-XXXX-ZZZZ  exp:2024-12-31  # Expires on date
+
+# ===========================================
+# Secret Detection
+# ===========================================
+secret:
+  config: infrastructure/security/secret-config.yaml
+
+# ===========================================
+# Misconfiguration Settings
+# ===========================================
+misconfiguration:
+  # Check for misconfigurations in Dockerfiles, K8s manifests, etc.
+  checks:
+    - docker
+    - kubernetes
+    - terraform
+    - cloudformation
+
+# ===========================================
+# Image Scanning Settings
+# ===========================================
+image:
+  # Scan removed images
+  removed-pkgs: true
+  # Scan non-packaged binaries
+  scanners:
+    - vuln
+    - secret
+    - misconfig
+
+# ===========================================
+# Report Settings
+# ===========================================
+format: table
+output: ""
+
+# ===========================================
+# License Scanning
+# ===========================================
+license:
+  # Ignore specific licenses
+  ignored:
+    - MIT
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - CC0-1.0
+  # Flag these licenses as forbidden
+  forbidden:
+    - AGPL-3.0
+    - GPL-3.0

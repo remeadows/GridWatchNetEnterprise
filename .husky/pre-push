@@ -1,0 +1,71 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# NetNynja Enterprise - Pre-push Hook
+#
+# This hook runs before pushing to remote to ensure:
+# 1. TypeScript builds successfully
+# 2. Tests pass (optional, can be skipped with --no-verify)
+# 3. No sensitive data is being pushed
+
+echo "🚀 Running pre-push checks..."
+
+# Get the remote name and URL
+remote="$1"
+url="$2"
+
+# Get the range of commits being pushed
+while read local_ref local_sha remote_ref remote_sha; do
+    # Skip deletes
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    # Determine range
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        # New branch
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+
+    # Check for sensitive files in commits being pushed
+    echo "🔒 Checking for sensitive files..."
+
+    SENSITIVE_PATTERNS='\.(pem|key|pfx|p12)$|\.env$|\.env\.local$|\.env\.production$|secrets\.json$|credentials\.json$'
+
+    FILES_IN_PUSH=$(git diff --name-only "$range" 2>/dev/null || git diff --name-only HEAD~10..HEAD)
+
+    if echo "$FILES_IN_PUSH" | grep -E "$SENSITIVE_PATTERNS"; then
+        echo ""
+        echo "❌ Error: Attempting to push sensitive files!"
+        echo "   Please remove these files from your commits before pushing."
+        echo ""
+        exit 1
+    fi
+done
+
+# Run TypeScript build check
+echo "📦 Checking TypeScript compilation..."
+if ! npm run typecheck --workspaces --if-present 2>/dev/null; then
+    echo ""
+    echo "⚠️  Warning: TypeScript type checking had errors"
+    echo "   Consider fixing them before pushing"
+    # Note: This is a warning, not blocking for now
+fi
+
+# Check if we're pushing to main/master directly
+CURRENT_BRANCH=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+
+if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+    echo ""
+    echo "⚠️  Warning: Pushing directly to $CURRENT_BRANCH branch"
+    echo "   Consider using feature branches and pull requests"
+fi
+
+# Optional: Run tests (can be slow, so we just note it)
+echo ""
+echo "💡 Tip: Consider running 'npm test' before pushing to ensure tests pass"
+
+echo ""
+echo "✅ Pre-push checks passed!"

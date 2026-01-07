@@ -1,0 +1,56 @@
+# ===========================================
+# NetNynja Enterprise - Production Vault Configuration
+# ===========================================
+# Use this file to override the default Vault configuration
+# for production deployments.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f infrastructure/vault/docker-compose.vault.yml up -d vault
+
+services:
+  vault:
+    # Use specific version for production
+    image: hashicorp/vault:1.15
+    container_name: netnynja-vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      # Production mode (no dev server)
+      VAULT_LOCAL_CONFIG: |
+        listener "tcp" {
+          address = "0.0.0.0:8200"
+          tls_disable = true
+        }
+        storage "file" {
+          path = "/vault/data"
+        }
+        disable_mlock = false
+        ui = true
+        log_level = "info"
+        api_addr = "http://127.0.0.1:8200"
+      # Skip dev mode
+      SKIP_SETCAP: "true"
+    # Use server mode instead of dev mode
+    command: vault server -config=/vault/config
+    volumes:
+      # Persistent storage for Vault data
+      - vault_data:/vault/data
+      # Mount configuration
+      - ./vault-config.hcl:/vault/config/vault.hcl:ro
+      # Mount policies for easy access
+      - ./policies:/vault/policies:ro
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - netnynja-network
+
+volumes:
+  vault_data:
+    name: netnynja-vault-data

@@ -1,0 +1,45 @@
+# ===========================================
+# NetNynja Enterprise - Trivy Ignore File
+# ===========================================
+# List CVEs to ignore during scanning.
+# Each line should contain a CVE ID and optionally an expiration date.
+#
+# Format:
+#   CVE-XXXX-YYYY              # Permanently ignore
+#   CVE-XXXX-YYYY exp:2024-12-31  # Ignore until date
+#
+# Always include a comment explaining WHY the CVE is ignored.
+
+# ===========================================
+# Development Dependencies
+# ===========================================
+# These vulnerabilities are in dev dependencies only,
+# not shipped to production.
+
+# Example (remove if not applicable):
+# CVE-2023-XXXXX exp:2024-06-01  # Dev dependency only, tracked in #XXX
+
+# ===========================================
+# False Positives
+# ===========================================
+# Vulnerabilities that don't apply to our usage.
+
+# Example:
+# CVE-2023-XXXXX  # Not exploitable in our configuration (see SEC-001)
+
+# ===========================================
+# Accepted Risks
+# ===========================================
+# Vulnerabilities we've accepted after security review.
+# Each should have a corresponding security review ticket.
+
+# Example:
+# CVE-2023-XXXXX exp:2024-03-01  # Accepted risk, mitigated by WAF (SEC-002)
+
+# ===========================================
+# Pending Fixes
+# ===========================================
+# Vulnerabilities waiting for upstream fixes.
+
+# Example:
+# CVE-2023-XXXXX exp:2024-02-01  # Waiting for postgres:15.5 release

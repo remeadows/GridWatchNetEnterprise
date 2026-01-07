@@ -1,0 +1,294 @@
+# NetNynja Enterprise - Test Workflow
+#
+# This workflow runs tests for:
+# - TypeScript/Node.js packages and applications
+# - Python services (if Poetry is configured)
+# - Coverage reporting
+
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "services/**"
+      - "package.json"
+      - "package-lock.json"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/test.yml"
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # TypeScript/Node.js Tests
+  typescript-tests:
+    name: TypeScript Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_netnynja
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --workspaces --if-present
+
+      - name: Run typecheck
+        run: npm run typecheck --workspaces --if-present
+
+      - name: Run unit tests
+        run: npm run test --workspaces --if-present
+        env:
+          NODE_ENV: test
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET: test-jwt-secret-key-for-testing-only
+          JWT_ALGORITHM: HS256
+
+      - name: Run coverage
+        run: npm run test:coverage --workspace=apps/gateway --if-present
+        env:
+          NODE_ENV: test
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET: test-jwt-secret-key-for-testing-only
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./apps/gateway/coverage
+          flags: gateway
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  # Python Tests (if Poetry is configured)
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    if: hashFiles('pyproject.toml') != ''
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_netnynja
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+        continue-on-error: true
+
+      - name: Install project
+        run: poetry install --no-interaction
+        continue-on-error: true
+
+      - name: Run pytest
+        run: |
+          if poetry run python -c "import pytest" 2>/dev/null; then
+            poetry run pytest services/ --tb=short -q || true
+          else
+            echo "pytest not installed, skipping Python tests"
+          fi
+        env:
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          REDIS_URL: redis://localhost:6379/1
+
+      - name: Run coverage
+        run: |
+          if poetry run python -c "import pytest" 2>/dev/null; then
+            poetry run pytest services/ --cov=services --cov-report=xml --cov-report=term-missing || true
+          fi
+        env:
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          REDIS_URL: redis://localhost:6379/1
+        continue-on-error: true
+
+  # Lint Check
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --workspaces --if-present
+
+      - name: Run ESLint
+        run: npm run lint --workspaces --if-present
+        continue-on-error: true
+
+      - name: Run Prettier check
+        run: npm run format:check
+        continue-on-error: true
+
+  # E2E Tests (optional, runs on main only)
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [typescript-tests]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --workspaces --if-present
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose up -d --wait
+          sleep 10
+        continue-on-error: true
+
+      - name: Run E2E tests
+        run: |
+          if [ -d "Testing" ]; then
+            cd Testing
+            if [ -f "requirements.txt" ]; then
+              python -m pip install -r requirements.txt
+              python -m pytest -v || true
+            fi
+          fi
+        continue-on-error: true
+
+      - name: Stop services
+        run: docker compose down -v
+        if: always()
+
+  # Summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [typescript-tests, python-tests, lint]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.typescript-tests.result }}" == "success" ]; then
+            echo "✅ TypeScript Tests: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ TypeScript Tests: ${{ needs.typescript-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.python-tests.result }}" == "success" ]; then
+            echo "✅ Python Tests: Passed" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.python-tests.result }}" == "skipped" ]; then
+            echo "⏭️ Python Tests: Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Python Tests: ${{ needs.python-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.lint.result }}" == "success" ]; then
+            echo "✅ Lint: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+          fi

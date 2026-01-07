@@ -24,7 +24,7 @@ services:
   # ============================================
   # SHARED INFRASTRUCTURE
   # ============================================
-  
+
   postgres:
     image: postgres:15-alpine
     profiles: ["infra", "ipam", "npm", "stig"]
@@ -68,7 +68,7 @@ services:
     profiles: ["infra", "ipam", "npm", "stig"]
     container_name: netnynja-nats
     restart: unless-stopped
-    command: 
+    command:
       - "--jetstream"
       - "--store_dir=/data"
       - "--http_port=8222"
@@ -76,8 +76,8 @@ services:
       - nats_data:/data
       - ./infrastructure/nats/nats.conf:/etc/nats/nats.conf:ro
     ports:
-      - "4222:4222"   # Client connections
-      - "8222:8222"   # HTTP monitoring
+      - "4222:4222" # Client connections
+      - "8222:8222" # HTTP monitoring
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
@@ -191,9 +191,9 @@ services:
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
-      - "16686:16686"  # UI
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "16686:16686" # UI
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
@@ -213,6 +213,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     depends_on:
@@ -221,7 +222,8 @@ services:
       - victoriametrics
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      test:
+        ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
     logging: *default-logging
     networks:
       - netnynja-network
@@ -324,7 +326,13 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3003/healthz').raise_for_status()"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import httpx; httpx.get('http://localhost:3003/healthz').raise_for_status()",
+        ]
     logging: *default-logging
     networks:
       - netnynja-network
@@ -398,7 +406,13 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3004/healthz').raise_for_status()"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import httpx; httpx.get('http://localhost:3004/healthz').raise_for_status()",
+        ]
     logging: *default-logging
     networks:
       - netnynja-network
@@ -492,7 +506,13 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3005/healthz').raise_for_status()"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import httpx; httpx.get('http://localhost:3005/healthz').raise_for_status()",
+        ]
     logging: *default-logging
     networks:
       - netnynja-network

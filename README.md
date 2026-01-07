@@ -17,12 +17,12 @@ NetNynja Enterprise consolidates three network management applications into a un
 
 ### Supported Platforms
 
-| Platform | Status |
-|----------|--------|
-| macOS (Intel/Apple Silicon) | ✅ Supported |
+| Platform                     | Status       |
+| ---------------------------- | ------------ |
+| macOS (Intel/Apple Silicon)  | ✅ Supported |
 | Red Hat Enterprise Linux 9.x | ✅ Supported |
-| Windows 11 | ✅ Supported |
-| Windows Server 2022 | ✅ Supported |
+| Windows 11                   | ✅ Supported |
+| Windows Server 2022          | ✅ Supported |
 
 ## Quick Start
 
@@ -61,14 +61,14 @@ npm run dev
 
 ### Access Points
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Web UI | http://localhost:5173 | admin / (from .env) |
-| API Gateway | http://localhost:3001 | - |
-| Grafana | http://localhost:3000 | admin / (from .env) |
-| NATS Monitoring | http://localhost:8222 | - |
-| Jaeger Tracing | http://localhost:16686 | - |
-| Vault | http://localhost:8200 | (dev token) |
+| Service         | URL                    | Credentials         |
+| --------------- | ---------------------- | ------------------- |
+| Web UI          | http://localhost:5173  | admin / (from .env) |
+| API Gateway     | http://localhost:3001  | -                   |
+| Grafana         | http://localhost:3000  | admin / (from .env) |
+| NATS Monitoring | http://localhost:8222  | -                   |
+| Jaeger Tracing  | http://localhost:16686 | -                   |
+| Vault           | http://localhost:8200  | (dev token)         |
 
 ## Architecture
 
@@ -151,7 +151,17 @@ docker compose --profile stig up -d
 
 # Run tests
 npm run test                    # TypeScript tests
+npm run test -w apps/gateway    # Gateway tests only
 poetry run pytest               # Python tests
+
+# Run with coverage
+npm run test:coverage -w apps/gateway
+
+# Run performance benchmarks
+npm run benchmark -w apps/gateway         # All benchmarks
+npm run benchmark:health -w apps/gateway  # Health endpoints only
+npm run benchmark:auth -w apps/gateway    # Auth endpoints only
+npm run benchmark:ipam -w apps/gateway    # IPAM endpoints only
 
 # Lint code
 npm run lint
@@ -164,6 +174,13 @@ poetry run black .
 # Type check
 npm run typecheck
 poetry run mypy .
+
+# Validate workspaces (cross-platform)
+./scripts/validate-workspaces.sh
+
+# Validate Poetry (cross-platform)
+./scripts/validate-poetry.sh              # Linux/macOS
+./scripts/validate-poetry.ps1             # Windows PowerShell
 ```
 
 ### Working with Claude Code
@@ -175,6 +192,40 @@ This project includes `CLAUDE.md` with comprehensive instructions for AI-assiste
 - Use the shared packages for common functionality
 - Security-first approach for all changes
 
+## Testing
+
+### Unit Tests
+
+```bash
+# Run all gateway tests
+npm run test -w apps/gateway
+
+# Run with coverage report
+npm run test:coverage -w apps/gateway
+```
+
+Coverage thresholds: 50% branches, functions, lines, statements
+
+### Performance Benchmarks
+
+The gateway includes performance benchmarks using [autocannon](https://github.com/mcollina/autocannon):
+
+| Suite  | Endpoints                 | Target RPS   |
+| ------ | ------------------------- | ------------ |
+| Health | /healthz, /livez, /readyz | 5,000-10,000 |
+| Auth   | /api/v1/auth/\*           | 100-2,000    |
+| IPAM   | /api/v1/ipam/\*           | 200-1,000    |
+
+```bash
+# Run all benchmarks (gateway must be running)
+npm run benchmark -w apps/gateway
+
+# JSON output for CI integration
+node apps/gateway/tests/benchmarks/run-all.js --json
+```
+
+See `apps/gateway/tests/benchmarks/README.md` for detailed documentation.
+
 ## Security
 
 - JWT + Argon2id authentication
@@ -182,6 +233,7 @@ This project includes `CLAUDE.md` with comprehensive instructions for AI-assiste
 - All secrets in HashiCorp Vault
 - TLS for production deployments
 - Container image scanning with Trivy
+- Pre-commit hooks for security checks
 
 ## Contributing
 
