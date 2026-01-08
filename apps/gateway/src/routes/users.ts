@@ -248,7 +248,59 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      const currentUserId = request.user?.sub;
       const body = updateUserSchema.parse(request.body);
+
+      // #082: Prevent self-disable
+      if (body.isActive === false && id === currentUserId) {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Cannot disable your own account",
+          },
+        };
+      }
+
+      // Get target user to check if they're an admin
+      const targetUser = await pool.query(
+        "SELECT role, is_active FROM shared.users WHERE id = $1",
+        [id],
+      );
+
+      if (targetUser.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "User not found" },
+        };
+      }
+
+      const targetRole = targetUser.rows[0].role;
+
+      // #082: Prevent disabling or demoting the last active admin
+      if (
+        targetRole === "admin" &&
+        (body.isActive === false || (body.role && body.role !== "admin"))
+      ) {
+        const adminCount = await pool.query(
+          "SELECT COUNT(*) FROM shared.users WHERE role = 'admin' AND is_active = true AND id != $1",
+          [id],
+        );
+
+        if (parseInt(adminCount.rows[0].count, 10) === 0) {
+          reply.status(400);
+          return {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message:
+                "Cannot disable or demote the last active admin. Promote another user to admin first.",
+            },
+          };
+        }
+      }
 
       const updates: string[] = [];
       const values: unknown[] = [];
@@ -287,14 +339,6 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
        RETURNING id, username, email, role, is_active, last_login, created_at, updated_at`,
         values,
       );
-
-      if (result.rows.length === 0) {
-        reply.status(404);
-        return {
-          success: false,
-          error: { code: "NOT_FOUND", message: "User not found" },
-        };
-      }
 
       const row = result.rows[0];
       logger.info({ userId: row.id, username: row.username }, "User updated");

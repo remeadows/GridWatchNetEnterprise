@@ -6,6 +6,7 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import { config } from "./config";
 import { logger } from "./logger";
 import { closePool, checkHealth as checkDbHealth } from "./db";
@@ -23,6 +24,7 @@ import usersRoutes from "./routes/users";
 import ipamRoutes from "./routes/ipam";
 import npmRoutes from "./routes/npm";
 import stigRoutes from "./routes/stig";
+import syslogRoutes from "./routes/syslog";
 
 // Initialize OpenTelemetry before anything else
 initTelemetry();
@@ -59,6 +61,13 @@ async function start(): Promise<void> {
       maxAge: config.CORS_MAX_AGE,
     });
 
+    // Register multipart for file uploads
+    await fastify.register(multipart, {
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB max file size
+      },
+    });
+
     // Register custom plugins
     await fastify.register(errorHandlerPlugin);
     await fastify.register(authPlugin);
@@ -82,6 +91,7 @@ async function start(): Promise<void> {
     await fastify.register(ipamRoutes, { prefix: "/api/v1/ipam" });
     await fastify.register(npmRoutes, { prefix: "/api/v1/npm" });
     await fastify.register(stigRoutes, { prefix: "/api/v1/stig" });
+    await fastify.register(syslogRoutes, { prefix: "/api/v1/syslog" });
 
     // Connect to Redis
     await redis.connect();

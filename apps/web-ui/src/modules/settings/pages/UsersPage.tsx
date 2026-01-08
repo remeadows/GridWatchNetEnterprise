@@ -459,13 +459,19 @@ export function UsersPage() {
                     onChange={(e) =>
                       setEditUser({ ...editUser, isActive: e.target.checked })
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={selectedUser.id === currentUser?.id}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <label
                     htmlFor="editIsActive"
                     className="text-sm text-gray-700 dark:text-gray-300"
                   >
                     Active
+                    {selectedUser.id === currentUser?.id && (
+                      <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                        (Cannot disable your own account)
+                      </span>
+                    )}
                   </label>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">

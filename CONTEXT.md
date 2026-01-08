@@ -2,9 +2,9 @@
 
 > Comprehensive context for AI-assisted and human development
 
-**Version**: 0.1.0
-**Last Updated**: 2026-01-06 23:45 EST
-**Status**: Active Development - Phase 7 Complete (Dev Infrastructure Enhanced)
+**Version**: 0.2.0
+**Last Updated**: 2026-01-08 11:00 EST
+**Status**: Active Development - Phase 8 In Progress (All 60 Issues Resolved)
 
 ## Project Vision
 
@@ -128,48 +128,81 @@ The monorepo is organized for separation of concerns while enabling code sharing
 
 **Key Entities:**
 
-- Networks (CIDR blocks with metadata)
-- IP Addresses (individual IPs with status)
-- Scan Jobs (discovery operations)
+- Networks (CIDR blocks with metadata, site designation)
+- IP Addresses (individual IPs with status, fingerprinting)
+- Scan Jobs (discovery operations with name/notes, exportable)
 
 **Key Operations:**
 
-- Network scanning (ping, TCP, NMAP)
-- IP discovery and tracking
-- Utilization reporting
+- Network scanning (ICMP ping, TCP, NMAP with XML parsing)
+- IP discovery and tracking with OS fingerprinting (TTL-based)
+- Utilization reporting with PDF/CSV export
 - DNS/DHCP correlation
+- Add discovered hosts to NPM monitoring
+- Scan management (create, edit, delete, export)
 
 ### NPM Domain
 
 **Key Entities:**
 
-- Devices (monitored network devices)
-- Interfaces (device ports/interfaces)
-- Metrics (time-series performance data)
+- Devices (monitored network devices with CPU/memory/latency metrics)
+- Interfaces (device ports/interfaces with traffic metrics)
+- Volumes (storage monitoring with utilization)
+- Metrics (time-series performance data, partitioned)
 - Alerts (threshold violations)
+- Device Groups (logical grouping of devices)
+- Discovery Jobs (network scanning with ICMP/SNMPv3)
+- SNMPv3 Credentials (FIPS-compliant, encrypted storage)
 
 **Key Operations:**
 
-- SNMP polling
-- Interface monitoring
-- Alert evaluation
-- Topology discovery
+- SNMPv3 polling with FIPS-compliant protocols (SHA-256+, AES-256)
+- Device discovery with fingerprinting (vendor, model, OS detection)
+- Interface and volume monitoring
+- Alert evaluation with customizable rules
+- Health/status PDF/CSV export
+- Site-based grouping of discovered hosts
+- Scale to 3000+ devices with optimized queries
 
 ### STIG Domain
 
 **Key Entities:**
 
-- Targets (auditable systems)
-- STIG Definitions (compliance rules)
-- Audit Jobs (compliance checks)
-- Results (pass/fail findings)
+- Targets (auditable systems with platform/connection type)
+- STIG Definitions (compliance rules from uploaded .zip files)
+- Definition Rules (individual XCCDF rules parsed from STIGs)
+- Audit Jobs (compliance checks with results)
+- Results (pass/fail findings with severity)
+- Import History (imported .ckl, .cklb, .xml checklists)
 
 **Key Operations:**
 
-- SSH/Netmiko connections
-- Rule evaluation
+- SSH/Netmiko connections for auditing
+- Rule evaluation against targets
+- CKL/CKLB/XML import from STIG Viewer
+- STIG Library management (upload, parse, delete)
 - CKL/PDF report generation
-- Compliance scoring
+- Compliance scoring and dashboards
+- Support for 16 platforms (Cisco, Juniper, Palo Alto, Fortinet, etc.)
+
+### Syslog Domain
+
+**Key Entities:**
+
+- Events (parsed syslog messages with device/event type)
+- Sources (configured syslog sources)
+- Filters (event filtering rules)
+- Forwarders (external SIEM forwarding)
+- Buffer Settings (10GB circular buffer configuration)
+
+**Key Operations:**
+
+- UDP/TCP listener on port 514
+- RFC 3164/5424 message parsing
+- Device type detection (Cisco, Juniper, Palo Alto, Linux, Windows)
+- Event type classification (authentication, security_alert, link_state)
+- 10GB circular buffer with configurable retention
+- Forward to external SIEM via UDP/TCP/TLS
 
 ---
 

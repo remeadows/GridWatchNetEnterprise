@@ -44,6 +44,8 @@ export type IPStatus = "active" | "inactive" | "reserved" | "dhcp" | "unknown";
 export interface ScanJob extends BaseEntity {
   networkId: string;
   scanType: ScanType;
+  name?: string;
+  notes?: string;
   startedAt: Date;
   completedAt?: Date;
   totalIps: number;

@@ -1,9 +1,10 @@
 # NetNynja Enterprise - Project Status
 
-**Version**: 0.1.0
-**Last Updated**: 2026-01-07 10:30 EST
+**Version**: 0.2.0
+**Last Updated**: 2026-01-08 11:00 EST
 **Current Phase**: Phase 8 - Cross-Platform Testing (In Progress)
-**Overall Progress**: ▓▓▓▓▓▓▓▓▓░ 90%
+**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 95%
+**Issues**: 0 Open | 60 Resolved
 
 ---
 
@@ -195,12 +196,14 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 ### Module Pages Implemented
 
-| Module    | Pages                                                                |
-| --------- | -------------------------------------------------------------------- |
-| Dashboard | Cross-module overview with stats and charts                          |
-| IPAM      | Networks list, Network detail with IP addresses                      |
-| NPM       | Devices list, Device detail with metrics, Alerts, SNMPv3 Credentials |
-| STIG      | Benchmarks, Assets, Compliance summary                               |
+| Module    | Pages                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| Dashboard | Cross-module overview with stats and charts                                               |
+| IPAM      | Networks list, Network detail with IP addresses, Scan management (edit/delete/export)     |
+| NPM       | Devices list, Device detail with metrics, Alerts, SNMPv3 Credentials, Discovery, Groups   |
+| STIG      | Benchmarks, Assets (editable), STIG Library (upload/manage), Checklist Import, Compliance |
+| Syslog    | Events (real-time), Sources, Filters, Forwarders                                          |
+| Settings  | User Management (create/edit/disable/reset password)                                      |
 
 ### Deliverables
 
@@ -253,13 +256,16 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 ### API Endpoints Added
 
-| Route                             | Methods | Description               |
-| --------------------------------- | ------- | ------------------------- |
-| `/api/v1/ipam/networks/:id/scan`  | POST    | Start network scan        |
-| `/api/v1/ipam/scans/:scanId`      | GET     | Get scan status           |
-| `/api/v1/ipam/networks/:id/scans` | GET     | List network scans        |
-| `/api/v1/ipam/dashboard`          | GET     | Dashboard statistics      |
-| `/api/v1/ipam/networks/:id/stats` | GET     | Network utilization stats |
+| Route                               | Methods            | Description               |
+| ----------------------------------- | ------------------ | ------------------------- |
+| `/api/v1/ipam/networks/:id/scan`    | POST               | Start network scan        |
+| `/api/v1/ipam/scans/:scanId`        | GET, PATCH, DELETE | Get/update/delete scan    |
+| `/api/v1/ipam/scans/:scanId/export` | GET                | Export scan to PDF/CSV    |
+| `/api/v1/ipam/networks/:id/scans`   | GET                | List network scans        |
+| `/api/v1/ipam/networks/:id/export`  | GET                | Export network to PDF/CSV |
+| `/api/v1/ipam/addresses/add-to-npm` | POST               | Add IPAM addresses to NPM |
+| `/api/v1/ipam/dashboard`            | GET                | Dashboard statistics      |
+| `/api/v1/ipam/networks/:id/stats`   | GET                | Network utilization stats |
 
 ### Deliverables
 
@@ -324,6 +330,18 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | `/api/v1/npm/snmpv3-credentials/:id`         | GET, PUT, DELETE | SNMPv3 credential CRUD          |
 | `/api/v1/npm/snmpv3-credentials/:id/test`    | POST             | Test credential against device  |
 | `/api/v1/npm/snmpv3-credentials/:id/devices` | GET              | Get devices using credential    |
+| `/api/v1/npm/discovery/jobs`                 | GET, POST        | Discovery job management        |
+| `/api/v1/npm/discovery/jobs/:id`             | GET              | Discovery job details           |
+| `/api/v1/npm/discovery/jobs/:id/hosts`       | GET, PATCH       | Discovered hosts (site assign)  |
+| `/api/v1/npm/discovery/jobs/:id/sites`       | GET              | Site list with counts           |
+| `/api/v1/npm/reports/health`                 | GET              | Health report PDF/CSV           |
+| `/api/v1/npm/reports/devices/:id`            | GET              | Device report PDF               |
+| `/api/v1/npm/devices/:id/interfaces`         | GET              | Device interfaces               |
+| `/api/v1/npm/devices/:id/volumes`            | GET              | Device volumes                  |
+| `/api/v1/npm/interfaces/:id/metrics`         | GET              | Interface metrics history       |
+| `/api/v1/npm/volumes/:id/metrics`            | GET              | Volume metrics history          |
+| `/api/v1/npm/dashboard`                      | GET              | Optimized dashboard stats       |
+| `/api/v1/npm/devices/status`                 | GET              | Lightweight bulk status         |
 
 ### SNMPv3 Credential Management
 
@@ -349,6 +367,12 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 - [x] SNMPv3 credential management with FIPS-compliant protocols
 - [x] AES-256-GCM encrypted password storage
 - [x] Flexible device polling (ICMP only, SNMPv3 only, or both)
+- [x] Network discovery with ICMP/SNMPv3 and fingerprinting
+- [x] Site-based grouping of discovered hosts
+- [x] Device metrics (CPU, memory, latency, availability)
+- [x] Interface and volume monitoring with metrics history
+- [x] Health/status PDF and CSV export
+- [x] Scaled for 3000+ devices with optimized queries
 
 ---
 
@@ -419,8 +443,16 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | Cisco NX-OS                | Netmiko         | Supported |
 | Arista EOS                 | Netmiko         | Supported |
 | HP ProCurve                | Netmiko         | Supported |
-| Juniper SRX                | Netmiko         | Supported |
-| pfSense                    | API             | Planned   |
+| Juniper JunOS              | Netmiko         | Supported |
+| Palo Alto                  | Netmiko         | Supported |
+| Fortinet                   | Netmiko         | Supported |
+| F5 BIG-IP                  | Netmiko         | Supported |
+| VMware ESXi                | SSH             | Supported |
+| VMware vCenter             | API             | Supported |
+| pfSense                    | SSH             | Supported |
+| HPE Aruba                  | Netmiko         | Supported |
+| Mellanox                   | Netmiko         | Supported |
+| FreeBSD                    | SSH             | Supported |
 
 ### Deliverables
 
@@ -738,7 +770,49 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 - Grafana dashboard for STIG compliance overview
 - Docker Compose services: stig-service (FastAPI), stig-collector (SSH), stig-reports (PDF/CKL)
 - Frontend module index with route configuration
-- Support for 10 platforms: Linux, macOS, Windows, Cisco IOS/NX-OS, Arista EOS, HP ProCurve, Juniper SRX, pfSense
+- Support for 16+ platforms: Linux, macOS, Windows, Cisco, Juniper, Palo Alto, Fortinet, F5, VMware, pfSense, HPE Aruba, Mellanox, FreeBSD
+- STIG Library management (upload .zip, parse XCCDF, delete)
+- Checklist import (.ckl, .cklb, .xml from STIG Viewer)
+- Editable assets with STIG selection
+
+#### Syslog Module (New)
+
+- Complete Syslog Python backend (`apps/syslog/`) with asyncio
+- UDP/TCP listener on port 514
+- RFC 3164/5424 message parsing
+- Device type detection (Cisco, Juniper, Palo Alto, Linux, Windows)
+- Event type classification (authentication, security_alert, link_state)
+- 10GB circular buffer with configurable retention
+- Forward to external SIEM via UDP/TCP/TLS
+- Frontend module with Events, Sources, Filters pages
+
+#### Settings Module (New)
+
+- User Management UI for admins
+- Create, edit, disable users
+- Role assignment (Admin/Operator/Viewer)
+- Password reset by admin
+- Account unlock functionality
+- Self-disable and last admin protection
+
+#### IPAM Enhancements (2026-01-08)
+
+- Scan management: delete scans, edit scan name/notes
+- Scan export to PDF and CSV with pdfmake
+- Network export to PDF and CSV
+- Add IPAM discovered addresses to NPM monitoring
+- Host fingerprinting with TTL-based OS detection
+- Confidence scoring (low/medium/high) for fingerprinting
+
+#### NPM Enhancements (2026-01-08)
+
+- Network discovery with ICMP/SNMPv3
+- Host fingerprinting with vendor/model detection from SNMP and MAC OUI
+- Site-based grouping for discovered hosts
+- Device metrics (CPU, memory, latency, availability)
+- Interface and volume metrics with history
+- Health/status PDF and CSV export
+- Scaled for 3000+ devices with optimized queries
 
 #### Development Infrastructure Improvements
 

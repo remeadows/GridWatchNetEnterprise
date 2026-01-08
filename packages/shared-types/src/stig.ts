@@ -2,8 +2,8 @@
  * NetNynja STIG Manager - Type Definitions
  */
 
-import { z } from 'zod';
-import type { BaseEntity } from './index';
+import { z } from "zod";
+import type { BaseEntity } from "./index";
 
 // ============================================
 // Target Types
@@ -21,19 +21,25 @@ export interface Target extends BaseEntity {
   lastAudit?: Date;
 }
 
-export type Platform = 
-  | 'linux'
-  | 'macos'
-  | 'windows'
-  | 'cisco_ios'
-  | 'cisco_nxos'
-  | 'arista_eos'
-  | 'hp_procurve'
-  | 'mellanox'
-  | 'juniper_srx'
-  | 'pfsense';
+export type Platform =
+  | "linux"
+  | "macos"
+  | "windows"
+  | "cisco_ios"
+  | "cisco_nxos"
+  | "arista_eos"
+  | "hp_procurve"
+  | "mellanox"
+  | "juniper_srx"
+  | "juniper_junos"
+  | "pfsense"
+  | "paloalto"
+  | "fortinet"
+  | "f5_bigip"
+  | "vmware_esxi"
+  | "vmware_vcenter";
 
-export type ConnectionType = 'ssh' | 'netmiko' | 'winrm' | 'api';
+export type ConnectionType = "ssh" | "netmiko" | "winrm" | "api";
 
 // ============================================
 // STIG Definition Types
@@ -62,7 +68,7 @@ export interface STIGRule {
   ccis: string[]; // CCI references
 }
 
-export type STIGSeverity = 'high' | 'medium' | 'low';
+export type STIGSeverity = "high" | "medium" | "low";
 
 // ============================================
 // Audit Types
@@ -82,7 +88,12 @@ export interface AuditJob extends BaseEntity {
   completedChecks?: number;
 }
 
-export type AuditStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type AuditStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export interface AuditResult extends BaseEntity {
   jobId: string;
@@ -95,13 +106,18 @@ export interface AuditResult extends BaseEntity {
   checkedAt: Date;
 }
 
-export type CheckStatus = 'pass' | 'fail' | 'not_applicable' | 'not_reviewed' | 'error';
+export type CheckStatus =
+  | "pass"
+  | "fail"
+  | "not_applicable"
+  | "not_reviewed"
+  | "error";
 
 // ============================================
 // Report Types
 // ============================================
 
-export type ReportFormat = 'pdf' | 'html' | 'ckl' | 'json' | 'sarif';
+export type ReportFormat = "pdf" | "html" | "ckl" | "json" | "sarif";
 
 export interface ReportRequest {
   jobId: string;
@@ -137,19 +153,25 @@ export const CreateTargetSchema = z.object({
   name: z.string().min(1).max(255),
   ipAddress: z.string().ip(),
   platform: z.enum([
-    'linux',
-    'macos',
-    'windows',
-    'cisco_ios',
-    'cisco_nxos',
-    'arista_eos',
-    'hp_procurve',
-    'mellanox',
-    'juniper_srx',
-    'pfsense',
+    "linux",
+    "macos",
+    "windows",
+    "cisco_ios",
+    "cisco_nxos",
+    "arista_eos",
+    "hp_procurve",
+    "mellanox",
+    "juniper_srx",
+    "juniper_junos",
+    "pfsense",
+    "paloalto",
+    "fortinet",
+    "f5_bigip",
+    "vmware_esxi",
+    "vmware_vcenter",
   ]),
   osVersion: z.string().max(100).optional(),
-  connectionType: z.enum(['ssh', 'netmiko', 'winrm', 'api']),
+  connectionType: z.enum(["ssh", "netmiko", "winrm", "api"]),
   credentialId: z.string().optional(),
   port: z.number().int().min(1).max(65535).optional(),
 });
@@ -164,7 +186,7 @@ export const StartAuditSchema = z.object({
 
 export const GenerateReportSchema = z.object({
   jobId: z.string().uuid(),
-  format: z.enum(['pdf', 'html', 'ckl', 'json', 'sarif']),
+  format: z.enum(["pdf", "html", "ckl", "json", "sarif"]),
   includeDetails: z.boolean().default(true),
   includeRemediation: z.boolean().default(true),
 });

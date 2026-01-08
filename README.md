@@ -9,11 +9,12 @@
 
 ## Overview
 
-NetNynja Enterprise consolidates three network management applications into a unified platform:
+NetNynja Enterprise consolidates four network management applications into a unified platform:
 
-- **NetNynja IPAM** - IP Address Management with network scanning and discovery
-- **NetNynja NPM** - Network Performance Monitoring with real-time metrics
-- **NetNynja STIG Manager** - Security Technical Implementation Guide compliance auditing
+- **NetNynja IPAM** - IP Address Management with network scanning, discovery, and fingerprinting
+- **NetNynja NPM** - Network Performance Monitoring with SNMPv3, device discovery, and 3000+ device scale
+- **NetNynja STIG Manager** - Security Technical Implementation Guide compliance auditing with 16+ platforms
+- **NetNynja Syslog** - Centralized syslog collection with 10GB buffer and SIEM forwarding
 
 ### Supported Platforms
 
@@ -114,7 +115,8 @@ netnynja-enterprise/
 │   ├── web-ui/           # React Frontend
 │   ├── ipam/             # IPAM Python Services
 │   ├── npm/              # NPM Python Services
-│   └── stig/             # STIG Python Services
+│   ├── stig/             # STIG Python Services
+│   └── syslog/           # Syslog Python Services
 ├── packages/
 │   ├── shared-types/     # TypeScript type definitions
 │   ├── shared-auth/      # Authentication library
@@ -148,6 +150,7 @@ docker compose up -d
 docker compose --profile ipam up -d
 docker compose --profile npm up -d
 docker compose --profile stig up -d
+docker compose --profile syslog up -d
 
 # Run tests
 npm run test                    # TypeScript tests
@@ -226,11 +229,55 @@ node apps/gateway/tests/benchmarks/run-all.js --json
 
 See `apps/gateway/tests/benchmarks/README.md` for detailed documentation.
 
+## Features
+
+### IPAM Module
+
+- Network scanning (ICMP, TCP, NMAP)
+- Host fingerprinting with OS detection (TTL-based)
+- Scan management (create, edit, delete, export PDF/CSV)
+- Add discovered hosts to NPM monitoring
+- Site designation for networks
+
+### NPM Module
+
+- SNMPv3 device monitoring (FIPS-compliant: SHA-256+, AES-256)
+- Network discovery with ICMP/SNMPv3
+- Device fingerprinting (vendor, model, OS from SNMP and MAC OUI)
+- CPU, memory, latency, availability metrics
+- Interface and volume monitoring
+- Health/status PDF and CSV export
+- Scales to 3000+ devices
+
+### STIG Module
+
+- STIG Library management (upload .zip, parse XCCDF)
+- Checklist import (.ckl, .cklb, .xml from STIG Viewer)
+- Support for 16+ platforms (Cisco, Juniper, Palo Alto, Fortinet, etc.)
+- CKL/PDF report generation
+- Editable assets with STIG selection
+
+### Syslog Module
+
+- UDP/TCP listener on port 514
+- RFC 3164/5424 parsing
+- Device type detection (Cisco, Juniper, Palo Alto, Linux, Windows)
+- 10GB circular buffer with configurable retention
+- Forward to external SIEM via UDP/TCP/TLS
+
+### Settings Module
+
+- User management (create, edit, disable)
+- Role-based access (Admin/Operator/Viewer)
+- Password reset by admin
+- Account unlock functionality
+
 ## Security
 
 - JWT + Argon2id authentication
 - Role-based access control (Admin/Operator/Viewer)
 - All secrets in HashiCorp Vault
+- SNMPv3 credentials encrypted with AES-256-GCM
 - TLS for production deployments
 - Container image scanning with Trivy
 - Pre-commit hooks for security checks

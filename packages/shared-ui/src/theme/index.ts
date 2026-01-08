@@ -88,9 +88,15 @@ export const moduleColors = {
     bg: "#f9fafb", // gray-50
     bgDark: "#1f2937", // gray-800
   },
+  syslog: {
+    primary: "#8b5cf6", // violet-500
+    secondary: "#7c3aed", // violet-600
+    bg: "#f5f3ff", // violet-50
+    bgDark: "#4c1d95", // violet-900
+  },
 } as const;
 
-export type ModuleType = "ipam" | "npm" | "stig" | "settings";
+export type ModuleType = "ipam" | "npm" | "stig" | "settings" | "syslog";
 
 export interface Theme {
   mode: "light" | "dark";

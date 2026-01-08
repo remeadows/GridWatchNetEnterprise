@@ -6,6 +6,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { pool } from "../../db";
 import { logger } from "../../logger";
+import reportsRoutes from "./reports";
 
 // Zod schemas
 const networkSchema = z.object({
@@ -25,9 +26,21 @@ const querySchema = z.object({
   search: z.string().optional(),
 });
 
+// Schema for adding IPAM addresses to NPM monitoring
+const addToNpmSchema = z.object({
+  addressIds: z.array(z.string().uuid()).min(1).max(100),
+  pollIcmp: z.boolean().default(true),
+  pollSnmp: z.boolean().default(false),
+  snmpv3CredentialId: z.string().uuid().optional(),
+  pollInterval: z.number().int().min(30).max(3600).default(60),
+});
+
 const ipamRoutes: FastifyPluginAsync = async (fastify) => {
   // Require authentication for all IPAM routes
   fastify.addHook("preHandler", fastify.requireAuth);
+
+  // Register reports sub-routes
+  await fastify.register(reportsRoutes);
 
   // List networks
   fastify.get(
@@ -518,7 +531,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       const { scanId } = request.params as { scanId: string };
 
       const result = await pool.query(
-        `SELECT id, network_id, scan_type, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message
+        `SELECT id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message
        FROM ipam.scan_history WHERE id = $1`,
         [scanId],
       );
@@ -538,6 +551,8 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           id: scan.id,
           networkId: scan.network_id,
           scanType: scan.scan_type,
+          name: scan.name,
+          notes: scan.notes,
           status: scan.status,
           startedAt: scan.started_at,
           completedAt: scan.completed_at,
@@ -572,7 +587,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       const query = querySchema.parse(request.query);
 
       const result = await pool.query(
-        `SELECT id, network_id, scan_type, status, started_at, completed_at, total_ips, active_ips, new_ips
+        `SELECT id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips
        FROM ipam.scan_history
        WHERE network_id = $1
        ORDER BY started_at DESC
@@ -586,6 +601,8 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           id: scan.id,
           networkId: scan.network_id,
           scanType: scan.scan_type,
+          name: scan.name,
+          notes: scan.notes,
           status: scan.status,
           startedAt: scan.started_at,
           completedAt: scan.completed_at,
@@ -593,6 +610,178 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           activeIps: scan.active_ips,
           newIps: scan.new_ips,
         })),
+      };
+    },
+  );
+
+  // Delete scan
+  fastify.delete(
+    "/scans/:scanId",
+    {
+      schema: {
+        tags: ["IPAM - Scans"],
+        summary: "Delete a scan from history",
+        description:
+          "Delete a completed or failed scan from history. Running scans cannot be deleted.",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          properties: {
+            scanId: { type: "string", format: "uuid" },
+          },
+          required: ["scanId"],
+        },
+      },
+      preHandler: [fastify.requireRole("admin", "operator")],
+    },
+    async (request, reply) => {
+      const { scanId } = request.params as { scanId: string };
+
+      // Check if scan exists and get its status
+      const statusCheck = await pool.query(
+        "SELECT id, status FROM ipam.scan_history WHERE id = $1",
+        [scanId],
+      );
+
+      if (statusCheck.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "Scan not found" },
+        };
+      }
+
+      // Don't allow deletion of running scans
+      if (statusCheck.rows[0].status === "running") {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message:
+              "Cannot delete a running scan. Wait for it to complete or fail.",
+          },
+        };
+      }
+
+      // Delete the scan
+      await pool.query("DELETE FROM ipam.scan_history WHERE id = $1", [scanId]);
+
+      logger.info({ scanId }, "Scan deleted");
+
+      return reply.status(204).send();
+    },
+  );
+
+  // Update scan attributes
+  fastify.patch(
+    "/scans/:scanId",
+    {
+      schema: {
+        tags: ["IPAM - Scans"],
+        summary: "Update scan attributes",
+        description:
+          "Update a scan's name and/or notes. Only completed or failed scans can be modified.",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          properties: {
+            scanId: { type: "string", format: "uuid" },
+          },
+          required: ["scanId"],
+        },
+        body: {
+          type: "object",
+          properties: {
+            name: { type: "string", maxLength: 255 },
+            notes: { type: "string" },
+          },
+        },
+      },
+      preHandler: [fastify.requireRole("admin", "operator")],
+    },
+    async (request, reply) => {
+      const { scanId } = request.params as { scanId: string };
+      const { name, notes } = request.body as { name?: string; notes?: string };
+
+      // Check if scan exists and get its status
+      const statusCheck = await pool.query(
+        "SELECT id, status FROM ipam.scan_history WHERE id = $1",
+        [scanId],
+      );
+
+      if (statusCheck.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "Scan not found" },
+        };
+      }
+
+      // Don't allow modification of running scans
+      if (
+        statusCheck.rows[0].status === "running" ||
+        statusCheck.rows[0].status === "pending"
+      ) {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message: "Cannot modify a running or pending scan.",
+          },
+        };
+      }
+
+      // Build update query dynamically
+      const updates: string[] = [];
+      const values: (string | null)[] = [];
+      let paramIndex = 1;
+
+      if (name !== undefined) {
+        updates.push(`name = $${paramIndex++}`);
+        values.push(name || null);
+      }
+      if (notes !== undefined) {
+        updates.push(`notes = $${paramIndex++}`);
+        values.push(notes || null);
+      }
+
+      if (updates.length === 0) {
+        reply.status(400);
+        return {
+          success: false,
+          error: { code: "BAD_REQUEST", message: "No fields to update" },
+        };
+      }
+
+      values.push(scanId);
+
+      const result = await pool.query(
+        `UPDATE ipam.scan_history SET ${updates.join(", ")} WHERE id = $${paramIndex}
+         RETURNING id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message`,
+        values,
+      );
+
+      const scan = result.rows[0];
+      logger.info({ scanId, name, notes }, "Scan updated");
+
+      return {
+        success: true,
+        data: {
+          id: scan.id,
+          networkId: scan.network_id,
+          scanType: scan.scan_type,
+          name: scan.name,
+          notes: scan.notes,
+          status: scan.status,
+          startedAt: scan.started_at,
+          completedAt: scan.completed_at,
+          totalIps: scan.total_ips,
+          activeIps: scan.active_ips,
+          newIps: scan.new_ips,
+          errorMessage: scan.error_message,
+        },
       };
     },
   );
@@ -668,6 +857,169 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           averageUtilization: parseFloat(
             utilization.rows[0].avg_utilization || 0,
           ).toFixed(2),
+        },
+      };
+    },
+  );
+
+  // Add IPAM discovered addresses to NPM monitoring
+  fastify.post(
+    "/addresses/add-to-npm",
+    {
+      schema: {
+        tags: ["IPAM - NPM Integration"],
+        summary: "Add discovered IP addresses to NPM monitoring",
+        description:
+          "Creates NPM devices from IPAM discovered addresses. Skips addresses already in NPM.",
+        security: [{ bearerAuth: [] }],
+        body: {
+          type: "object",
+          required: ["addressIds"],
+          properties: {
+            addressIds: {
+              type: "array",
+              items: { type: "string", format: "uuid" },
+              minItems: 1,
+              maxItems: 100,
+            },
+            pollIcmp: { type: "boolean", default: true },
+            pollSnmp: { type: "boolean", default: false },
+            snmpv3CredentialId: { type: "string", format: "uuid" },
+            pollInterval: {
+              type: "number",
+              minimum: 30,
+              maximum: 3600,
+              default: 60,
+            },
+          },
+        },
+      },
+      preHandler: [fastify.requireRole("admin", "operator")],
+    },
+    async (request, reply) => {
+      const body = addToNpmSchema.parse(request.body);
+
+      // Validate at least one polling method is enabled
+      if (!body.pollIcmp && !body.pollSnmp) {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              "At least one polling method (ICMP or SNMP) must be enabled",
+          },
+        };
+      }
+
+      // Validate SNMPv3 credential if SNMP is enabled
+      if (body.pollSnmp && !body.snmpv3CredentialId) {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              "SNMPv3 credential is required when SNMP polling is enabled",
+          },
+        };
+      }
+
+      // If SNMPv3 credential ID is provided, verify it exists
+      if (body.snmpv3CredentialId) {
+        const credCheck = await pool.query(
+          "SELECT id FROM npm.snmpv3_credentials WHERE id = $1",
+          [body.snmpv3CredentialId],
+        );
+        if (credCheck.rows.length === 0) {
+          reply.status(400);
+          return {
+            success: false,
+            error: {
+              code: "BAD_REQUEST",
+              message: "SNMPv3 credential not found",
+            },
+          };
+        }
+      }
+
+      // Get IPAM addresses
+      const addressResult = await pool.query(
+        `SELECT id, address, hostname, mac_address, device_type
+         FROM ipam.addresses
+         WHERE id = ANY($1)`,
+        [body.addressIds],
+      );
+
+      if (addressResult.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "No matching addresses found" },
+        };
+      }
+
+      // Check which addresses already exist in NPM
+      const ipAddresses = addressResult.rows.map((r) => r.address);
+      const existingResult = await pool.query(
+        `SELECT ip_address FROM npm.devices WHERE ip_address = ANY($1)`,
+        [ipAddresses],
+      );
+      const existingIps = new Set(existingResult.rows.map((r) => r.ip_address));
+
+      // Filter out addresses that already exist in NPM
+      const newAddresses = addressResult.rows.filter(
+        (r) => !existingIps.has(r.address),
+      );
+
+      if (newAddresses.length === 0) {
+        return {
+          success: true,
+          data: {
+            addedCount: 0,
+            skippedCount: addressResult.rows.length,
+            message: "All selected addresses are already in NPM monitoring",
+          },
+        };
+      }
+
+      // Insert new devices into NPM
+      const addedDevices = [];
+      for (const addr of newAddresses) {
+        const deviceName = addr.hostname || addr.address;
+        const result = await pool.query(
+          `INSERT INTO npm.devices (name, ip_address, device_type, poll_icmp, poll_snmp,
+                                    snmpv3_credential_id, poll_interval, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+           RETURNING id, name, ip_address`,
+          [
+            deviceName,
+            addr.address,
+            addr.device_type,
+            body.pollIcmp,
+            body.pollSnmp,
+            body.snmpv3CredentialId || null,
+            body.pollInterval,
+          ],
+        );
+        addedDevices.push(result.rows[0]);
+      }
+
+      logger.info(
+        { addedCount: addedDevices.length, skippedCount: existingIps.size },
+        "IPAM addresses added to NPM monitoring",
+      );
+
+      return {
+        success: true,
+        data: {
+          addedCount: addedDevices.length,
+          skippedCount: addressResult.rows.length - addedDevices.length,
+          addedDevices: addedDevices.map((d) => ({
+            id: d.id,
+            name: d.name,
+            ipAddress: d.ip_address,
+          })),
         },
       };
     },

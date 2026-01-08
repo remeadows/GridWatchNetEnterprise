@@ -27,10 +27,18 @@ class DeviceMetrics(BaseModel):
     device_id: str
     device_name: str
     timestamp: datetime
+    # ICMP metrics
+    icmp_latency_ms: float | None = None
+    icmp_packet_loss_percent: float | None = None
+    icmp_reachable: bool | None = None
+    # SNMP metrics
     cpu_utilization: float | None = None
     memory_utilization: float | None = None
+    memory_total_bytes: int | None = None
+    memory_used_bytes: int | None = None
     temperature: float | None = None
     uptime_seconds: int | None = None
+    # Interface summary
     interface_count: int = 0
     interface_up_count: int = 0
     interface_down_count: int = 0
@@ -38,6 +46,8 @@ class DeviceMetrics(BaseModel):
     total_out_octets: int = 0
     total_in_errors: int = 0
     total_out_errors: int = 0
+    # Availability
+    is_available: bool = False
 
 
 class InterfaceMetrics(BaseModel):

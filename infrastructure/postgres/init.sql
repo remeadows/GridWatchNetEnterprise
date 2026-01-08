@@ -14,9 +14,10 @@ CREATE SCHEMA IF NOT EXISTS shared;
 CREATE SCHEMA IF NOT EXISTS ipam;
 CREATE SCHEMA IF NOT EXISTS npm;
 CREATE SCHEMA IF NOT EXISTS stig;
+CREATE SCHEMA IF NOT EXISTS syslog;
 
 -- Set search path
-ALTER DATABASE netnynja SET search_path TO shared, ipam, npm, stig, public;
+ALTER DATABASE netnynja SET search_path TO shared, ipam, npm, stig, syslog, public;
 
 -- ============================================
 -- SHARED SCHEMA - Cross-application tables
@@ -128,6 +129,8 @@ CREATE TABLE ipam.scan_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     network_id UUID REFERENCES ipam.networks(id) ON DELETE CASCADE,
     scan_type VARCHAR(50) NOT NULL,
+    name VARCHAR(255),
+    notes TEXT,
     started_at TIMESTAMPTZ NOT NULL,
     completed_at TIMESTAMPTZ,
     total_ips INTEGER,
@@ -178,6 +181,8 @@ CREATE TABLE npm.devices (
     device_type VARCHAR(100),
     vendor VARCHAR(100),
     model VARCHAR(100),
+    -- Device grouping
+    group_id UUID,
     -- Polling methods (can be ICMP, SNMPv3, or both)
     poll_icmp BOOLEAN DEFAULT true,
     poll_snmp BOOLEAN DEFAULT false,
@@ -201,6 +206,7 @@ CREATE TABLE npm.devices (
 CREATE INDEX idx_npm_devices_ip ON npm.devices(ip_address);
 CREATE INDEX idx_npm_devices_status ON npm.devices(status);
 CREATE INDEX idx_npm_devices_credential ON npm.devices(snmpv3_credential_id);
+CREATE INDEX idx_npm_devices_group ON npm.devices(group_id);
 
 -- Interfaces
 CREATE TABLE npm.interfaces (
@@ -221,6 +227,43 @@ CREATE TABLE npm.interfaces (
 );
 
 CREATE INDEX idx_interfaces_device ON npm.interfaces(device_id);
+
+-- Device Groups (for organizing devices)
+CREATE TABLE npm.device_groups (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#6366f1' CHECK (color ~ '^#[0-9a-fA-F]{6}$'),
+    parent_id UUID REFERENCES npm.device_groups(id) ON DELETE SET NULL,
+    device_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES shared.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(name)
+);
+
+CREATE INDEX idx_device_groups_parent ON npm.device_groups(parent_id);
+CREATE INDEX idx_device_groups_active ON npm.device_groups(is_active);
+
+-- Volumes/Storage (for monitoring disk/storage on devices)
+CREATE TABLE npm.volumes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
+    volume_index INTEGER NOT NULL,
+    name VARCHAR(255),
+    description TEXT,
+    type VARCHAR(50) CHECK (type IN ('hrStorageFixedDisk', 'hrStorageRemovableDisk', 'hrStorageFlashMemory', 'hrStorageNetworkDisk', 'hrStorageRam', 'hrStorageVirtualMemory', 'hrStorageOther')),
+    mount_point VARCHAR(512),
+    total_bytes BIGINT,
+    used_bytes BIGINT,
+    is_monitored BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(device_id, volume_index)
+);
+
+CREATE INDEX idx_volumes_device ON npm.volumes(device_id);
 
 -- Alert rules
 CREATE TABLE npm.alert_rules (
@@ -258,6 +301,180 @@ CREATE INDEX idx_alerts_device ON npm.alerts(device_id);
 CREATE INDEX idx_alerts_status ON npm.alerts(status);
 CREATE INDEX idx_alerts_triggered ON npm.alerts(triggered_at DESC);
 
+-- Discovery Jobs (network scanning for device discovery)
+CREATE TABLE npm.discovery_jobs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    cidr CIDR NOT NULL,
+    discovery_method VARCHAR(50) NOT NULL CHECK (discovery_method IN ('icmp', 'snmpv3', 'both')),
+    snmpv3_credential_id UUID REFERENCES npm.snmpv3_credentials(id),
+    site VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+    progress_percent INTEGER DEFAULT 0 CHECK (progress_percent >= 0 AND progress_percent <= 100),
+    total_hosts INTEGER DEFAULT 0,
+    discovered_hosts INTEGER DEFAULT 0,
+    error_message TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_by UUID REFERENCES shared.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_discovery_jobs_status ON npm.discovery_jobs(status);
+CREATE INDEX idx_discovery_jobs_created ON npm.discovery_jobs(created_at DESC);
+
+-- Discovered Hosts (temporary storage before adding to devices)
+CREATE TABLE npm.discovered_hosts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    job_id UUID REFERENCES npm.discovery_jobs(id) ON DELETE CASCADE,
+    ip_address INET NOT NULL,
+    hostname VARCHAR(255),
+    mac_address MACADDR,
+    vendor VARCHAR(255),
+    model VARCHAR(255),
+    device_type VARCHAR(100),
+    os_family VARCHAR(100),
+    sys_name VARCHAR(255),
+    sys_description TEXT,
+    sys_contact VARCHAR(255),
+    sys_location VARCHAR(255),
+    site VARCHAR(255),
+    icmp_reachable BOOLEAN DEFAULT false,
+    icmp_latency_ms NUMERIC(10, 3),
+    icmp_ttl INTEGER,
+    snmp_reachable BOOLEAN DEFAULT false,
+    snmp_engine_id VARCHAR(255),
+    interfaces_count INTEGER DEFAULT 0,
+    uptime_seconds BIGINT,
+    open_ports TEXT,
+    fingerprint_confidence VARCHAR(20) DEFAULT 'low' CHECK (fingerprint_confidence IN ('low', 'medium', 'high')),
+    is_added_to_monitoring BOOLEAN DEFAULT false,
+    device_id UUID REFERENCES npm.devices(id),
+    discovered_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_discovered_hosts_job ON npm.discovered_hosts(job_id);
+CREATE INDEX idx_discovered_hosts_ip ON npm.discovered_hosts(ip_address);
+CREATE INDEX idx_discovered_hosts_added ON npm.discovered_hosts(is_added_to_monitoring);
+CREATE INDEX idx_discovered_hosts_site ON npm.discovered_hosts(site);
+
+-- Device Metrics (time-series storage for CPU, memory, latency, availability)
+-- Partitioned by timestamp for efficient querying and retention management
+CREATE TABLE npm.device_metrics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
+    collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- ICMP metrics
+    icmp_latency_ms NUMERIC(10, 3),
+    icmp_packet_loss_percent NUMERIC(5, 2),
+    icmp_reachable BOOLEAN,
+    -- SNMP metrics (vendor-agnostic)
+    cpu_utilization_percent NUMERIC(5, 2),
+    memory_utilization_percent NUMERIC(5, 2),
+    memory_total_bytes BIGINT,
+    memory_used_bytes BIGINT,
+    uptime_seconds BIGINT,
+    -- Temperature (if available)
+    temperature_celsius NUMERIC(5, 2),
+    -- Interface summary
+    total_interfaces INTEGER,
+    interfaces_up INTEGER,
+    interfaces_down INTEGER,
+    -- Availability calculation (based on poll results)
+    is_available BOOLEAN DEFAULT false
+) PARTITION BY RANGE (collected_at);
+
+-- Create partitions for metrics (daily partitions)
+-- In production, use pg_partman for automatic partition management
+CREATE TABLE npm.device_metrics_default PARTITION OF npm.device_metrics DEFAULT;
+
+CREATE INDEX idx_device_metrics_device ON npm.device_metrics(device_id);
+CREATE INDEX idx_device_metrics_collected ON npm.device_metrics(collected_at DESC);
+CREATE INDEX idx_device_metrics_device_time ON npm.device_metrics(device_id, collected_at DESC);
+
+-- Interface Metrics (bandwidth utilization, errors)
+CREATE TABLE npm.interface_metrics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    interface_id UUID REFERENCES npm.interfaces(id) ON DELETE CASCADE,
+    device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
+    collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Traffic counters (64-bit)
+    in_octets BIGINT,
+    out_octets BIGINT,
+    in_packets BIGINT,
+    out_packets BIGINT,
+    -- Error counters
+    in_errors BIGINT,
+    out_errors BIGINT,
+    in_discards BIGINT,
+    out_discards BIGINT,
+    -- Calculated rates (per second, calculated by collector)
+    in_octets_rate NUMERIC(18, 2),
+    out_octets_rate NUMERIC(18, 2),
+    utilization_in_percent NUMERIC(5, 2),
+    utilization_out_percent NUMERIC(5, 2),
+    -- Status
+    admin_status VARCHAR(20),
+    oper_status VARCHAR(20)
+) PARTITION BY RANGE (collected_at);
+
+CREATE TABLE npm.interface_metrics_default PARTITION OF npm.interface_metrics DEFAULT;
+
+CREATE INDEX idx_interface_metrics_interface ON npm.interface_metrics(interface_id);
+CREATE INDEX idx_interface_metrics_device ON npm.interface_metrics(device_id);
+CREATE INDEX idx_interface_metrics_collected ON npm.interface_metrics(collected_at DESC);
+CREATE INDEX idx_interface_metrics_if_time ON npm.interface_metrics(interface_id, collected_at DESC);
+
+-- Volume Metrics (storage utilization)
+CREATE TABLE npm.volume_metrics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    volume_id UUID REFERENCES npm.volumes(id) ON DELETE CASCADE,
+    device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
+    collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Storage utilization
+    total_bytes BIGINT,
+    used_bytes BIGINT,
+    available_bytes BIGINT,
+    utilization_percent NUMERIC(5, 2)
+) PARTITION BY RANGE (collected_at);
+
+CREATE TABLE npm.volume_metrics_default PARTITION OF npm.volume_metrics DEFAULT;
+
+CREATE INDEX idx_volume_metrics_volume ON npm.volume_metrics(volume_id);
+CREATE INDEX idx_volume_metrics_device ON npm.volume_metrics(device_id);
+CREATE INDEX idx_volume_metrics_collected ON npm.volume_metrics(collected_at DESC);
+CREATE INDEX idx_volume_metrics_vol_time ON npm.volume_metrics(volume_id, collected_at DESC);
+
+-- Aggregated device availability (hourly/daily summaries)
+CREATE TABLE npm.device_availability (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
+    period_type VARCHAR(20) NOT NULL CHECK (period_type IN ('hourly', 'daily', 'weekly', 'monthly')),
+    -- Availability metrics
+    total_polls INTEGER NOT NULL DEFAULT 0,
+    successful_polls INTEGER NOT NULL DEFAULT 0,
+    failed_polls INTEGER NOT NULL DEFAULT 0,
+    availability_percent NUMERIC(5, 2),
+    -- Latency aggregates
+    avg_latency_ms NUMERIC(10, 3),
+    min_latency_ms NUMERIC(10, 3),
+    max_latency_ms NUMERIC(10, 3),
+    -- Resource utilization aggregates
+    avg_cpu_percent NUMERIC(5, 2),
+    max_cpu_percent NUMERIC(5, 2),
+    avg_memory_percent NUMERIC(5, 2),
+    max_memory_percent NUMERIC(5, 2),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(device_id, period_start, period_type)
+);
+
+CREATE INDEX idx_device_availability_device ON npm.device_availability(device_id);
+CREATE INDEX idx_device_availability_period ON npm.device_availability(period_start DESC);
+CREATE INDEX idx_device_availability_type ON npm.device_availability(period_type);
+
 -- ============================================
 -- STIG SCHEMA
 -- ============================================
@@ -290,10 +507,27 @@ CREATE TABLE stig.definitions (
     release_date DATE,
     platform VARCHAR(100),
     description TEXT,
-    xccdf_content JSONB,
+    xccdf_content TEXT,  -- Store raw XCCDF XML
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- STIG definition rules (individual checks from XCCDF)
+CREATE TABLE stig.definition_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    definition_id UUID NOT NULL REFERENCES stig.definitions(id) ON DELETE CASCADE,
+    rule_id VARCHAR(100) NOT NULL,
+    title VARCHAR(512),
+    severity VARCHAR(50) CHECK (severity IN ('high', 'medium', 'low')),
+    description TEXT,
+    fix_text TEXT,
+    check_text TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(definition_id, rule_id)
+);
+
+CREATE INDEX idx_definition_rules_definition ON stig.definition_rules(definition_id);
+CREATE INDEX idx_definition_rules_severity ON stig.definition_rules(severity);
 
 -- Audit jobs
 CREATE TABLE stig.audit_jobs (
@@ -368,6 +602,64 @@ CREATE TRIGGER update_stig_targets_updated_at
     BEFORE UPDATE ON stig.targets
     FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
 
+CREATE TRIGGER update_discovery_jobs_updated_at
+    BEFORE UPDATE ON npm.discovery_jobs
+    FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
+
+CREATE TRIGGER update_device_groups_updated_at
+    BEFORE UPDATE ON npm.device_groups
+    FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
+
+-- Function to update device_count in device_groups when devices change groups
+CREATE OR REPLACE FUNCTION npm.update_device_group_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Decrement old group count
+    IF OLD.group_id IS NOT NULL THEN
+        UPDATE npm.device_groups SET device_count = device_count - 1 WHERE id = OLD.group_id;
+    END IF;
+    -- Increment new group count
+    IF NEW.group_id IS NOT NULL THEN
+        UPDATE npm.device_groups SET device_count = device_count + 1 WHERE id = NEW.group_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION npm.device_group_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.group_id IS NOT NULL THEN
+        UPDATE npm.device_groups SET device_count = device_count + 1 WHERE id = NEW.group_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION npm.device_group_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.group_id IS NOT NULL THEN
+        UPDATE npm.device_groups SET device_count = device_count - 1 WHERE id = OLD.group_id;
+    END IF;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_device_group_count_on_update
+    AFTER UPDATE OF group_id ON npm.devices
+    FOR EACH ROW
+    WHEN (OLD.group_id IS DISTINCT FROM NEW.group_id)
+    EXECUTE FUNCTION npm.update_device_group_count();
+
+CREATE TRIGGER update_device_group_count_on_insert
+    AFTER INSERT ON npm.devices
+    FOR EACH ROW EXECUTE FUNCTION npm.device_group_insert();
+
+CREATE TRIGGER update_device_group_count_on_delete
+    AFTER DELETE ON npm.devices
+    FOR EACH ROW EXECUTE FUNCTION npm.device_group_delete();
+
 -- ============================================
 -- SEED DATA (Development Only)
 -- ============================================
@@ -392,7 +684,156 @@ VALUES (
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA shared, ipam, npm, stig TO netnynja_app;
 -- GRANT USAGE ON ALL SEQUENCES IN SCHEMA shared, ipam, npm, stig TO netnynja_app;
 
+-- ============================================
+-- SYSLOG SCHEMA
+-- ============================================
+
+-- Syslog sources (devices sending syslog)
+CREATE TABLE syslog.sources (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    ip_address INET NOT NULL,
+    port INTEGER DEFAULT 514,
+    protocol VARCHAR(10) NOT NULL DEFAULT 'udp' CHECK (protocol IN ('udp', 'tcp', 'tls')),
+    hostname VARCHAR(255),
+    device_type VARCHAR(100),
+    is_active BOOLEAN DEFAULT true,
+    events_received BIGINT DEFAULT 0,
+    last_event_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_syslog_sources_ip ON syslog.sources(ip_address);
+CREATE INDEX idx_syslog_sources_active ON syslog.sources(is_active);
+
+-- Syslog events (with 10GB circular buffer - managed by partitioning)
+-- Events are partitioned by received_at for efficient buffer management
+CREATE TABLE syslog.events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source_id UUID REFERENCES syslog.sources(id) ON DELETE SET NULL,
+    source_ip INET NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- RFC 5424 fields
+    facility INTEGER NOT NULL CHECK (facility >= 0 AND facility <= 23),
+    severity INTEGER NOT NULL CHECK (severity >= 0 AND severity <= 7),
+    version INTEGER DEFAULT 1,
+    timestamp TIMESTAMPTZ,
+    hostname VARCHAR(255),
+    app_name VARCHAR(48),
+    proc_id VARCHAR(128),
+    msg_id VARCHAR(32),
+    structured_data JSONB,
+    message TEXT,
+    -- Parsed fields
+    device_type VARCHAR(100),
+    event_type VARCHAR(100),
+    tags TEXT[],
+    -- Raw message
+    raw_message TEXT NOT NULL
+) PARTITION BY RANGE (received_at);
+
+-- Create partitions for the last 7 days and next day
+-- Note: In production, use pg_partman for automatic partition management
+CREATE TABLE syslog.events_default PARTITION OF syslog.events DEFAULT;
+
+CREATE INDEX idx_syslog_events_source ON syslog.events(source_id);
+CREATE INDEX idx_syslog_events_received ON syslog.events(received_at DESC);
+CREATE INDEX idx_syslog_events_severity ON syslog.events(severity);
+CREATE INDEX idx_syslog_events_facility ON syslog.events(facility);
+CREATE INDEX idx_syslog_events_source_ip ON syslog.events(source_ip);
+CREATE INDEX idx_syslog_events_hostname ON syslog.events(hostname);
+CREATE INDEX idx_syslog_events_device_type ON syslog.events(device_type);
+CREATE INDEX idx_syslog_events_event_type ON syslog.events(event_type);
+CREATE INDEX idx_syslog_events_tags ON syslog.events USING gin(tags);
+
+-- Syslog filters (for routing, alerting, dropping)
+CREATE TABLE syslog.filters (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    priority INTEGER DEFAULT 100,
+    -- Filter criteria (JSONB for flexibility)
+    criteria JSONB NOT NULL DEFAULT '{}',
+    -- Actions: alert, drop, forward, tag
+    action VARCHAR(20) NOT NULL CHECK (action IN ('alert', 'drop', 'forward', 'tag')),
+    action_config JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    match_count BIGINT DEFAULT 0,
+    last_match_at TIMESTAMPTZ,
+    created_by UUID REFERENCES shared.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_syslog_filters_active ON syslog.filters(is_active, priority);
+
+-- Syslog forwarders (for off-loading to external systems)
+CREATE TABLE syslog.forwarders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    -- Target configuration
+    target_host VARCHAR(255) NOT NULL,
+    target_port INTEGER NOT NULL DEFAULT 514,
+    protocol VARCHAR(10) NOT NULL DEFAULT 'tcp' CHECK (protocol IN ('udp', 'tcp', 'tls')),
+    -- TLS configuration
+    tls_enabled BOOLEAN DEFAULT false,
+    tls_verify BOOLEAN DEFAULT true,
+    tls_ca_cert TEXT,
+    tls_client_cert TEXT,
+    tls_client_key_encrypted TEXT,
+    -- Filtering (which events to forward)
+    filter_criteria JSONB DEFAULT '{}',
+    -- Status
+    is_active BOOLEAN DEFAULT true,
+    events_forwarded BIGINT DEFAULT 0,
+    last_forward_at TIMESTAMPTZ,
+    last_error TEXT,
+    last_error_at TIMESTAMPTZ,
+    -- Buffer settings
+    buffer_size INTEGER DEFAULT 10000,
+    retry_count INTEGER DEFAULT 3,
+    retry_delay_ms INTEGER DEFAULT 1000,
+    created_by UUID REFERENCES shared.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_syslog_forwarders_active ON syslog.forwarders(is_active);
+
+-- Buffer management settings
+CREATE TABLE syslog.buffer_settings (
+    id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1), -- Singleton
+    max_size_bytes BIGINT NOT NULL DEFAULT 10737418240, -- 10GB default
+    current_size_bytes BIGINT DEFAULT 0,
+    retention_days INTEGER DEFAULT 30,
+    cleanup_threshold_percent INTEGER DEFAULT 90,
+    last_cleanup_at TIMESTAMPTZ,
+    events_dropped_overflow BIGINT DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Insert default buffer settings
+INSERT INTO syslog.buffer_settings (max_size_bytes, retention_days)
+VALUES (10737418240, 30) -- 10GB, 30 days
+ON CONFLICT (id) DO NOTHING;
+
+-- Triggers for syslog tables
+CREATE TRIGGER update_syslog_sources_updated_at
+    BEFORE UPDATE ON syslog.sources
+    FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
+
+CREATE TRIGGER update_syslog_filters_updated_at
+    BEFORE UPDATE ON syslog.filters
+    FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
+
+CREATE TRIGGER update_syslog_forwarders_updated_at
+    BEFORE UPDATE ON syslog.forwarders
+    FOR EACH ROW EXECUTE FUNCTION shared.update_updated_at();
+
 COMMENT ON SCHEMA shared IS 'Cross-application shared tables: users, auth, audit';
 COMMENT ON SCHEMA ipam IS 'IP Address Management module tables';
 COMMENT ON SCHEMA npm IS 'Network Performance Monitoring module tables';
 COMMENT ON SCHEMA stig IS 'STIG Manager compliance module tables';
+COMMENT ON SCHEMA syslog IS 'Syslog collection and forwarding module tables';

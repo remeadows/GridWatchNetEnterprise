@@ -22,11 +22,18 @@ import { NPMDevicesPage } from "./modules/npm/pages/DevicesPage";
 import { NPMDeviceDetailPage } from "./modules/npm/pages/DeviceDetailPage";
 import { NPMAlertsPage } from "./modules/npm/pages/AlertsPage";
 import { SNMPv3CredentialsPage } from "./modules/npm/pages/SNMPv3CredentialsPage";
+import { NPMDiscoveryPage } from "./modules/npm/pages/DiscoveryPage";
 
 // STIG module
 import { STIGBenchmarksPage } from "./modules/stig/pages/BenchmarksPage";
 import { STIGAssetsPage } from "./modules/stig/pages/AssetsPage";
 import { STIGCompliancePage } from "./modules/stig/pages/CompliancePage";
+import { STIGLibraryPage } from "./modules/stig/pages/LibraryPage";
+
+// Syslog module
+import { SyslogEventsPage } from "./modules/syslog/pages/EventsPage";
+import { SyslogSourcesPage } from "./modules/syslog/pages/SourcesPage";
+import { SyslogFiltersPage } from "./modules/syslog/pages/FiltersPage";
 
 // Settings module
 import { UsersPage } from "./modules/settings/pages/UsersPage";
@@ -88,16 +95,26 @@ function App() {
             <Route index element={<Navigate to="/npm/devices" replace />} />
             <Route path="devices" element={<NPMDevicesPage />} />
             <Route path="devices/:id" element={<NPMDeviceDetailPage />} />
+            <Route path="discovery" element={<NPMDiscoveryPage />} />
             <Route path="alerts" element={<NPMAlertsPage />} />
             <Route path="credentials" element={<SNMPv3CredentialsPage />} />
           </Route>
 
           {/* STIG Module */}
           <Route path="/stig">
-            <Route index element={<Navigate to="/stig/benchmarks" replace />} />
+            <Route index element={<Navigate to="/stig/library" replace />} />
+            <Route path="library" element={<STIGLibraryPage />} />
             <Route path="benchmarks" element={<STIGBenchmarksPage />} />
             <Route path="assets" element={<STIGAssetsPage />} />
             <Route path="compliance" element={<STIGCompliancePage />} />
+          </Route>
+
+          {/* Syslog Module */}
+          <Route path="/syslog">
+            <Route index element={<Navigate to="/syslog/events" replace />} />
+            <Route path="events" element={<SyslogEventsPage />} />
+            <Route path="sources" element={<SyslogSourcesPage />} />
+            <Route path="filters" element={<SyslogFiltersPage />} />
           </Route>
 
           {/* Settings Module */}
