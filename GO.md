@@ -12,6 +12,7 @@ Ingest and analyze the following project documentation files:
 - `CONTEXT.md`
 - `PROJECT_STATUS.md`
 - `IssuesTracker.md`
+- `README.md`
 
 ## Objective
 
