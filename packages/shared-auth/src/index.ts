@@ -3,9 +3,9 @@
  * JWT + Argon2id implementation
  */
 
-import * as argon2 from 'argon2';
-import * as jose from 'jose';
-import type { JWTPayload, AuthTokens, UserRole } from '@netnynja/shared-types';
+import * as argon2 from "argon2";
+import * as jose from "jose";
+import type { JWTPayload, AuthTokens, UserRole } from "@netnynja/shared-types";
 
 // ============================================
 // Configuration
@@ -22,10 +22,10 @@ export interface AuthConfig {
 }
 
 const DEFAULT_CONFIG: AuthConfig = {
-  accessTokenExpiry: '15m',
-  refreshTokenExpiry: '7d',
-  issuer: 'netnynja-enterprise',
-  audience: 'netnynja-api',
+  accessTokenExpiry: "15m",
+  refreshTokenExpiry: "7d",
+  issuer: "netnynja-enterprise",
+  audience: "netnynja-api",
 };
 
 let config: AuthConfig = { ...DEFAULT_CONFIG };
@@ -68,7 +68,7 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function verifyPassword(
   hash: string,
-  password: string
+  password: string,
 ): Promise<boolean> {
   try {
     return await argon2.verify(hash, password);
@@ -92,26 +92,26 @@ type SecretOrKey = Uint8Array | jose.KeyLike;
 
 async function getSigningKey(): Promise<SecretOrKey> {
   if (config.jwtPrivateKey) {
-    return jose.importPKCS8(config.jwtPrivateKey, 'RS256');
+    return jose.importPKCS8(config.jwtPrivateKey, "RS256");
   }
   if (config.jwtSecret) {
     return new TextEncoder().encode(config.jwtSecret);
   }
-  throw new Error('No JWT signing key configured');
+  throw new Error("No JWT signing key configured");
 }
 
 async function getVerificationKey(): Promise<SecretOrKey> {
   if (config.jwtPublicKey) {
-    return jose.importSPKI(config.jwtPublicKey, 'RS256');
+    return jose.importSPKI(config.jwtPublicKey, "RS256");
   }
   if (config.jwtSecret) {
     return new TextEncoder().encode(config.jwtSecret);
   }
-  throw new Error('No JWT verification key configured');
+  throw new Error("No JWT verification key configured");
 }
 
 function getAlgorithm(): string {
-  return config.jwtPrivateKey ? 'RS256' : 'HS256';
+  return config.jwtPrivateKey ? "RS256" : "HS256";
 }
 
 /**
@@ -121,12 +121,12 @@ export async function generateTokens(
   userId: string,
   username: string,
   email: string,
-  role: UserRole
+  role: UserRole,
 ): Promise<AuthTokens> {
   const key = await getSigningKey();
   const alg = getAlgorithm();
 
-  const payload: Omit<JWTPayload, 'iat' | 'exp'> = {
+  const payload: Omit<JWTPayload, "iat" | "exp"> = {
     sub: userId,
     username,
     email,
@@ -141,7 +141,7 @@ export async function generateTokens(
     .setExpirationTime(config.accessTokenExpiry)
     .sign(key);
 
-  const refreshToken = await new jose.SignJWT({ sub: userId, type: 'refresh' })
+  const refreshToken = await new jose.SignJWT({ sub: userId, type: "refresh" })
     .setProtectedHeader({ alg })
     .setIssuedAt()
     .setIssuer(config.issuer)
@@ -184,7 +184,7 @@ export async function verifyAccessToken(token: string): Promise<JWTPayload> {
  * Verify a refresh token
  */
 export async function verifyRefreshToken(
-  token: string
+  token: string,
 ): Promise<{ sub: string }> {
   const key = await getVerificationKey();
 
@@ -193,8 +193,8 @@ export async function verifyRefreshToken(
     audience: config.audience,
   });
 
-  if (payload.type !== 'refresh') {
-    throw new Error('Invalid token type');
+  if (payload.type !== "refresh") {
+    throw new Error("Invalid token type");
   }
 
   return { sub: payload.sub as string };
@@ -223,13 +223,13 @@ function parseExpiry(expiry: string): number {
   const unit = match[2];
 
   switch (unit) {
-    case 's':
+    case "s":
       return value;
-    case 'm':
+    case "m":
       return value * 60;
-    case 'h':
+    case "h":
       return value * 3600;
-    case 'd':
+    case "d":
       return value * 86400;
     default:
       return 900;
@@ -242,8 +242,8 @@ function parseExpiry(expiry: string): number {
 export function generateSecureToken(length = 32): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join(
-    ''
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
   );
 }
 
@@ -253,9 +253,9 @@ export function generateSecureToken(length = 32): string {
 export async function hashToken(token: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // ============================================
@@ -263,4 +263,13 @@ export async function hashToken(token: string): Promise<string> {
 // ============================================
 
 export { type JWTPayload, type AuthTokens, type UserRole };
-export { AuthError, UnauthorizedError, ForbiddenError } from './errors';
+export {
+  AuthError,
+  UnauthorizedError,
+  ForbiddenError,
+  TokenExpiredError,
+  InvalidTokenError,
+  InvalidCredentialsError,
+  AccountLockedError,
+  InsufficientPermissionsError,
+} from "./errors";

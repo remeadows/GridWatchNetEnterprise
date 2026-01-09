@@ -2,8 +2,8 @@
  * NetNynja Enterprise - User Repository
  */
 
-import { query } from './db';
-import type { User, UserRole } from '@netnynja/shared-types';
+import { query } from "./db";
+import type { User, UserRole } from "@netnynja/shared-types";
 
 export interface DbUser {
   id: string;
@@ -28,7 +28,7 @@ export async function findByUsername(username: string): Promise<DbUser | null> {
             last_login, failed_login_attempts, locked_until, created_at, updated_at
      FROM shared.users
      WHERE username = $1`,
-    [username]
+    [username],
   );
 
   return rows[0] || null;
@@ -43,7 +43,7 @@ export async function findById(id: string): Promise<DbUser | null> {
             last_login, failed_login_attempts, locked_until, created_at, updated_at
      FROM shared.users
      WHERE id = $1`,
-    [id]
+    [id],
   );
 
   return rows[0] || null;
@@ -58,7 +58,7 @@ export async function findByEmail(email: string): Promise<DbUser | null> {
             last_login, failed_login_attempts, locked_until, created_at, updated_at
      FROM shared.users
      WHERE email = $1`,
-    [email]
+    [email],
   );
 
   return rows[0] || null;
@@ -68,10 +68,9 @@ export async function findByEmail(email: string): Promise<DbUser | null> {
  * Update last login timestamp
  */
 export async function updateLastLogin(userId: string): Promise<void> {
-  await query(
-    `UPDATE shared.users SET last_login = NOW() WHERE id = $1`,
-    [userId]
-  );
+  await query(`UPDATE shared.users SET last_login = NOW() WHERE id = $1`, [
+    userId,
+  ]);
 }
 
 /**
@@ -83,7 +82,7 @@ export async function incrementFailedAttempts(userId: string): Promise<number> {
      SET failed_login_attempts = failed_login_attempts + 1
      WHERE id = $1
      RETURNING failed_login_attempts`,
-    [userId]
+    [userId],
   );
 
   return rows[0]?.failed_login_attempts || 0;
@@ -97,18 +96,21 @@ export async function resetFailedAttempts(userId: string): Promise<void> {
     `UPDATE shared.users
      SET failed_login_attempts = 0, locked_until = NULL
      WHERE id = $1`,
-    [userId]
+    [userId],
   );
 }
 
 /**
  * Lock a user account
  */
-export async function lockAccount(userId: string, lockUntil: Date): Promise<void> {
-  await query(
-    `UPDATE shared.users SET locked_until = $2 WHERE id = $1`,
-    [userId, lockUntil]
-  );
+export async function lockAccount(
+  userId: string,
+  lockUntil: Date,
+): Promise<void> {
+  await query(`UPDATE shared.users SET locked_until = $2 WHERE id = $1`, [
+    userId,
+    lockUntil,
+  ]);
 }
 
 /**
@@ -117,7 +119,7 @@ export async function lockAccount(userId: string, lockUntil: Date): Promise<void
 export async function isLocked(userId: string): Promise<boolean> {
   const rows = await query<{ locked_until: Date | null }>(
     `SELECT locked_until FROM shared.users WHERE id = $1`,
-    [userId]
+    [userId],
   );
 
   const lockedUntil = rows[0]?.locked_until;
@@ -129,10 +131,13 @@ export async function isLocked(userId: string): Promise<boolean> {
 /**
  * Update password hash
  */
-export async function updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+export async function updatePasswordHash(
+  userId: string,
+  passwordHash: string,
+): Promise<void> {
   await query(
     `UPDATE shared.users SET password_hash = $2, updated_at = NOW() WHERE id = $1`,
-    [userId, passwordHash]
+    [userId, passwordHash],
   );
 }
 
@@ -143,15 +148,19 @@ export async function createUser(
   username: string,
   email: string,
   passwordHash: string,
-  role: UserRole = 'viewer'
+  role: UserRole = "viewer",
 ): Promise<DbUser> {
   const rows = await query<DbUser>(
     `INSERT INTO shared.users (username, email, password_hash, role)
      VALUES ($1, $2, $3, $4)
      RETURNING id, username, email, password_hash, role, is_active,
                last_login, failed_login_attempts, locked_until, created_at, updated_at`,
-    [username, email, passwordHash, role]
+    [username, email, passwordHash, role],
   );
+
+  if (!rows[0]) {
+    throw new Error("Failed to create user");
+  }
 
   return rows[0];
 }

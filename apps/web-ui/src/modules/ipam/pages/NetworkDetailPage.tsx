@@ -133,7 +133,6 @@ export function IPAMNetworkDetailPage() {
     deleteScan,
     updateScan,
     exportScan,
-    exportNetwork,
     deleteNetwork,
     addAddressesToNpm,
   } = useIPAMStore();

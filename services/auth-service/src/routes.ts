@@ -2,28 +2,27 @@
  * NetNynja Enterprise - Auth Service Routes
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
 import {
   configureAuth,
   generateTokens,
   verifyPassword,
-  hashPassword,
   hashToken,
   verifyRefreshToken,
   verifyAccessToken,
-} from '@netnynja/shared-auth';
+} from "@netnynja/shared-auth";
 import {
-  InvalidCredentialsError,
-  AccountLockedError,
-  InvalidTokenError,
-} from '@netnynja/shared-auth';
-import { LoginSchema, type ApiResponse, type AuthTokens, type User } from '@netnynja/shared-types';
-import { config } from './config';
-import * as users from './users';
-import * as redis from './redis';
-import * as audit from './audit';
-import { logger } from './logger';
+  LoginSchema,
+  type ApiResponse,
+  type AuthTokens,
+  type User,
+} from "@netnynja/shared-types";
+import { config } from "./config";
+import * as users from "./users";
+import * as redis from "./redis";
+import * as audit from "./audit";
+import { logger } from "./logger";
 
 // Configure shared-auth with our config
 configureAuth({
@@ -53,25 +52,36 @@ const LogoutSchema = z.object({
 // Route Helpers
 // ============================================
 
-function getClientInfo(request: FastifyRequest): { ipAddress: string; userAgent: string } {
-  const ipAddress = request.ip || request.headers['x-forwarded-for']?.toString() || 'unknown';
-  const userAgent = request.headers['user-agent'] || 'unknown';
+function getClientInfo(request: FastifyRequest): {
+  ipAddress: string;
+  userAgent: string;
+} {
+  const forwarded = request.headers["x-forwarded-for"];
+  const forwardedIp =
+    typeof forwarded === "string" ? forwarded : forwarded?.[0];
+  const ipAddress = request.ip || forwardedIp || "unknown";
+  const userAgent = request.headers["user-agent"] || "unknown";
   return { ipAddress, userAgent };
 }
 
 function parseRefreshTokenExpiry(expiry: string): number {
   const match = expiry.match(/^(\d+)([smhd])$/);
-  if (!match) return 604800; // default 7 days
+  if (!match || !match[1] || !match[2]) return 604800; // default 7 days
 
   const value = parseInt(match[1], 10);
   const unit = match[2];
 
   switch (unit) {
-    case 's': return value;
-    case 'm': return value * 60;
-    case 'h': return value * 3600;
-    case 'd': return value * 86400;
-    default: return 604800;
+    case "s":
+      return value;
+    case "m":
+      return value * 60;
+    case "h":
+      return value * 3600;
+    case "d":
+      return value * 86400;
+    default:
+      return 604800;
   }
 }
 
@@ -81,10 +91,10 @@ function parseRefreshTokenExpiry(expiry: string): number {
 
 export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
   // Health check
-  fastify.get('/health', async (): Promise<ApiResponse<{ status: string }>> => {
+  fastify.get("/health", async (): Promise<ApiResponse<{ status: string }>> => {
     return {
       success: true,
-      data: { status: 'healthy' },
+      data: { status: "healthy" },
     };
   });
 
@@ -92,8 +102,11 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
   // POST /login
   // ============================================
   fastify.post<{ Body: z.infer<typeof LoginSchema> }>(
-    '/login',
-    async (request, reply): Promise<ApiResponse<{ tokens: AuthTokens; user: User }>> => {
+    "/login",
+    async (
+      request,
+      reply,
+    ): Promise<ApiResponse<{ tokens: AuthTokens; user: User }>> => {
       const { ipAddress, userAgent } = getClientInfo(request);
 
       // Validate input
@@ -103,8 +116,8 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         return {
           success: false,
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request body',
+            code: "VALIDATION_ERROR",
+            message: "Invalid request body",
             details: parseResult.error.flatten(),
           },
         };
@@ -116,17 +129,17 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
       const rateLimit = await redis.checkRateLimit(
         `login:${ipAddress}`,
         config.RATE_LIMIT_MAX,
-        Math.floor(config.RATE_LIMIT_WINDOW_MS / 1000)
+        Math.floor(config.RATE_LIMIT_WINDOW_MS / 1000),
       );
 
       if (!rateLimit.allowed) {
         reply.status(429);
-        reply.header('Retry-After', rateLimit.resetIn.toString());
+        reply.header("Retry-After", rateLimit.resetIn.toString());
         return {
           success: false,
           error: {
-            code: 'RATE_LIMITED',
-            message: 'Too many login attempts. Please try again later.',
+            code: "RATE_LIMITED",
+            message: "Too many login attempts. Please try again later.",
           },
         };
       }
@@ -134,13 +147,18 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
       // Check if account is locked (in Redis for performance)
       if (await redis.isAccountLocked(username)) {
         const ttl = await redis.getLockoutTTL(username);
-        await audit.logLoginFailed(username, 'Account locked', ipAddress, userAgent);
+        await audit.logLoginFailed(
+          username,
+          "Account locked",
+          ipAddress,
+          userAgent,
+        );
 
         reply.status(403);
         return {
           success: false,
           error: {
-            code: 'ACCOUNT_LOCKED',
+            code: "ACCOUNT_LOCKED",
             message: `Account is temporarily locked. Try again in ${Math.ceil(ttl / 60)} minutes.`,
           },
         };
@@ -149,26 +167,36 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
       // Find user
       const user = await users.findByUsername(username);
       if (!user) {
-        await audit.logLoginFailed(username, 'User not found', ipAddress, userAgent);
+        await audit.logLoginFailed(
+          username,
+          "User not found",
+          ipAddress,
+          userAgent,
+        );
         reply.status(401);
         return {
           success: false,
           error: {
-            code: 'INVALID_CREDENTIALS',
-            message: 'Invalid username or password',
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid username or password",
           },
         };
       }
 
       // Check if user is active
       if (!user.is_active) {
-        await audit.logLoginFailed(username, 'Account inactive', ipAddress, userAgent);
+        await audit.logLoginFailed(
+          username,
+          "Account inactive",
+          ipAddress,
+          userAgent,
+        );
         reply.status(401);
         return {
           success: false,
           error: {
-            code: 'ACCOUNT_INACTIVE',
-            message: 'Account is inactive',
+            code: "ACCOUNT_INACTIVE",
+            message: "Account is inactive",
           },
         };
       }
@@ -180,20 +208,25 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         const { locked, attempts } = await redis.recordFailedLogin(
           username,
           config.MAX_LOGIN_ATTEMPTS,
-          config.LOCKOUT_DURATION_MINUTES
+          config.LOCKOUT_DURATION_MINUTES,
         );
 
         if (locked) {
           await audit.logAccountLocked(username, attempts, ipAddress);
         }
 
-        await audit.logLoginFailed(username, 'Invalid password', ipAddress, userAgent);
+        await audit.logLoginFailed(
+          username,
+          "Invalid password",
+          ipAddress,
+          userAgent,
+        );
         reply.status(401);
         return {
           success: false,
           error: {
-            code: 'INVALID_CREDENTIALS',
-            message: 'Invalid username or password',
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid username or password",
           },
         };
       }
@@ -202,7 +235,12 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
       await redis.clearFailedLogins(username);
 
       // Generate tokens
-      const tokens = await generateTokens(user.id, user.username, user.email, user.role);
+      const tokens = await generateTokens(
+        user.id,
+        user.username,
+        user.email,
+        user.role,
+      );
 
       // Store refresh token hash in Redis
       const refreshTokenHash = await hashToken(tokens.refreshToken);
@@ -215,7 +253,10 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
       // Audit log
       await audit.logLoginSuccess(user.id, user.username, ipAddress, userAgent);
 
-      logger.info({ userId: user.id, username: user.username }, 'User logged in');
+      logger.info(
+        { userId: user.id, username: user.username },
+        "User logged in",
+      );
 
       return {
         success: true,
@@ -224,14 +265,14 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           user: users.toApiUser(user),
         },
       };
-    }
+    },
   );
 
   // ============================================
   // POST /refresh
   // ============================================
   fastify.post<{ Body: z.infer<typeof RefreshSchema> }>(
-    '/refresh',
+    "/refresh",
     async (request, reply): Promise<ApiResponse<{ tokens: AuthTokens }>> => {
       const { ipAddress, userAgent } = getClientInfo(request);
 
@@ -242,8 +283,8 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         return {
           success: false,
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid request body',
+            code: "VALIDATION_ERROR",
+            message: "Invalid request body",
           },
         };
       }
@@ -263,8 +304,8 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           return {
             success: false,
             error: {
-              code: 'TOKEN_REVOKED',
-              message: 'Refresh token has been revoked',
+              code: "TOKEN_REVOKED",
+              message: "Refresh token has been revoked",
             },
           };
         }
@@ -276,8 +317,8 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           return {
             success: false,
             error: {
-              code: 'USER_NOT_FOUND',
-              message: 'User not found or inactive',
+              code: "USER_NOT_FOUND",
+              message: "User not found or inactive",
             },
           };
         }
@@ -286,53 +327,60 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         await redis.revokeRefreshToken(userId, tokenHash);
 
         // Generate new tokens
-        const tokens = await generateTokens(user.id, user.username, user.email, user.role);
+        const tokens = await generateTokens(
+          user.id,
+          user.username,
+          user.email,
+          user.role,
+        );
 
         // Store new refresh token hash
         const newTokenHash = await hashToken(tokens.refreshToken);
-        const refreshExpiry = parseRefreshTokenExpiry(config.JWT_REFRESH_EXPIRY);
+        const refreshExpiry = parseRefreshTokenExpiry(
+          config.JWT_REFRESH_EXPIRY,
+        );
         await redis.storeRefreshToken(user.id, newTokenHash, refreshExpiry);
 
         // Audit log
         await audit.logTokenRefresh(user.id, ipAddress, userAgent);
 
-        logger.debug({ userId: user.id }, 'Token refreshed');
+        logger.debug({ userId: user.id }, "Token refreshed");
 
         return {
           success: true,
           data: { tokens },
         };
       } catch (error) {
-        logger.warn({ error }, 'Token refresh failed');
+        logger.warn({ error }, "Token refresh failed");
         reply.status(401);
         return {
           success: false,
           error: {
-            code: 'INVALID_TOKEN',
-            message: 'Invalid or expired refresh token',
+            code: "INVALID_TOKEN",
+            message: "Invalid or expired refresh token",
           },
         };
       }
-    }
+    },
   );
 
   // ============================================
   // POST /logout
   // ============================================
   fastify.post<{ Body: z.infer<typeof LogoutSchema> }>(
-    '/logout',
+    "/logout",
     async (request, reply): Promise<ApiResponse<{ message: string }>> => {
       const { ipAddress, userAgent } = getClientInfo(request);
 
       // Get user from access token
       const authHeader = request.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
+      if (!authHeader?.startsWith("Bearer ")) {
         reply.status(401);
         return {
           success: false,
           error: {
-            code: 'UNAUTHORIZED',
-            message: 'No authorization header',
+            code: "UNAUTHORIZED",
+            message: "No authorization header",
           },
         };
       }
@@ -350,7 +398,10 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           const count = await redis.revokeAllRefreshTokens(userId);
           await audit.logLogoutAll(userId, count, ipAddress, userAgent);
 
-          logger.info({ userId, sessionCount: count }, 'User logged out from all devices');
+          logger.info(
+            { userId, sessionCount: count },
+            "User logged out from all devices",
+          );
 
           return {
             success: true,
@@ -366,31 +417,34 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
 
         await audit.logLogout(userId, ipAddress, userAgent);
 
-        logger.info({ userId }, 'User logged out');
+        logger.info({ userId }, "User logged out");
 
         return {
           success: true,
-          data: { message: 'Logged out successfully' },
+          data: { message: "Logged out successfully" },
         };
       } catch (error) {
         // Even with invalid token, we still log out
-        logger.warn({ error }, 'Logout with invalid token');
+        logger.warn({ error }, "Logout with invalid token");
         return {
           success: true,
-          data: { message: 'Logged out' },
+          data: { message: "Logged out" },
         };
       }
-    }
+    },
   );
 
   // ============================================
   // GET /verify
   // ============================================
   fastify.get(
-    '/verify',
-    async (request, reply): Promise<ApiResponse<{ valid: boolean; user?: User }>> => {
+    "/verify",
+    async (
+      request,
+      reply,
+    ): Promise<ApiResponse<{ valid: boolean; user?: User }>> => {
       const authHeader = request.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
+      if (!authHeader?.startsWith("Bearer ")) {
         return {
           success: true,
           data: { valid: false },
@@ -424,58 +478,55 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           data: { valid: false },
         };
       }
-    }
+    },
   );
 
   // ============================================
   // GET /me
   // ============================================
-  fastify.get(
-    '/me',
-    async (request, reply): Promise<ApiResponse<User>> => {
-      const authHeader = request.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
-        reply.status(401);
-        return {
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'No authorization header',
-          },
-        };
-      }
-
-      const accessToken = authHeader.slice(7);
-
-      try {
-        const payload = await verifyAccessToken(accessToken);
-        const user = await users.findById(payload.sub);
-
-        if (!user) {
-          reply.status(404);
-          return {
-            success: false,
-            error: {
-              code: 'NOT_FOUND',
-              message: 'User not found',
-            },
-          };
-        }
-
-        return {
-          success: true,
-          data: users.toApiUser(user),
-        };
-      } catch (error) {
-        reply.status(401);
-        return {
-          success: false,
-          error: {
-            code: 'INVALID_TOKEN',
-            message: 'Invalid or expired token',
-          },
-        };
-      }
+  fastify.get("/me", async (request, reply): Promise<ApiResponse<User>> => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      reply.status(401);
+      return {
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "No authorization header",
+        },
+      };
     }
-  );
+
+    const accessToken = authHeader.slice(7);
+
+    try {
+      const payload = await verifyAccessToken(accessToken);
+      const user = await users.findById(payload.sub);
+
+      if (!user) {
+        reply.status(404);
+        return {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "User not found",
+          },
+        };
+      }
+
+      return {
+        success: true,
+        data: users.toApiUser(user),
+      };
+    } catch (error) {
+      reply.status(401);
+      return {
+        success: false,
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired token",
+        },
+      };
+    }
+  });
 }

@@ -2,15 +2,15 @@
  * NetNynja Enterprise - Auth Service Redis Client
  */
 
-import Redis from 'ioredis';
-import { config } from './config';
-import { logger } from './logger';
+import Redis from "ioredis";
+import { config } from "./config";
+import { logger } from "./logger";
 
 export const redis = new Redis(config.REDIS_URL, {
   maxRetriesPerRequest: 3,
   retryStrategy: (times) => {
     if (times > 3) {
-      logger.error('Redis connection failed after 3 retries');
+      logger.error("Redis connection failed after 3 retries");
       return null;
     }
     return Math.min(times * 200, 2000);
@@ -18,24 +18,24 @@ export const redis = new Redis(config.REDIS_URL, {
   lazyConnect: true,
 });
 
-redis.on('connect', () => {
-  logger.info('Connected to Redis');
+redis.on("connect", () => {
+  logger.info("Connected to Redis");
 });
 
-redis.on('error', (err) => {
-  logger.error({ err }, 'Redis connection error');
+redis.on("error", (err) => {
+  logger.error({ err }, "Redis connection error");
 });
 
-redis.on('close', () => {
-  logger.warn('Redis connection closed');
+redis.on("close", () => {
+  logger.warn("Redis connection closed");
 });
 
 // ============================================
 // Session Management
 // ============================================
 
-const SESSION_PREFIX = 'session:';
-const REFRESH_TOKEN_PREFIX = 'refresh:';
+const SESSION_PREFIX = "session:";
+const REFRESH_TOKEN_PREFIX = "refresh:";
 
 /**
  * Store a refresh token hash for a user
@@ -43,11 +43,11 @@ const REFRESH_TOKEN_PREFIX = 'refresh:';
 export async function storeRefreshToken(
   userId: string,
   tokenHash: string,
-  expirySeconds: number
+  expirySeconds: number,
 ): Promise<void> {
   const key = `${REFRESH_TOKEN_PREFIX}${userId}:${tokenHash}`;
-  await redis.setex(key, expirySeconds, '1');
-  logger.debug({ userId }, 'Stored refresh token');
+  await redis.setex(key, expirySeconds, "1");
+  logger.debug({ userId }, "Stored refresh token");
 }
 
 /**
@@ -55,7 +55,7 @@ export async function storeRefreshToken(
  */
 export async function isRefreshTokenValid(
   userId: string,
-  tokenHash: string
+  tokenHash: string,
 ): Promise<boolean> {
   const key = `${REFRESH_TOKEN_PREFIX}${userId}:${tokenHash}`;
   const exists = await redis.exists(key);
@@ -67,11 +67,11 @@ export async function isRefreshTokenValid(
  */
 export async function revokeRefreshToken(
   userId: string,
-  tokenHash: string
+  tokenHash: string,
 ): Promise<void> {
   const key = `${REFRESH_TOKEN_PREFIX}${userId}:${tokenHash}`;
   await redis.del(key);
-  logger.debug({ userId }, 'Revoked refresh token');
+  logger.debug({ userId }, "Revoked refresh token");
 }
 
 /**
@@ -86,7 +86,7 @@ export async function revokeAllRefreshTokens(userId: string): Promise<number> {
   }
 
   const deleted = await redis.del(...keys);
-  logger.info({ userId, count: deleted }, 'Revoked all refresh tokens');
+  logger.info({ userId, count: deleted }, "Revoked all refresh tokens");
   return deleted;
 }
 
@@ -109,7 +109,7 @@ export interface SessionData {
 export async function storeSession(
   sessionId: string,
   data: SessionData,
-  expirySeconds: number
+  expirySeconds: number,
 ): Promise<void> {
   const key = `${SESSION_PREFIX}${sessionId}`;
   await redis.setex(key, expirySeconds, JSON.stringify(data));
@@ -118,7 +118,9 @@ export async function storeSession(
 /**
  * Get session data
  */
-export async function getSession(sessionId: string): Promise<SessionData | null> {
+export async function getSession(
+  sessionId: string,
+): Promise<SessionData | null> {
   const key = `${SESSION_PREFIX}${sessionId}`;
   const data = await redis.get(key);
 
@@ -141,7 +143,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
 // Rate Limiting
 // ============================================
 
-const RATE_LIMIT_PREFIX = 'ratelimit:';
+const RATE_LIMIT_PREFIX = "ratelimit:";
 
 /**
  * Check rate limit for an IP/action combination
@@ -149,7 +151,7 @@ const RATE_LIMIT_PREFIX = 'ratelimit:';
 export async function checkRateLimit(
   key: string,
   maxAttempts: number,
-  windowSeconds: number
+  windowSeconds: number,
 ): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
   const redisKey = `${RATE_LIMIT_PREFIX}${key}`;
 
@@ -159,8 +161,12 @@ export async function checkRateLimit(
 
   const results = await multi.exec();
 
-  if (!results) {
-    return { allowed: true, remaining: maxAttempts - 1, resetIn: windowSeconds };
+  if (!results || !results[0] || !results[1]) {
+    return {
+      allowed: true,
+      remaining: maxAttempts - 1,
+      resetIn: windowSeconds,
+    };
   }
 
   const count = results[0][1] as number;
@@ -182,8 +188,8 @@ export async function checkRateLimit(
 // Failed Login Tracking
 // ============================================
 
-const FAILED_LOGIN_PREFIX = 'failedlogin:';
-const LOCKOUT_PREFIX = 'lockout:';
+const FAILED_LOGIN_PREFIX = "failedlogin:";
+const LOCKOUT_PREFIX = "lockout:";
 
 /**
  * Record a failed login attempt
@@ -191,7 +197,7 @@ const LOCKOUT_PREFIX = 'lockout:';
 export async function recordFailedLogin(
   username: string,
   maxAttempts: number,
-  lockoutMinutes: number
+  lockoutMinutes: number,
 ): Promise<{ locked: boolean; attempts: number }> {
   const key = `${FAILED_LOGIN_PREFIX}${username}`;
   const lockoutKey = `${LOCKOUT_PREFIX}${username}`;
@@ -213,9 +219,12 @@ export async function recordFailedLogin(
 
   // Lock account if max attempts exceeded
   if (attempts >= maxAttempts) {
-    await redis.setex(lockoutKey, lockoutMinutes * 60, '1');
+    await redis.setex(lockoutKey, lockoutMinutes * 60, "1");
     await redis.del(key);
-    logger.warn({ username, attempts }, 'Account locked due to failed login attempts');
+    logger.warn(
+      { username, attempts },
+      "Account locked due to failed login attempts",
+    );
     return { locked: true, attempts };
   }
 
@@ -264,5 +273,5 @@ export async function checkHealth(): Promise<boolean> {
  */
 export async function closeRedis(): Promise<void> {
   await redis.quit();
-  logger.info('Redis connection closed');
+  logger.info("Redis connection closed");
 }

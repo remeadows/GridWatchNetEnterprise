@@ -18,16 +18,31 @@ const execAsync = promisify(exec);
  * Generate all host IPs from a CIDR notation
  */
 function getCidrHosts(cidr: string): string[] {
-  const [baseIp, prefixStr] = cidr.split("/");
+  const cidrParts = cidr.split("/");
+  const baseIp = cidrParts[0];
+  const prefixStr = cidrParts[1];
+
+  if (!baseIp || !prefixStr) {
+    throw new Error("Invalid CIDR notation");
+  }
+
   const prefix = parseInt(prefixStr, 10);
 
   if (prefix < 8 || prefix > 30) {
     throw new Error("Only /8 to /30 networks supported");
   }
 
-  const parts = baseIp.split(".").map((p) => parseInt(p, 10));
+  const ipParts = baseIp.split(".");
+  if (ipParts.length !== 4) {
+    throw new Error("Invalid IP address format");
+  }
+
+  const parts = ipParts.map((p) => parseInt(p, 10));
   const baseNum =
-    (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+    ((parts[0] ?? 0) << 24) |
+    ((parts[1] ?? 0) << 16) |
+    ((parts[2] ?? 0) << 8) |
+    (parts[3] ?? 0);
   const hostBits = 32 - prefix;
   const numHosts = Math.pow(2, hostBits);
 
@@ -66,10 +81,10 @@ async function pingHost(
       const match =
         stdout.match(/Average\s*=\s*(\d+)ms/i) ||
         stdout.match(/time[=<](\d+)ms/i);
-      if (match) latency = parseInt(match[1], 10);
+      if (match && match[1]) latency = parseInt(match[1], 10);
     } else {
       const match = stdout.match(/time[=](\d+\.?\d*)\s*ms/i);
-      if (match) latency = parseFloat(match[1]);
+      if (match && match[1]) latency = parseFloat(match[1]);
     }
 
     return { ip, alive: true, latency };
@@ -326,7 +341,7 @@ async function runNmapScan(
     const hostXml = match[0];
     if (statusRegex.test(hostXml)) {
       const ipMatch = ipRegex.exec(hostXml);
-      if (ipMatch) {
+      if (ipMatch && ipMatch[1]) {
         activeIps.push(ipMatch[1]);
       }
     }
