@@ -25,39 +25,315 @@ NetNynja Enterprise consolidates four network management applications into a uni
 | Windows 11                   | ✅ Supported |
 | Windows Server 2022          | ✅ Supported |
 
-## Quick Start
+## Installation
 
 ### Prerequisites
 
-- Docker 24+ with Docker Compose V2
-- Node.js 20+ (for development)
-- Python 3.11+ (for development)
-- Poetry (Python package manager)
+| Component | Version | Notes                           |
+| --------- | ------- | ------------------------------- |
+| Docker    | 24+     | With Docker Compose V2          |
+| Node.js   | 20+     | For development                 |
+| Python    | 3.11+   | For development                 |
+| Poetry    | 1.7+    | Python package manager          |
+| Git       | 2.40+   | With LF line endings configured |
 
-### Development Setup
+---
+
+### macOS Installation (Intel & Apple Silicon)
+
+#### 1. Install Homebrew (if not installed)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### 2. Install Dependencies
+
+```bash
+# Install Docker Desktop
+brew install --cask docker
+
+# Install Node.js 20
+brew install node@20
+echo 'export PATH="/opt/homebrew/opt/node@20/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Install Python 3.11
+brew install python@3.11
+
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Verify installations
+docker --version    # Should show 24.x or higher
+node --version      # Should show v20.x
+python3 --version   # Should show 3.11.x
+poetry --version    # Should show 1.7.x or higher
+```
+
+#### 3. Configure Docker Desktop
+
+1. Open Docker Desktop
+2. Go to **Settings → Resources**
+3. Allocate at least **8 GB RAM** and **4 CPUs**
+4. Enable **Use Virtualization Framework** (Apple Silicon)
+5. Click **Apply & Restart**
+
+#### 4. Clone and Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/netnynja-enterprise.git
 cd netnynja-enterprise
 
-# Run the setup script
-./infrastructure/scripts/init-dev.sh
-
-# Or manually:
-# 1. Copy environment file
+# Copy environment file and configure
 cp .env.example .env
-# Edit .env with your passwords
+# Edit .env with your passwords (POSTGRES_PASSWORD, REDIS_PASSWORD, etc.)
 
-# 2. Start infrastructure
-docker compose --profile infra up -d
-
-# 3. Install dependencies
+# Install dependencies
 npm install
 poetry install
 
-# 4. Start development servers
-npm run dev
+# Start the platform
+docker compose --profile ipam --profile npm --profile stig up -d
+```
+
+---
+
+### Windows 11 / Windows Server 2022 Installation
+
+#### 1. Enable WSL2
+
+Open PowerShell as Administrator:
+
+```powershell
+# Enable WSL2
+wsl --install
+
+# Restart your computer when prompted
+```
+
+#### 2. Install Docker Desktop
+
+1. Download [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+2. Run the installer
+3. During installation, ensure **Use WSL 2 instead of Hyper-V** is checked
+4. Complete installation and restart if prompted
+
+#### 3. Configure Docker Desktop
+
+1. Open Docker Desktop
+2. Go to **Settings → General**
+   - Ensure **Use the WSL 2 based engine** is checked
+3. Go to **Settings → Resources → WSL Integration**
+   - Enable integration with your default WSL distro
+4. Go to **Settings → Resources → Advanced**
+   - Allocate at least **8 GB RAM** and **4 CPUs**
+5. Click **Apply & Restart**
+
+#### 4. Install Node.js
+
+1. Download [Node.js 20 LTS](https://nodejs.org/) Windows installer
+2. Run the installer with default options
+3. Verify: Open new PowerShell and run `node --version`
+
+#### 5. Install Python 3.11
+
+1. Download [Python 3.11](https://www.python.org/downloads/) Windows installer
+2. **Important**: Check **Add Python to PATH** during installation
+3. Enable **long paths** during installation
+4. Verify: `python --version`
+
+#### 6. Install Poetry
+
+```powershell
+# Install Poetry
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+
+# Add Poetry to PATH (add to PowerShell profile)
+$env:Path += ";$env:APPDATA\Python\Scripts"
+
+# Verify
+poetry --version
+```
+
+#### 7. Configure Git for LF Line Endings
+
+```powershell
+git config --global core.autocrlf input
+git config --global core.eol lf
+```
+
+#### 8. Clone and Setup
+
+```powershell
+# Clone the repository
+git clone https://github.com/your-org/netnynja-enterprise.git
+cd netnynja-enterprise
+
+# Copy environment file
+Copy-Item .env.example .env
+# Edit .env with your passwords using Notepad or VS Code
+
+# Install dependencies
+npm install
+poetry install
+
+# Start the platform
+docker compose --profile ipam --profile npm --profile stig up -d
+```
+
+#### Windows-Specific Notes
+
+- **Docker not in PATH**: If `docker` command fails, add `C:\Program Files\Docker\Docker\resources\bin` to your PATH
+- **Credential Helper**: If git credential issues occur, run: `git config --global credential.helper manager`
+- **Long Paths**: Enable long paths if you encounter path length errors:
+  ```powershell
+  # Run as Administrator
+  Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1
+  ```
+
+---
+
+### Red Hat Enterprise Linux 9.x Installation
+
+#### 1. Install Docker
+
+```bash
+# Remove old Docker versions
+sudo dnf remove docker docker-client docker-client-latest docker-common \
+    docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
+
+# Add Docker repository
+sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+
+# Install Docker
+sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Start and enable Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add your user to docker group (logout/login required)
+sudo usermod -aG docker $USER
+
+# Verify
+docker --version
+docker compose version
+```
+
+#### 2. Install Node.js 20
+
+```bash
+# Enable Node.js 20 module
+sudo dnf module enable nodejs:20
+
+# Install Node.js
+sudo dnf install nodejs
+
+# Verify
+node --version
+npm --version
+```
+
+#### 3. Install Python 3.11
+
+```bash
+# Install Python 3.11
+sudo dnf install python3.11 python3.11-pip python3.11-devel
+
+# Set as default (optional)
+sudo alternatives --set python3 /usr/bin/python3.11
+
+# Verify
+python3.11 --version
+```
+
+#### 4. Install Poetry
+
+```bash
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3.11 -
+
+# Add to PATH
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify
+poetry --version
+```
+
+#### 5. Configure Firewall
+
+```bash
+# Open required ports
+sudo firewall-cmd --permanent --add-port=3000-3007/tcp  # Application ports
+sudo firewall-cmd --permanent --add-port=5433/tcp      # PostgreSQL
+sudo firewall-cmd --permanent --add-port=6379/tcp      # Redis
+sudo firewall-cmd --permanent --add-port=8200/tcp      # Vault
+sudo firewall-cmd --permanent --add-port=8222/tcp      # NATS monitoring
+sudo firewall-cmd --permanent --add-port=9090/tcp      # Prometheus
+sudo firewall-cmd --permanent --add-port=16686/tcp     # Jaeger
+
+# Reload firewall
+sudo firewall-cmd --reload
+```
+
+#### 6. Configure SELinux (if enabled)
+
+```bash
+# For bind mounts, use :Z suffix in docker-compose.yml
+# Or set SELinux to permissive for Docker
+sudo setsebool -P container_manage_cgroup on
+```
+
+#### 7. Clone and Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/netnynja-enterprise.git
+cd netnynja-enterprise
+
+# Copy environment file
+cp .env.example .env
+# Edit .env with your passwords
+
+# Install dependencies
+npm install
+poetry install
+
+# Start the platform
+docker compose --profile ipam --profile npm --profile stig up -d
+```
+
+#### RHEL-Specific Notes
+
+- **Podman Alternative**: RHEL includes Podman natively. If you prefer Podman:
+  ```bash
+  sudo dnf install podman podman-compose
+  alias docker=podman
+  ```
+- **SELinux**: Add `:Z` suffix to volume mounts if you encounter permission issues
+- **Resource Limits**: Check `ulimit -n` and increase if needed for large deployments
+
+---
+
+## Quick Start (All Platforms)
+
+After completing the platform-specific installation above:
+
+```bash
+# Navigate to project directory
+cd netnynja-enterprise
+
+# Start all services
+docker compose --profile ipam --profile npm --profile stig up -d
+
+# Verify services are running
+docker compose ps
+
+# View logs
+docker compose logs -f gateway
 ```
 
 ### Access Points
