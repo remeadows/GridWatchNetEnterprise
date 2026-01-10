@@ -26,51 +26,53 @@ class TestSubnetCRUD:
         authed_client: httpx.AsyncClient,
         config
     ):
-        """POST /api/v1/ipam/subnets creates a new subnet."""
+        """POST /api/v1/ipam/networks creates a new subnet."""
         response = await authed_client.post(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             json={
-                "cidr": "10.250.0.0/24",
+                "network": "10.250.0.0/24",
                 "name": "E2E Create Test",
                 "description": "Test subnet for E2E - auto cleanup",
-                "vlan_id": 250,
+                "vlanId": 250,
                 "gateway": "10.250.0.1"
             }
         )
-        
+
         assert response.status_code in (200, 201)
-        data = response.json()
-        
+        response_data = response.json()
+        # Handle wrapped response format {success: true, data: {...}}
+        data = response_data.get("data", response_data)
+
         assert "id" in data
-        assert data["cidr"] == "10.250.0.0/24"
+        assert data["network"] == "10.250.0.0/24"
         assert data["name"] == "E2E Create Test"
-        
+
         # Cleanup
-        await authed_client.delete(f"/api/v1/ipam/subnets/{data['id']}")
+        await authed_client.delete(f"/api/v1/ipam/networks/{data['id']}")
     
     async def test_read_subnet(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """GET /api/v1/ipam/subnets/{id} returns subnet details."""
+        """GET /api/v1/ipam/networks/{id} returns subnet details."""
         response = await authed_client.get(
-            f"/api/v1/ipam/subnets/{test_subnet['id']}"
+            f"/api/v1/ipam/networks/{test_network['id']}"
         )
         
         assert response.status_code == 200
         data = response.json()
         
-        assert data["id"] == test_subnet["id"]
-        assert data["cidr"] == test_subnet["cidr"]
+        assert data["id"] == test_network["id"]
+        assert data["cidr"] == test_network["cidr"]
     
     async def test_list_subnets(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """GET /api/v1/ipam/subnets returns list of subnets."""
-        response = await authed_client.get("/api/v1/ipam/subnets")
+        """GET /api/v1/ipam/networks returns list of subnets."""
+        response = await authed_client.get("/api/v1/ipam/networks")
         
         assert response.status_code == 200
         data = response.json()
@@ -85,17 +87,17 @@ class TestSubnetCRUD:
         
         # Test subnet should be in list
         subnet_ids = [s["id"] for s in subnets]
-        assert test_subnet["id"] in subnet_ids
+        assert test_network["id"] in subnet_ids
     
     async def test_update_subnet(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """PATCH/PUT /api/v1/ipam/subnets/{id} updates subnet."""
+        """PATCH/PUT /api/v1/ipam/networks/{id} updates subnet."""
         # Try PATCH first, fall back to PUT
         response = await authed_client.patch(
-            f"/api/v1/ipam/subnets/{test_subnet['id']}",
+            f"/api/v1/ipam/networks/{test_network['id']}",
             json={
                 "description": "Updated by E2E test"
             }
@@ -103,9 +105,9 @@ class TestSubnetCRUD:
         
         if response.status_code == 405:  # Method not allowed
             response = await authed_client.put(
-                f"/api/v1/ipam/subnets/{test_subnet['id']}",
+                f"/api/v1/ipam/networks/{test_network['id']}",
                 json={
-                    **test_subnet,
+                    **test_network,
                     "description": "Updated by E2E test"
                 }
             )
@@ -119,12 +121,12 @@ class TestSubnetCRUD:
         self,
         authed_client: httpx.AsyncClient
     ):
-        """DELETE /api/v1/ipam/subnets/{id} removes subnet."""
+        """DELETE /api/v1/ipam/networks/{id} removes subnet."""
         # Create subnet to delete
         create_response = await authed_client.post(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             json={
-                "cidr": "10.251.0.0/24",
+                "network": "10.251.0.0/24",
                 "name": "E2E Delete Test"
             }
         )
@@ -133,14 +135,14 @@ class TestSubnetCRUD:
         
         # Delete it
         delete_response = await authed_client.delete(
-            f"/api/v1/ipam/subnets/{subnet_id}"
+            f"/api/v1/ipam/networks/{subnet_id}"
         )
         
         assert delete_response.status_code in (200, 204)
         
         # Verify it's gone
         get_response = await authed_client.get(
-            f"/api/v1/ipam/subnets/{subnet_id}"
+            f"/api/v1/ipam/networks/{subnet_id}"
         )
         
         assert get_response.status_code == 404
@@ -148,14 +150,14 @@ class TestSubnetCRUD:
     async def test_create_subnet_duplicate_cidr_fails(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         config
     ):
         """Creating subnet with duplicate CIDR fails."""
         response = await authed_client.post(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             json={
-                "cidr": config.test_subnet,  # Same as test_subnet
+                "network": config.test_network,  # Same as test_network
                 "name": "Duplicate CIDR Test"
             }
         )
@@ -169,13 +171,13 @@ class TestIPAddressManagement:
     async def test_list_addresses_in_subnet(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         config
     ):
-        """GET /api/v1/ipam/addresses with subnet filter."""
+        """GET /api/v1/ipam/networks with subnet filter."""
         response = await authed_client.get(
-            "/api/v1/ipam/addresses",
-            params={"subnet": config.test_subnet}
+            "/api/v1/ipam/networks",
+            params={"subnet": config.test_network}
         )
         
         assert response.status_code == 200
@@ -192,14 +194,14 @@ class TestIPAddressManagement:
     async def test_reserve_ip_address(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """POST /api/v1/ipam/addresses reserves an IP address."""
+        """POST /api/v1/ipam/networks reserves an IP address."""
         response = await authed_client.post(
-            "/api/v1/ipam/addresses",
+            "/api/v1/ipam/networks",
             json={
                 "ip_address": "10.255.0.100",
-                "subnet_id": test_subnet["id"],
+                "subnet_id": test_network["id"],
                 "hostname": "e2e-test-host",
                 "status": "reserved",
                 "description": "E2E test reservation"
@@ -215,11 +217,11 @@ class TestIPAddressManagement:
     async def test_get_next_available_ip(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """GET /api/v1/ipam/subnets/{id}/next-available returns next free IP."""
+        """GET /api/v1/ipam/networks/{id}/next-available returns next free IP."""
         response = await authed_client.get(
-            f"/api/v1/ipam/subnets/{test_subnet['id']}/next-available"
+            f"/api/v1/ipam/networks/{test_network['id']}/next-available"
         )
         
         # This endpoint may not exist in all implementations
@@ -239,13 +241,13 @@ class TestIPDiscoveryScanning:
     async def test_trigger_subnet_scan(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
         """POST /api/v1/ipam/scan triggers discovery scan."""
         response = await authed_client.post(
             "/api/v1/ipam/scan",
             json={
-                "subnet_id": test_subnet["id"],
+                "subnet_id": test_network["id"],
                 "scan_type": "ping"  # ICMP ping scan
             }
         )
@@ -261,7 +263,7 @@ class TestIPDiscoveryScanning:
     async def test_scan_publishes_nats_event(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         nats_message_capture
     ):
         """Subnet scan publishes ipam.discovery.* event to NATS."""
@@ -277,7 +279,7 @@ class TestIPDiscoveryScanning:
         await authed_client.post(
             "/api/v1/ipam/scan",
             json={
-                "subnet_id": test_subnet["id"],
+                "subnet_id": test_network["id"],
                 "scan_type": "ping"
             }
         )
@@ -293,19 +295,19 @@ class TestIPDiscoveryScanning:
         
         # Soft check - scan may complete very fast on empty subnet
         if discovery_events:
-            assert discovery_events[0]["data"].get("subnet_id") == test_subnet["id"]
+            assert discovery_events[0]["data"].get("subnet_id") == test_network["id"]
     
     async def test_get_scan_status(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
         """GET /api/v1/ipam/scan/{job_id} returns scan status."""
         # First trigger a scan
         scan_response = await authed_client.post(
             "/api/v1/ipam/scan",
             json={
-                "subnet_id": test_subnet["id"],
+                "subnet_id": test_network["id"],
                 "scan_type": "ping"
             }
         )
@@ -337,17 +339,17 @@ class TestIPAMMetrics:
     async def test_utilization_metrics_written(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         query_metrics
     ):
         """IP utilization metrics are written to VictoriaMetrics."""
         # Reserve some IPs to generate utilization data
         for i in range(3):
             await authed_client.post(
-                "/api/v1/ipam/addresses",
+                "/api/v1/ipam/networks",
                 json={
                     "ip_address": f"10.255.0.{10 + i}",
-                    "subnet_id": test_subnet["id"],
+                    "subnet_id": test_network["id"],
                     "status": "reserved"
                 }
             )
@@ -357,7 +359,7 @@ class TestIPAMMetrics:
         
         # Query for utilization metrics
         result = await query_metrics(
-            f'ipam_subnet_utilization{{subnet_id="{test_subnet["id"]}"}}'
+            f'ipam_subnet_utilization{{subnet_id="{test_network["id"]}"}}'
         )
         
         # Check if metrics exist
@@ -388,7 +390,7 @@ class TestPostgreSQLDataTypes:
     async def test_cidr_stored_correctly(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         postgres_conn
     ):
         """CIDR is stored using PostgreSQL native type."""
@@ -396,7 +398,7 @@ class TestPostgreSQLDataTypes:
         async with postgres_conn.cursor() as cur:
             await cur.execute(
                 "SELECT cidr FROM ipam.subnets WHERE id = %s",
-                (test_subnet["id"],)
+                (test_network["id"],)
             )
             row = await cur.fetchone()
         
@@ -408,16 +410,16 @@ class TestPostgreSQLDataTypes:
     async def test_ip_address_stored_correctly(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         postgres_conn
     ):
         """IP addresses are stored using PostgreSQL INET type."""
         # Create an address
         response = await authed_client.post(
-            "/api/v1/ipam/addresses",
+            "/api/v1/ipam/networks",
             json={
                 "ip_address": "10.255.0.200",
-                "subnet_id": test_subnet["id"],
+                "subnet_id": test_network["id"],
                 "status": "reserved"
             }
         )
@@ -442,14 +444,14 @@ class TestPostgreSQLDataTypes:
 class TestSubnetCalculations:
     """Test subnet calculations and validations."""
     
-    async def test_subnet_statistics(
+    async def test_network_statistics(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
-        """GET /api/v1/ipam/subnets/{id}/stats returns utilization stats."""
+        """GET /api/v1/ipam/networks/{id}/stats returns utilization stats."""
         response = await authed_client.get(
-            f"/api/v1/ipam/subnets/{test_subnet['id']}/stats"
+            f"/api/v1/ipam/networks/{test_network['id']}/stats"
         )
         
         if response.status_code == 404:
@@ -467,14 +469,14 @@ class TestSubnetCalculations:
     async def test_cannot_create_overlapping_subnets(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet
+        test_network
     ):
         """Creating overlapping subnet fails."""
-        # Try to create subnet that overlaps with test_subnet (10.255.0.0/24)
+        # Try to create subnet that overlaps with test_network (10.255.0.0/24)
         response = await authed_client.post(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             json={
-                "cidr": "10.255.0.0/25",  # Overlaps with /24
+                "network": "10.255.0.0/25",  # Overlaps with /24
                 "name": "Overlapping Subnet Test"
             }
         )
@@ -485,12 +487,12 @@ class TestSubnetCalculations:
     async def test_search_subnets_by_cidr(
         self,
         authed_client: httpx.AsyncClient,
-        test_subnet,
+        test_network,
         config
     ):
         """Search subnets by CIDR query."""
         response = await authed_client.get(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             params={"q": "10.255"}
         )
         
@@ -503,7 +505,7 @@ class TestSubnetCalculations:
             subnets = data.get("items", data.get("subnets", []))
         
         # Test subnet should be in results
-        matching = [s for s in subnets if config.test_subnet in s.get("cidr", "")]
+        matching = [s for s in subnets if config.test_network in s.get("cidr", "")]
         assert len(matching) > 0
 
 
@@ -517,9 +519,9 @@ class TestIPAMDataIntegrity:
         """Deleting subnet removes associated addresses."""
         # Create subnet
         subnet_response = await authed_client.post(
-            "/api/v1/ipam/subnets",
+            "/api/v1/ipam/networks",
             json={
-                "cidr": "10.252.0.0/24",
+                "network": "10.252.0.0/24",
                 "name": "Cascade Test Subnet"
             }
         )
@@ -528,7 +530,7 @@ class TestIPAMDataIntegrity:
         
         # Create address in subnet
         addr_response = await authed_client.post(
-            "/api/v1/ipam/addresses",
+            "/api/v1/ipam/networks",
             json={
                 "ip_address": "10.252.0.50",
                 "subnet_id": subnet["id"],
@@ -540,12 +542,12 @@ class TestIPAMDataIntegrity:
         
         # Delete subnet
         delete_response = await authed_client.delete(
-            f"/api/v1/ipam/subnets/{subnet['id']}"
+            f"/api/v1/ipam/networks/{subnet['id']}"
         )
         assert delete_response.status_code in (200, 204)
         
         # Address should be gone
         addr_check = await authed_client.get(
-            f"/api/v1/ipam/addresses/{address['id']}"
+            f"/api/v1/ipam/networks/{address['id']}"
         )
         assert addr_check.status_code == 404

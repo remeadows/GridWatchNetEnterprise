@@ -2,9 +2,9 @@
 
 > Comprehensive context for AI-assisted and human development
 
-**Version**: 0.2.0
-**Last Updated**: 2026-01-09 13:30 EST
-**Status**: Active Development - Phase 8 In Progress (2 Open, 66 Resolved)
+**Version**: 0.2.1
+**Last Updated**: 2026-01-10 11:30 EST
+**Status**: Active Development - Phase 8 Complete (0 Open, 74 Resolved)
 
 ## Project Vision
 
@@ -253,6 +253,32 @@ Client → Gateway → Auth Service → Vault (JWT keys)
 | macOS    | Docker Desktop, host.docker.internal |
 | RHEL 9   | Podman compatible, SELinux :Z mounts |
 | Windows  | WSL2 backend, Linux containers       |
+
+### Container Dependencies
+
+The gateway container includes additional system packages for network scanning:
+
+| Package      | Version | Purpose                             |
+| ------------ | ------- | ----------------------------------- |
+| nmap         | 7.97+   | Network discovery and NMAP scanning |
+| nmap-scripts | -       | NMAP scripting engine support       |
+
+These are installed in the gateway Dockerfile development stage:
+
+```dockerfile
+RUN apk add --no-cache nmap nmap-scripts && \
+    npm install -g tsx pino-pretty
+```
+
+**Note**: NMAP fingerprinting (MAC addresses, vendor detection) requires the gateway container to be on the same network segment as scanned hosts. DNS reverse lookup must be configured for hostname resolution.
+
+**Enabling Full Fingerprinting**: By default, the gateway runs on a Docker bridge network which cannot detect MAC addresses for hosts on the physical LAN. To enable MAC address detection:
+
+1. Edit `docker-compose.yml` and uncomment `network_mode: host` in the gateway service
+2. Comment out the `networks` and `ports` sections for the gateway
+3. Rebuild and restart: `docker compose build gateway && docker compose up -d gateway`
+
+With host network mode, the gateway has direct Layer 2 access to detect MAC addresses and vendor information for hosts on the same subnet.
 
 ### Scaling Patterns
 

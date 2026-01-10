@@ -194,6 +194,26 @@ const moduleNav: Record<ModuleType, NavItem[]> = {
         </svg>
       ),
     },
+    {
+      id: "groups",
+      label: "Device Groups",
+      href: "/npm/groups",
+      icon: (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+          />
+        </svg>
+      ),
+    },
   ],
   stig: [
     {
@@ -494,14 +514,8 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const {
-    isDark,
-    activeModule,
-    sidebarCollapsed,
-    toggleTheme,
-    setActiveModule,
-    toggleSidebar,
-  } = useThemeStore();
+  const { activeModule, sidebarCollapsed, setActiveModule, toggleSidebar } =
+    useThemeStore();
 
   const handleModuleChange = (module: ModuleType) => {
     setActiveModule(module);
@@ -514,7 +528,19 @@ export function MainLayout() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div className="relative flex h-screen overflow-hidden bg-dark-900">
+      {/* Full-page ninja background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url(/assets/NetNNJA1.jpg)",
+        }}
+      />
+      {/* Dark overlay to fade the background image */}
+      <div className="absolute inset-0 bg-dark-900/92" />
+      {/* Subtle cyber glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-900/10 via-transparent to-accent-900/10" />
+
       <Sidebar
         module={activeModule}
         items={moduleNav[activeModule]}
@@ -522,16 +548,30 @@ export function MainLayout() {
         onNavigate={navigate}
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebar}
+        className="relative z-10"
+        backgroundImage="/assets/NetNynjaLogo.png"
         header={
           !sidebarCollapsed && (
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
-              NetNynja
-            </span>
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/NetNNJA2.jpg"
+                alt="NetNynja Logo"
+                className="h-8 w-8 rounded-lg object-cover"
+              />
+              <div className="flex flex-col leading-tight">
+                <span className="text-lg font-bold text-primary-500">
+                  NetNynja
+                </span>
+                <span className="text-xs font-medium text-silver-400">
+                  Enterprise
+                </span>
+              </div>
+            </div>
           )
         }
       />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
         <TopNav
           modules={modules}
           activeModule={activeModule}
@@ -545,8 +585,6 @@ export function MainLayout() {
               : undefined
           }
           onLogout={handleLogout}
-          onThemeToggle={toggleTheme}
-          isDark={isDark}
         />
 
         <main className="flex-1 overflow-y-auto p-6">

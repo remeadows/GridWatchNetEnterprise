@@ -392,12 +392,13 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
         };
       }
 
-      const result = await pool.query(
-        "DELETE FROM shared.users WHERE id = $1 RETURNING id, username",
+      // Check if user exists first
+      const userCheck = await pool.query(
+        "SELECT id, username, role FROM shared.users WHERE id = $1",
         [id],
       );
 
-      if (result.rows.length === 0) {
+      if (userCheck.rows.length === 0) {
         reply.status(404);
         return {
           success: false,
@@ -405,10 +406,97 @@ const usersRoutes: FastifyPluginAsync = async (fastify) => {
         };
       }
 
-      const row = result.rows[0];
-      logger.info({ userId: row.id, username: row.username }, "User deleted");
+      const targetUser = userCheck.rows[0];
 
-      return { success: true, message: "User deleted" };
+      // Prevent deleting the last admin
+      if (targetUser.role === "admin") {
+        const adminCount = await pool.query(
+          "SELECT COUNT(*) FROM shared.users WHERE role = 'admin' AND is_active = true AND id != $1",
+          [id],
+        );
+
+        if (parseInt(adminCount.rows[0].count, 10) === 0) {
+          reply.status(400);
+          return {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message:
+                "Cannot delete the last active admin. Promote another user to admin first.",
+            },
+          };
+        }
+      }
+
+      // Use a transaction to clean up related records and delete the user
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // Set created_by/updated_by references to NULL for records that shouldn't be deleted
+        // These are audit/tracking fields and setting to NULL preserves the records
+        await client.query(
+          "UPDATE shared.audit_log SET user_id = NULL WHERE user_id = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE shared.settings SET updated_by = NULL WHERE updated_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE ipam.networks SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE npm.alert_rules SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE npm.alerts SET acknowledged_by = NULL WHERE acknowledged_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE stig.audit_jobs SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE npm.snmpv3_credentials SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE npm.device_groups SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+        await client.query(
+          "UPDATE npm.discovery_jobs SET created_by = NULL WHERE created_by = $1",
+          [id],
+        );
+
+        // Delete refresh tokens (cascade should handle this, but explicit is safer)
+        await client.query(
+          "DELETE FROM shared.refresh_tokens WHERE user_id = $1",
+          [id],
+        );
+
+        // Now delete the user
+        const result = await client.query(
+          "DELETE FROM shared.users WHERE id = $1 RETURNING id, username",
+          [id],
+        );
+
+        await client.query("COMMIT");
+
+        const row = result.rows[0];
+        logger.info({ userId: row.id, username: row.username }, "User deleted");
+
+        return { success: true, message: "User deleted" };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        logger.error({ error, userId: id }, "Failed to delete user");
+        throw error;
+      } finally {
+        client.release();
+      }
     },
   );
 

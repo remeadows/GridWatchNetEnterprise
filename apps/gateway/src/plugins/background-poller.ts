@@ -213,7 +213,7 @@ class BackgroundPoller {
       const isReachable = icmpSuccess === true;
       await pool.query(
         `INSERT INTO npm.device_metrics (device_id, icmp_latency_ms, icmp_reachable, is_available, collected_at)
-         VALUES ($1, $2, $3::boolean, $4::boolean, NOW())`,
+         VALUES ($1, $2, $3, $4, NOW())`,
         [device.id, icmpLatency, isReachable, isReachable],
       );
 

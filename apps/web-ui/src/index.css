@@ -2,37 +2,241 @@
 @tailwind components;
 @tailwind utilities;
 
+/* NetNynja Enterprise - Cyberpunk Dark Theme
+   Brand colors extracted from NetNNJA1.jpg and NetNNJA2.jpg
+   No light mode - dark cyberpunk only */
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+
+  /* Force dark color scheme */
+  color-scheme: dark;
+
+  /* Brand CSS Variables */
+  --color-bg-primary: #0a0e17;
+  --color-bg-secondary: #0f172a;
+  --color-bg-elevated: #1a1a2e;
+  --color-bg-card: #0f1419;
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --color-brand-primary: #00d4ff;
+  --color-brand-accent: #d946ef;
+  --color-brand-success: #22c55e;
+
+  --color-border: #1e293b;
+  --color-border-hover: #334155;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+/* Base layer - apply dark theme globally */
+@layer base {
+  html {
+    background-color: #0a0e17;
+    color: #e2e8f0;
+  }
+
+  body {
+    background-color: #0a0e17;
+    color: #e2e8f0;
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0e17 0%, #0f1419 50%, #0a0e17 100%);
+    background-attachment: fixed;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  /* Typography defaults */
+  h1, h2, h3, h4, h5, h6 {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  a {
+    color: #00d4ff;
+    transition: color 150ms;
+  }
+
+  a:hover {
+    color: #26cbff;
+  }
+
+  /* Form elements default dark styling */
+  input, textarea, select {
+    background-color: #0f172a;
+    border-color: #1e293b;
+    color: #e2e8f0;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #64748b;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: #00d4ff;
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.3);
+  }
 }
 
-#root {
-  min-height: 100vh;
+/* Component layer - custom component styles */
+@layer components {
+  /* Neon glow text effect */
+  .text-neon-blue {
+    color: #00d4ff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .text-neon-pink {
+    color: #d946ef;
+    text-shadow: 0 0 10px rgba(217, 70, 239, 0.5), 0 0 20px rgba(217, 70, 239, 0.3);
+  }
+
+  .text-neon-green {
+    color: #22c55e;
+    text-shadow: 0 0 10px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+  }
+
+  /* Cyber card style */
+  .cyber-card {
+    background-color: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+                0 2px 4px -2px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(0, 212, 255, 0.05);
+  }
+
+  .cyber-card:hover {
+    border-color: #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+                0 2px 4px -2px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(0, 212, 255, 0.15);
+  }
+
+  /* Neon border effect */
+  .neon-border {
+    position: relative;
+  }
+
+  .neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(90deg, #00d4ff, #d946ef, #22c55e, #00d4ff);
+    background-size: 300% 100%;
+    border-radius: inherit;
+    z-index: -1;
+    animation: neon-border-animate 3s linear infinite;
+  }
+
+  @keyframes neon-border-animate {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+
+  /* Primary button with neon glow */
+  .btn-cyber {
+    background-color: #06b6d4;
+    color: #ffffff;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 200ms;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+  }
+
+  .btn-cyber:hover {
+    background-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+  }
+
+  .btn-cyber:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.5);
+  }
+
+  /* Status indicator pulse */
+  .status-pulse {
+    position: relative;
+  }
+
+  .status-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(0, 212, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 212, 255, 0);
+    }
+  }
 }
 
-/* Custom scrollbar */
+/* Utility layer */
+@layer utilities {
+  /* Glow effects */
+  .glow-blue {
+    box-shadow: 0 0 5px #00d4ff, 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .glow-pink {
+    box-shadow: 0 0 5px #d946ef, 0 0 20px rgba(217, 70, 239, 0.3);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 5px #22c55e, 0 0 20px rgba(34, 197, 94, 0.3);
+  }
+}
+
+/* Custom scrollbar - dark cyberpunk style */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  background: #0a0e17;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  background: #334155;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  background: #475569;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #0a0e17;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #ffffff;
 }

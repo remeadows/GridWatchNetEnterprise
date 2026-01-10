@@ -1,33 +1,33 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '../../utils/cn';
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "../../utils/cn";
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
   {
     variants: {
       variant: {
         default:
-          'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200',
-        secondary:
-          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+          "bg-primary-900/50 text-primary-300 border border-primary-700/50",
+        secondary: "bg-dark-700 text-silver-300 border border-dark-600",
         success:
-          'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200',
+          "bg-success-900/50 text-success-300 border border-success-700/50",
         warning:
-          'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200',
-        error:
-          'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200',
-        outline: 'border border-current bg-transparent',
+          "bg-warning-900/50 text-warning-300 border border-warning-700/50",
+        error: "bg-error-900/50 text-error-300 border border-error-700/50",
+        outline: "border border-current bg-transparent",
+        accent: "bg-accent-900/50 text-accent-300 border border-accent-700/50",
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: "default",
     },
-  }
+  },
 );
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {

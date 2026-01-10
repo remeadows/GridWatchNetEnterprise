@@ -35,11 +35,18 @@ class Settings(BaseSettings):
 
     # NATS
     nats_url: str = Field(default="nats://localhost:4222", alias="NATS_URL")
+    nats_user: str | None = Field(default=None, alias="NATS_USER")
+    nats_password: str | None = Field(default=None, alias="NATS_PASSWORD")
+    nats_tls_enabled: bool = Field(default=False, alias="NATS_TLS_ENABLED")
+    nats_tls_ca: str | None = Field(default=None, alias="NATS_TLS_CA")  # Path to CA cert
 
     # JWT
     jwt_secret: str | None = Field(default=None, alias="JWT_SECRET")
     jwt_public_key: str | None = Field(default=None, alias="JWT_PUBLIC_KEY")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+
+    # Credential Encryption - MUST be set via environment variable in production (min 32 chars)
+    credential_encryption_key: str = Field(..., alias="NPM_CREDENTIAL_KEY", min_length=32)
 
     # VictoriaMetrics
     victoria_url: str = Field(

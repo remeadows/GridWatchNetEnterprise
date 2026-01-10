@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { cn } from '../../utils/cn';
-import { type ModuleType, moduleColors } from '../../theme';
+import * as React from "react";
+import { cn } from "../../utils/cn";
+import { type ModuleType, moduleColors } from "../../theme";
 
 export interface NavItem {
   id: string;
@@ -20,6 +20,9 @@ export interface SidebarProps {
   onToggleCollapse?: () => void;
   header?: React.ReactNode;
   footer?: React.ReactNode;
+  className?: string;
+  /** Optional background image URL for the sidebar */
+  backgroundImage?: string;
 }
 
 export function Sidebar({
@@ -31,27 +34,42 @@ export function Sidebar({
   onToggleCollapse,
   header,
   footer,
+  className,
+  backgroundImage,
 }: SidebarProps) {
   const colors = moduleColors[module];
 
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-gray-200 bg-white transition-all dark:border-gray-700 dark:bg-gray-900',
-        collapsed ? 'w-16' : 'w-64'
+        "relative flex h-full flex-col border-r border-dark-700 bg-dark-900/80 backdrop-blur-sm transition-all overflow-hidden",
+        collapsed ? "w-16" : "w-64",
+        className,
       )}
     >
+      {/* Optional faded background image */}
+      {backgroundImage && (
+        <>
+          <div
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat opacity-[0.04]"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+          />
+        </>
+      )}
       {header && (
-        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
+        <div className="relative z-10 flex h-16 items-center justify-between border-b border-dark-700 px-4">
           {header}
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="rounded-md p-1.5 text-silver-400 hover:bg-dark-800 hover:text-primary-400"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <svg
-                className={cn('h-5 w-5 transition-transform', collapsed && 'rotate-180')}
+                className={cn(
+                  "h-5 w-5 transition-transform",
+                  collapsed && "rotate-180",
+                )}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -68,19 +86,21 @@ export function Sidebar({
         </div>
       )}
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
+      <nav className="relative z-10 flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {items.map((item) => {
-          const isActive = currentPath === item.href || currentPath.startsWith(item.href + '/');
+          const isActive =
+            currentPath === item.href ||
+            currentPath.startsWith(item.href + "/");
 
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.href)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? 'text-white'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  ? "text-white shadow-[0_0_10px_rgba(0,212,255,0.3)]"
+                  : "text-silver-300 hover:bg-dark-800 hover:text-primary-400",
               )}
               style={isActive ? { backgroundColor: colors.primary } : undefined}
             >
@@ -95,10 +115,10 @@ export function Sidebar({
                   {item.badge !== undefined && (
                     <span
                       className={cn(
-                        'rounded-full px-2 py-0.5 text-xs',
+                        "rounded-full px-2 py-0.5 text-xs",
                         isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                          ? "bg-white/20 text-white"
+                          : "bg-dark-700 text-silver-300",
                       )}
                     >
                       {item.badge}
@@ -112,7 +132,7 @@ export function Sidebar({
       </nav>
 
       {footer && (
-        <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+        <div className="relative z-10 border-t border-dark-700 p-4">
           {footer}
         </div>
       )}

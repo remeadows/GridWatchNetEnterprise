@@ -9,8 +9,12 @@ import {
   StatsCard,
   StatusIndicator,
   LineChart,
+  Input,
+  Select,
 } from "@netnynja/shared-ui";
 import { useNPMStore, type PollDeviceResponse } from "../../../stores/npm";
+import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
+import { useDeviceGroupsStore } from "../../../stores/device-groups";
 
 export function NPMDeviceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,23 +29,42 @@ export function NPMDeviceDetailPage() {
     fetchMetricsHistory,
     deleteDevice,
     pollDevice,
+    updateDevice,
   } = useNPMStore();
+  const { credentials, fetchCredentials } = useSNMPv3CredentialsStore();
+  const { groups, fetchGroups } = useDeviceGroupsStore();
 
   const [timeRange, setTimeRange] = useState<"1h" | "6h" | "24h" | "7d">("24h");
   const [showPollModal, setShowPollModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [pollMethods, setPollMethods] = useState<{
     icmp: boolean;
     snmp: boolean;
   }>({ icmp: true, snmp: false });
   const [pollResult, setPollResult] = useState<PollDeviceResponse | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [deviceSettings, setDeviceSettings] = useState({
+    name: "",
+    deviceType: "",
+    vendor: "",
+    model: "",
+    groupId: "",
+    pollIcmp: true,
+    pollSnmp: false,
+    snmpv3CredentialId: "",
+    snmpPort: "161",
+    pollInterval: "60",
+  });
 
   useEffect(() => {
     if (id) {
       fetchDevice(id);
       fetchCurrentMetrics(id);
     }
-  }, [id, fetchDevice, fetchCurrentMetrics]);
+    fetchCredentials();
+    fetchGroups();
+  }, [id, fetchDevice, fetchCurrentMetrics, fetchCredentials, fetchGroups]);
 
   useEffect(() => {
     if (id) {
@@ -110,6 +133,82 @@ export function NPMDeviceDetailPage() {
     setShowPollModal(false);
     setPollResult(null);
   };
+
+  const openSettingsModal = () => {
+    if (selectedDevice) {
+      setDeviceSettings({
+        name: selectedDevice.name || "",
+        deviceType: selectedDevice.deviceType || "",
+        vendor: selectedDevice.vendor || "",
+        model: selectedDevice.model || "",
+        groupId: selectedDevice.groupId || "",
+        pollIcmp: selectedDevice.pollIcmp ?? true,
+        pollSnmp: selectedDevice.pollSnmp ?? false,
+        snmpv3CredentialId: selectedDevice.snmpv3CredentialId || "",
+        snmpPort: String(selectedDevice.snmpPort || 161),
+        pollInterval: String(selectedDevice.pollInterval || 60),
+      });
+      setShowSettingsModal(true);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+
+    setIsSavingSettings(true);
+    try {
+      await updateDevice(id, {
+        name: deviceSettings.name,
+        deviceType: deviceSettings.deviceType || undefined,
+        vendor: deviceSettings.vendor || undefined,
+        model: deviceSettings.model || undefined,
+        groupId: deviceSettings.groupId || null,
+        pollIcmp: deviceSettings.pollIcmp,
+        pollSnmp: deviceSettings.pollSnmp,
+        snmpv3CredentialId:
+          deviceSettings.pollSnmp && deviceSettings.snmpv3CredentialId
+            ? deviceSettings.snmpv3CredentialId
+            : null,
+        snmpPort: parseInt(deviceSettings.snmpPort),
+        pollInterval: parseInt(deviceSettings.pollInterval),
+      });
+      setShowSettingsModal(false);
+      // Refresh device data
+      fetchDevice(id);
+    } catch {
+      // Error handled in store
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const credentialOptions = [
+    { value: "", label: "Select a credential..." },
+    ...credentials.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  const groupOptions = [
+    { value: "", label: "No Group" },
+    ...groups
+      .filter((g) => g.isActive)
+      .map((g) => ({ value: g.id, label: g.name })),
+  ];
+
+  // Common device types for quick selection
+  const deviceTypeOptions = [
+    { value: "", label: "Select or type custom..." },
+    { value: "Router", label: "Router" },
+    { value: "Switch", label: "Switch" },
+    { value: "Firewall", label: "Firewall" },
+    { value: "Access Point", label: "Access Point" },
+    { value: "Server", label: "Server" },
+    { value: "Storage", label: "Storage" },
+    { value: "Load Balancer", label: "Load Balancer" },
+    { value: "UPS", label: "UPS" },
+    { value: "PDU", label: "PDU" },
+    { value: "Other", label: "Other" },
+  ];
 
   const statusMap = {
     up: "success",
@@ -190,6 +289,28 @@ export function NPMDeviceDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" onClick={openSettingsModal}>
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            Settings
+          </Button>
           <Button variant="outline" onClick={openPollModal}>
             <svg
               className="mr-2 h-4 w-4"
@@ -706,6 +827,237 @@ export function NPMDeviceDetailPage() {
                   </Button>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Device Settings Modal */}
+      {showSettingsModal && selectedDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <CardContent className="pt-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Device Settings
+              </h2>
+              <form onSubmit={handleSaveSettings} className="space-y-4">
+                <Input
+                  label="Device Name"
+                  value={deviceSettings.name}
+                  onChange={(e) =>
+                    setDeviceSettings({
+                      ...deviceSettings,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder="e.g., Core Router 1"
+                  required
+                />
+
+                {/* Device Properties Section */}
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Device Properties
+                  </p>
+                  <div className="space-y-3">
+                    <Select
+                      label="Device Type"
+                      value={
+                        deviceTypeOptions.some(
+                          (opt) => opt.value === deviceSettings.deviceType,
+                        )
+                          ? deviceSettings.deviceType
+                          : ""
+                      }
+                      onChange={(e) =>
+                        setDeviceSettings({
+                          ...deviceSettings,
+                          deviceType: e.target.value,
+                        })
+                      }
+                      options={deviceTypeOptions}
+                    />
+                    {!deviceTypeOptions.some(
+                      (opt) => opt.value === deviceSettings.deviceType,
+                    ) &&
+                      deviceSettings.deviceType && (
+                        <p className="text-xs text-silver-400">
+                          Current: {deviceSettings.deviceType} (custom type from
+                          SNMP)
+                        </p>
+                      )}
+                    <Input
+                      label="Vendor"
+                      value={deviceSettings.vendor}
+                      onChange={(e) =>
+                        setDeviceSettings({
+                          ...deviceSettings,
+                          vendor: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Cisco, Juniper, Arista"
+                    />
+                    <Input
+                      label="Model"
+                      value={deviceSettings.model}
+                      onChange={(e) =>
+                        setDeviceSettings({
+                          ...deviceSettings,
+                          model: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Catalyst 9300, EX4300"
+                    />
+                    <Select
+                      label="Device Group"
+                      value={deviceSettings.groupId}
+                      onChange={(e) =>
+                        setDeviceSettings({
+                          ...deviceSettings,
+                          groupId: e.target.value,
+                        })
+                      }
+                      options={groupOptions}
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Polling Methods
+                  </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="settingsPollIcmp"
+                        checked={deviceSettings.pollIcmp}
+                        onChange={(e) =>
+                          setDeviceSettings({
+                            ...deviceSettings,
+                            pollIcmp: e.target.checked,
+                          })
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="settingsPollIcmp"
+                        className="text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        ICMP Ping (reachability check)
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="settingsPollSnmp"
+                        checked={deviceSettings.pollSnmp}
+                        onChange={(e) =>
+                          setDeviceSettings({
+                            ...deviceSettings,
+                            pollSnmp: e.target.checked,
+                          })
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="settingsPollSnmp"
+                        className="text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        SNMPv3 (performance metrics: CPU, memory, interfaces)
+                      </label>
+                    </div>
+                  </div>
+                  {!deviceSettings.pollIcmp && !deviceSettings.pollSnmp && (
+                    <p className="mt-2 text-xs text-red-600">
+                      At least one polling method must be enabled
+                    </p>
+                  )}
+                </div>
+
+                {/* SNMPv3 Settings */}
+                {deviceSettings.pollSnmp && (
+                  <div className="border-t pt-4 mt-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      SNMPv3 Settings
+                    </p>
+                    <div className="space-y-3">
+                      <Select
+                        label="SNMPv3 Credential"
+                        value={deviceSettings.snmpv3CredentialId}
+                        onChange={(e) =>
+                          setDeviceSettings({
+                            ...deviceSettings,
+                            snmpv3CredentialId: e.target.value,
+                          })
+                        }
+                        options={credentialOptions}
+                      />
+                      {!deviceSettings.snmpv3CredentialId && (
+                        <p className="text-xs text-amber-600">
+                          An SNMPv3 credential is required for SNMP polling.{" "}
+                          <a
+                            href="/npm/credentials"
+                            className="underline hover:text-amber-700"
+                          >
+                            Create one
+                          </a>{" "}
+                          if you haven't yet.
+                        </p>
+                      )}
+                      <Input
+                        label="SNMP Port"
+                        type="number"
+                        value={deviceSettings.snmpPort}
+                        onChange={(e) =>
+                          setDeviceSettings({
+                            ...deviceSettings,
+                            snmpPort: e.target.value,
+                          })
+                        }
+                        placeholder="161"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t pt-4 mt-4">
+                  <Input
+                    label="Poll Interval (seconds)"
+                    type="number"
+                    value={deviceSettings.pollInterval}
+                    onChange={(e) =>
+                      setDeviceSettings({
+                        ...deviceSettings,
+                        pollInterval: e.target.value,
+                      })
+                    }
+                    placeholder="60"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSettingsModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={isSavingSettings}
+                    disabled={
+                      !deviceSettings.name ||
+                      (!deviceSettings.pollIcmp && !deviceSettings.pollSnmp) ||
+                      (deviceSettings.pollSnmp &&
+                        !deviceSettings.snmpv3CredentialId)
+                    }
+                  >
+                    Save Settings
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>

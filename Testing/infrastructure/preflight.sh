@@ -6,6 +6,16 @@
 
 set -uo pipefail
 
+# Source .env if it exists (for custom port configurations)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    # Export only specific variables to avoid conflicts
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+fi
+
 # Configuration
 COMPOSE_PROJECT="${COMPOSE_PROJECT:-netnynja}"
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
@@ -23,7 +33,7 @@ VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
 VICTORIA_HOST="${VICTORIA_HOST:-localhost}"
 VICTORIA_PORT="${VICTORIA_PORT:-8428}"
 GATEWAY_URL="${GATEWAY_URL:-http://localhost:3001}"
-GRAFANA_PORT="${GRAFANA_PORT:-3000}"
+GRAFANA_PORT="${GRAFANA_PORT:-3002}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -418,13 +428,13 @@ check_nats() {
         section_failures+="JetStream disabled; "
     fi
     
-    # Check expected streams
+    # Check expected streams (matching actual service stream names)
+    # Services create: IPAM, NPM_METRICS, STIG
+    # Optional shared streams: SHARED_ALERTS, SHARED_AUDIT (created by setup script if needed)
     local EXPECTED_STREAMS=(
-        "IPAM_DISCOVERY"
+        "IPAM"
         "NPM_METRICS"
-        "STIG_AUDIT"
-        "SHARED_ALERTS"
-        "SHARED_AUDIT"
+        "STIG"
     )
     
     log_test "JetStream streams"
@@ -674,8 +684,11 @@ check_observability() {
     
     # Check for traces from NetNynja services
     log_test "Traces from NetNynja services"
-    local services=$(curl -sf "http://localhost:16686/api/services" 2>/dev/null | grep -c "netnynja" || echo "0")
-    
+    local services=$(curl -sf "http://localhost:16686/api/services" 2>/dev/null | grep -c "netnynja" 2>/dev/null | tr -d '\n' || echo "0")
+    # Ensure we have a valid integer (default to 0 if empty or non-numeric)
+    services=${services:-0}
+    [[ ! "$services" =~ ^[0-9]+$ ]] && services=0
+
     if [ "$services" -gt 0 ]; then
         echo -e "${GREEN}✓${NC} $services services traced"
         ((PASSED++))

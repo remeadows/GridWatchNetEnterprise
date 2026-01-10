@@ -1,23 +1,24 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { useAuthStore } from '../stores/auth';
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "../stores/auth";
 
 export const api = axios.create({
-  baseURL: '',
+  baseURL: "",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
+  withCredentials: true, // Enable cookies for all requests (for refresh token HttpOnly cookie)
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const { tokens } = useAuthStore.getState();
-    if (tokens?.accessToken) {
-      config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor for token refresh
@@ -36,20 +37,20 @@ api.interceptors.response.use(
 
       try {
         await useAuthStore.getState().refreshTokens();
-        const { tokens } = useAuthStore.getState();
+        const { accessToken } = useAuthStore.getState();
 
-        if (tokens?.accessToken) {
-          originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+        if (accessToken) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         }
       } catch {
         await useAuthStore.getState().logout();
-        window.location.href = '/login';
+        window.location.href = "/login";
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

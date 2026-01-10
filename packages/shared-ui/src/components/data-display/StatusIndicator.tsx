@@ -11,19 +11,19 @@ export interface StatusIndicatorProps {
 }
 
 const statusColors: Record<StatusType, string> = {
-  success: "bg-green-500",
-  warning: "bg-yellow-500",
-  error: "bg-red-500",
-  info: "bg-blue-500",
-  neutral: "bg-gray-400 dark:bg-gray-500",
+  success: "bg-success-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]",
+  warning: "bg-warning-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]",
+  error: "bg-error-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]",
+  info: "bg-primary-500 shadow-[0_0_8px_rgba(0,212,255,0.5)]",
+  neutral: "bg-silver-500",
 };
 
 const statusTextColors: Record<StatusType, string> = {
-  success: "text-green-700 dark:text-green-400",
-  warning: "text-yellow-700 dark:text-yellow-400",
-  error: "text-red-700 dark:text-red-400",
-  info: "text-blue-700 dark:text-blue-400",
-  neutral: "text-gray-600 dark:text-gray-300",
+  success: "text-success-400",
+  warning: "text-warning-400",
+  error: "text-error-400",
+  info: "text-primary-400",
+  neutral: "text-silver-300",
 };
 
 const sizeClasses = {

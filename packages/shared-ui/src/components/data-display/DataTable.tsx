@@ -30,12 +30,16 @@ export interface DataTableProps<TData> {
    * uses these IDs instead of row indices, which fixes selection issues
    * when the table is filtered, sorted, or paginated. */
   getRowId?: (originalRow: TData, index: number) => string;
+  /** Show page size selector with options to show more rows at once */
+  showPageSizeSelector?: boolean;
+  /** Available page size options */
+  pageSizeOptions?: number[];
 }
 
 export function DataTable<TData>({
   columns,
   data,
-  pageSize = 10,
+  pageSize: initialPageSize = 10,
   searchable = false,
   searchPlaceholder = "Search...",
   onRowClick,
@@ -44,12 +48,15 @@ export function DataTable<TData>({
   rowSelection,
   onRowSelectionChange,
   getRowId,
+  showPageSizeSelector = false,
+  pageSizeOptions = [10, 25, 50, 100],
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [pageSize, setPageSize] = React.useState(initialPageSize);
   const [internalRowSelection, setInternalRowSelection] =
     React.useState<RowSelectionState>({});
 
@@ -91,10 +98,15 @@ export function DataTable<TData>({
     },
     initialState: {
       pagination: {
-        pageSize,
+        pageSize: initialPageSize,
       },
     },
   });
+
+  // Update page size when it changes
+  React.useEffect(() => {
+    table.setPageSize(pageSize);
+  }, [pageSize, table]);
 
   return (
     <div className="space-y-4">
@@ -105,23 +117,23 @@ export function DataTable<TData>({
             placeholder={searchPlaceholder}
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+            className="max-w-sm rounded-md border border-dark-600 bg-dark-800 px-3 py-2 text-sm text-silver-100 placeholder:text-silver-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-900 transition-shadow focus:shadow-[0_0_10px_rgba(0,212,255,0.3)]"
           />
         </div>
       )}
 
-      <div className="rounded-md border border-gray-200 dark:border-gray-700">
+      <div className="rounded-md border border-dark-700">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800">
+          <thead className="bg-dark-800">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     className={cn(
-                      "px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300",
+                      "px-4 py-3 text-left font-medium text-silver-300",
                       header.column.getCanSort() &&
-                        "cursor-pointer select-none",
+                        "cursor-pointer select-none hover:text-primary-400",
                     )}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -169,16 +181,16 @@ export function DataTable<TData>({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y divide-dark-700">
             {loading ? (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-8 text-center text-gray-500"
+                  className="px-4 py-8 text-center text-silver-400"
                 >
                   <div className="flex items-center justify-center gap-2">
                     <svg
-                      className="h-5 w-5 animate-spin"
+                      className="h-5 w-5 animate-spin text-primary-500"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -204,7 +216,7 @@ export function DataTable<TData>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                  className="px-4 py-8 text-center text-silver-400"
                 >
                   {emptyMessage}
                 </td>
@@ -214,17 +226,14 @@ export function DataTable<TData>({
                 <tr
                   key={row.id}
                   className={cn(
-                    "bg-white dark:bg-gray-900",
+                    "bg-dark-900",
                     onRowClick &&
-                      "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800",
+                      "cursor-pointer hover:bg-dark-800 transition-colors",
                   )}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3 text-gray-900 dark:text-gray-100"
-                    >
+                    <td key={cell.id} className="px-4 py-3 text-silver-100">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -238,16 +247,38 @@ export function DataTable<TData>({
         </table>
       </div>
 
-      {table.getPageCount() > 1 && (
+      {(table.getPageCount() > 1 || showPageSizeSelector) && (
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {table.getState().pagination.pageIndex * pageSize + 1} to{" "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * pageSize,
-              data.length,
-            )}{" "}
-            of {data.length} results
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-silver-400">
+              Showing {table.getState().pagination.pageIndex * pageSize + 1} to{" "}
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) * pageSize,
+                data.length,
+              )}{" "}
+              of {data.length} results
+            </span>
+            {showPageSizeSelector && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-silver-400">Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPageSize(value === "all" ? data.length : Number(value));
+                  }}
+                  className="rounded-md border border-dark-600 bg-dark-800 px-2 py-1 text-sm text-silver-200"
+                >
+                  {pageSizeOptions.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                  <option value="all">All</option>
+                </select>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

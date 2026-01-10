@@ -15,6 +15,22 @@ from ..models.metrics import (
 logger = get_logger(__name__)
 
 
+def escape_label_value(value: str) -> str:
+    """Escape a Prometheus label value.
+
+    Per Prometheus text format spec, label values can contain any Unicode characters.
+    Backslash, double-quote, and line feed must be escaped.
+    """
+    if not value:
+        return ""
+    return (
+        value
+        .replace("\\", "\\\\")  # Backslash must be escaped first
+        .replace('"', '\\"')    # Double quotes must be escaped
+        .replace("\n", "\\n")   # Newlines must be escaped
+    )
+
+
 class MetricsService:
     """Service for pushing and querying metrics from VictoriaMetrics."""
 
@@ -35,13 +51,17 @@ class MetricsService:
         """Push device metrics to VictoriaMetrics."""
         timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
 
+        # Escape label values to prevent metric format corruption
+        safe_device_id = escape_label_value(device_id)
+        safe_device_name = escape_label_value(device_name)
+
         metric_lines = [
-            f'npm_device_cpu_utilization{{device_id="{device_id}",device_name="{device_name}"}} {metrics.cpu_utilization or 0} {timestamp}',
-            f'npm_device_memory_utilization{{device_id="{device_id}",device_name="{device_name}"}} {metrics.memory_utilization or 0} {timestamp}',
-            f'npm_device_uptime_seconds{{device_id="{device_id}",device_name="{device_name}"}} {metrics.uptime_seconds or 0} {timestamp}',
-            f'npm_device_interfaces_total{{device_id="{device_id}",device_name="{device_name}"}} {metrics.interface_count} {timestamp}',
-            f'npm_device_interfaces_up{{device_id="{device_id}",device_name="{device_name}"}} {metrics.interface_up_count} {timestamp}',
-            f'npm_device_interfaces_down{{device_id="{device_id}",device_name="{device_name}"}} {metrics.interface_down_count} {timestamp}',
+            f'npm_device_cpu_utilization{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.cpu_utilization or 0} {timestamp}',
+            f'npm_device_memory_utilization{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.memory_utilization or 0} {timestamp}',
+            f'npm_device_uptime_seconds{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.uptime_seconds or 0} {timestamp}',
+            f'npm_device_interfaces_total{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.interface_count} {timestamp}',
+            f'npm_device_interfaces_up{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.interface_up_count} {timestamp}',
+            f'npm_device_interfaces_down{{device_id="{safe_device_id}",device_name="{safe_device_name}"}} {metrics.interface_down_count} {timestamp}',
         ]
 
         try:
@@ -65,13 +85,18 @@ class MetricsService:
         """Push interface metrics to VictoriaMetrics."""
         timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
 
+        # Escape label values to prevent metric format corruption
+        safe_interface_id = escape_label_value(interface_id)
+        safe_device_id = escape_label_value(device_id)
+        safe_interface_name = escape_label_value(interface_name)
+
         metric_lines = [
-            f'npm_interface_in_octets{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.in_octets} {timestamp}',
-            f'npm_interface_out_octets{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.out_octets} {timestamp}',
-            f'npm_interface_in_errors{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.in_errors} {timestamp}',
-            f'npm_interface_out_errors{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.out_errors} {timestamp}',
-            f'npm_interface_in_utilization{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.in_utilization_pct} {timestamp}',
-            f'npm_interface_out_utilization{{interface_id="{interface_id}",device_id="{device_id}",interface_name="{interface_name}"}} {metrics.out_utilization_pct} {timestamp}',
+            f'npm_interface_in_octets{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.in_octets} {timestamp}',
+            f'npm_interface_out_octets{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.out_octets} {timestamp}',
+            f'npm_interface_in_errors{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.in_errors} {timestamp}',
+            f'npm_interface_out_errors{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.out_errors} {timestamp}',
+            f'npm_interface_in_utilization{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.in_utilization_pct} {timestamp}',
+            f'npm_interface_out_utilization{{interface_id="{safe_interface_id}",device_id="{safe_device_id}",interface_name="{safe_interface_name}"}} {metrics.out_utilization_pct} {timestamp}',
         ]
 
         try:
@@ -93,7 +118,7 @@ class MetricsService:
         step: str = "1m",
     ) -> MetricSeries:
         """Query metric history from VictoriaMetrics."""
-        label_str = ",".join(f'{k}="{v}"' for k, v in labels.items())
+        label_str = ",".join(f'{k}="{escape_label_value(v)}"' for k, v in labels.items())
         query = f'{metric_name}{{{label_str}}}'
 
         try:

@@ -1,16 +1,26 @@
--- Seed default admin user
--- Username: Admin
--- Password: admin123
+-- Seed admin user template
+-- ================================================================
+-- SECURITY WARNING: Do NOT use default passwords in production!
+-- ================================================================
+--
+-- This template shows the required INSERT statement.
+-- Replace PLACEHOLDER_HASH with a securely generated Argon2id hash.
+--
+-- To generate a secure password hash, run:
+--   npx tsx scripts/generate-password-hash.ts <your-secure-password>
+--
+-- Example (DO NOT USE - generate your own):
+--   INSERT INTO shared.users (username, email, password_hash, role, is_active)
+--   VALUES (
+--       'admin',
+--       'admin@yourdomain.com',
+--       '<YOUR_ARGON2ID_HASH_HERE>',
+--       'admin',
+--       true
+--   );
+--
+-- For development, use environment variable ADMIN_PASSWORD_HASH or run:
+--   docker compose exec gateway npx tsx /app/scripts/create-admin.ts
 
-INSERT INTO shared.users (username, email, password_hash, role, is_active)
-VALUES (
-    'Admin',
-    'admin@netnynja.local',
-    '$argon2id$v=19$m=65536,t=3,p=4$FUHIbYhlF0fAmDkKKrwx1w$223Jm8aGdTeNTEnKR/shIuhw7tqeADcUIxSJtMoVkhU',
-    'admin',
-    true
-)
-ON CONFLICT (username) DO UPDATE SET
-    password_hash = '$argon2id$v=19$m=65536,t=3,p=4$FUHIbYhlF0fAmDkKKrwx1w$223Jm8aGdTeNTEnKR/shIuhw7tqeADcUIxSJtMoVkhU',
-    role = 'admin',
-    is_active = true;
+-- This file is intentionally a template only.
+-- Production deployments MUST use environment-based admin creation.

@@ -1,11 +1,11 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User, AuthTokens } from '@netnynja/shared-types';
-import { api } from '../lib/api';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { User, AuthTokens } from "@netnynja/shared-types";
+import { api } from "../lib/api";
 
 interface AuthState {
   user: User | null;
-  tokens: AuthTokens | null;
+  accessToken: string | null; // Only store access token in memory/localStorage
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -19,7 +19,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      tokens: null,
+      accessToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -29,17 +29,23 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post<{
             data: { user: User; tokens: AuthTokens };
-          }>('/api/v1/auth/login', { username, password });
+          }>(
+            "/api/v1/auth/login",
+            { username, password },
+            {
+              withCredentials: true, // Enable cookies
+            },
+          );
 
           const { user, tokens } = response.data.data;
           set({
             user,
-            tokens,
+            accessToken: tokens.accessToken,
             isAuthenticated: true,
             isLoading: false,
           });
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Login failed';
+          const message = err instanceof Error ? err.message : "Login failed";
           set({ error: message, isLoading: false });
           throw err;
         }
@@ -47,37 +53,39 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          const { tokens } = get();
-          if (tokens?.refreshToken) {
-            await api.post('/api/v1/auth/logout', {
-              refreshToken: tokens.refreshToken,
-            });
-          }
+          // Logout - server will clear refresh token cookie
+          await api.post(
+            "/api/v1/auth/logout",
+            {},
+            {
+              withCredentials: true,
+            },
+          );
         } catch {
           // Ignore logout errors
         } finally {
           set({
             user: null,
-            tokens: null,
+            accessToken: null,
             isAuthenticated: false,
           });
         }
       },
 
       checkAuth: async () => {
-        const { tokens } = get();
-        if (!tokens?.accessToken) {
+        const { accessToken } = get();
+        if (!accessToken) {
           set({ isAuthenticated: false });
           return;
         }
 
         try {
           const response = await api.get<{ data: { user: User } }>(
-            '/api/v1/auth/me'
+            "/api/v1/auth/me",
           );
           set({ user: response.data.data.user, isAuthenticated: true });
         } catch {
-          // Token expired or invalid
+          // Token expired or invalid - try refresh
           const { refreshTokens, logout } = get();
           try {
             await refreshTokens();
@@ -88,35 +96,35 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refreshTokens: async () => {
-        const { tokens } = get();
-        if (!tokens?.refreshToken) {
-          throw new Error('No refresh token');
-        }
-
         try {
+          // Refresh token is sent automatically via HttpOnly cookie
           const response = await api.post<{
             data: { tokens: AuthTokens };
-          }>('/api/v1/auth/refresh', {
-            refreshToken: tokens.refreshToken,
-          });
+          }>(
+            "/api/v1/auth/refresh",
+            {},
+            {
+              withCredentials: true, // Send refresh token cookie
+            },
+          );
 
           set({
-            tokens: response.data.data.tokens,
+            accessToken: response.data.data.tokens.accessToken,
             isAuthenticated: true,
           });
         } catch (err) {
-          set({ tokens: null, isAuthenticated: false });
+          set({ accessToken: null, isAuthenticated: false });
           throw err;
         }
       },
     }),
     {
-      name: 'netnynja-auth',
+      name: "netnynja-auth",
       partialize: (state) => ({
-        tokens: state.tokens,
+        accessToken: state.accessToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );

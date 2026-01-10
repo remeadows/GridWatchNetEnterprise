@@ -40,24 +40,47 @@ class NATSHandler:
     async def connect(self) -> None:
         """Connect to NATS server."""
         try:
-            self.nc = await nats.connect(settings.nats_url)
+            # Build connection options
+            connect_opts: dict = {"servers": settings.nats_url}
+
+            # Add authentication if configured
+            if settings.nats_user and settings.nats_password:
+                connect_opts["user"] = settings.nats_user
+                connect_opts["password"] = settings.nats_password
+                logger.info("nats_auth_enabled", user=settings.nats_user)
+
+            # Add TLS if configured
+            if settings.nats_tls_enabled:
+                import ssl
+                tls_ctx = ssl.create_default_context()
+                if settings.nats_tls_ca:
+                    tls_ctx.load_verify_locations(settings.nats_tls_ca)
+                connect_opts["tls"] = tls_ctx
+                logger.info("nats_tls_enabled")
+
+            self.nc = await nats.connect(**connect_opts)
             self.js = self.nc.jetstream()
 
-            # Ensure stream exists
+            # Ensure stream exists or update it
             try:
-                await self.js.stream_info(STREAM_NAME)
+                stream_info = await self.js.stream_info(STREAM_NAME)
+                logger.info("stream_exists", stream=STREAM_NAME, subjects=stream_info.config.subjects)
             except nats.js.errors.NotFoundError:
                 logger.info("creating_jetstream_stream", stream=STREAM_NAME)
-                await self.js.add_stream(
-                    name=STREAM_NAME,
-                    subjects=[
-                        "ipam.scan.*",
-                        "ipam.discovery.*",
-                    ],
-                    retention="limits",
-                    max_msgs=100000,
-                    max_age=86400 * 7,  # 7 days
-                )
+                try:
+                    await self.js.add_stream(
+                        name=STREAM_NAME,
+                        subjects=[
+                            "ipam.scan.*",
+                            "ipam.discovery.*",
+                        ],
+                        retention="limits",
+                        max_msgs=100000,
+                        max_age=86400 * 7,  # 7 days
+                    )
+                except nats.js.errors.BadRequestError as e:
+                    # Stream might exist with overlapping subjects from another service
+                    logger.warning("stream_creation_conflict", error=str(e))
 
             logger.info("nats_connected", url=settings.nats_url)
         except Exception as e:
@@ -235,3 +258,32 @@ class NATSHandler:
             SUBJECT_DISCOVERY,
             json.dumps(data).encode(),
         )
+
+
+async def main() -> None:
+    """Main entry point for running the NATS handler as a standalone service."""
+    from ..core.logging import configure_logging
+    from ..db import init_db, close_db
+
+    configure_logging()
+    logger.info("starting_ipam_scanner_service")
+
+    await init_db()
+
+    handler = NATSHandler()
+    await handler.connect()
+    await handler.start_consumers()
+
+    try:
+        # Keep running until interrupted
+        while True:
+            await asyncio.sleep(3600)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("shutting_down_ipam_scanner")
+    finally:
+        await handler.disconnect()
+        await close_db()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

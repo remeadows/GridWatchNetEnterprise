@@ -18,8 +18,19 @@ logger = get_logger(__name__)
 
 
 def _row_to_dict(row: Any) -> dict[str, Any]:
-    """Convert asyncpg Record to dictionary."""
-    return dict(row) if row else {}
+    """Convert asyncpg Record to dictionary with type conversions."""
+    if not row:
+        return {}
+    result = dict(row)
+    # Convert UUID to string for Pydantic models
+    if "id" in result and isinstance(result["id"], UUID):
+        result["id"] = str(result["id"])
+    # Strip CIDR notation from IP address (PostgreSQL inet type returns /32)
+    if "ip_address" in result and result["ip_address"]:
+        ip = result["ip_address"]
+        if "/" in ip:
+            result["ip_address"] = ip.split("/")[0]
+    return result
 
 
 class DeviceRepository:

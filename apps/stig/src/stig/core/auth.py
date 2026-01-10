@@ -42,7 +42,8 @@ def verify_token(token: str) -> UserContext:
             token,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
-            options={"verify_aud": False},
+            audience=settings.jwt_audience,
+            issuer=settings.jwt_issuer,
         )
 
         user_id = payload.get("sub")

@@ -868,9 +868,9 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
           const newIcmpStatus = pingResult.success ? "up" : "down";
           await pool.query(
             `UPDATE npm.devices
-             SET icmp_status = $1, last_icmp_poll = NOW(),
+             SET icmp_status = $1::varchar, last_icmp_poll = NOW(),
                  status = CASE
-                   WHEN $1 = 'up' THEN 'up'
+                   WHEN $1::varchar = 'up' THEN 'up'
                    WHEN snmp_status = 'up' THEN 'up'
                    ELSE 'down'
                  END,
@@ -883,7 +883,7 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
           const isReachable = pingResult.success === true;
           await pool.query(
             `INSERT INTO npm.device_metrics (device_id, icmp_latency_ms, icmp_reachable, is_available, collected_at)
-             VALUES ($1, $2, $3::boolean, $4::boolean, NOW())`,
+             VALUES ($1, $2, $3, $4, NOW())`,
             [id, pingResult.latencyMs || null, isReachable, isReachable],
           );
         } catch (err) {

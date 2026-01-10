@@ -123,28 +123,37 @@ class TestDeviceManagement:
         authed_client: httpx.AsyncClient
     ):
         """POST /api/v1/npm/devices creates a monitored device."""
+        # API uses camelCase field names
         response = await authed_client.post(
             "/api/v1/npm/devices",
             json={
-                "hostname": "e2e-test-router",
-                "ip_address": "10.255.255.10",
-                "device_type": "router",
+                "name": "e2e-test-router",
+                "ipAddress": "10.255.255.10",
+                "deviceType": "router",
                 "vendor": "cisco",
                 "model": "test",
-                "snmp_community": "public",
-                "snmp_version": "2c",
+                "snmpCommunity": "public",
+                "snmpVersion": "2c",
                 "enabled": False
             }
         )
-        
+
         assert response.status_code in (200, 201)
         data = response.json()
-        
-        assert "id" in data
-        assert data["hostname"] == "e2e-test-router"
-        
+
+        # Response may wrap in 'data' or 'device'
+        if "data" in data:
+            device_data = data["data"]
+        elif "device" in data:
+            device_data = data["device"]
+        else:
+            device_data = data
+
+        assert "id" in device_data
+        assert device_data.get("name") == "e2e-test-router"
+
         # Cleanup
-        await authed_client.delete(f"/api/v1/npm/devices/{data['id']}")
+        await authed_client.delete(f"/api/v1/npm/devices/{device_data['id']}")
     
     async def test_get_device(
         self,
@@ -155,12 +164,14 @@ class TestDeviceManagement:
         response = await authed_client.get(
             f"/api/v1/npm/devices/{test_device['id']}"
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
-        assert data["id"] == test_device["id"]
-        assert data["hostname"] == test_device["hostname"]
+        # Handle wrapped response
+        device = data.get("data", data.get("device", data))
+
+        assert device["id"] == test_device["id"]
+        assert device.get("name") == test_device.get("name")
     
     async def test_update_device(
         self,
@@ -168,22 +179,14 @@ class TestDeviceManagement:
         test_device
     ):
         """PATCH /api/v1/npm/devices/{id} updates device."""
+        # API uses PATCH for partial updates with camelCase field names
         response = await authed_client.patch(
             f"/api/v1/npm/devices/{test_device['id']}",
             json={
-                "description": "Updated by E2E test"
+                "vendor": "updated-vendor"
             }
         )
-        
-        if response.status_code == 405:
-            response = await authed_client.put(
-                f"/api/v1/npm/devices/{test_device['id']}",
-                json={
-                    **test_device,
-                    "description": "Updated by E2E test"
-                }
-            )
-        
+
         assert response.status_code == 200
     
     async def test_delete_device(
@@ -191,25 +194,28 @@ class TestDeviceManagement:
         authed_client: httpx.AsyncClient
     ):
         """DELETE /api/v1/npm/devices/{id} removes device."""
-        # Create device to delete
+        # Create device to delete - API uses camelCase
         create_response = await authed_client.post(
             "/api/v1/npm/devices",
             json={
-                "hostname": "e2e-delete-test",
-                "ip_address": "10.255.255.99",
-                "device_type": "switch",
+                "name": "e2e-delete-test",
+                "ipAddress": "10.255.255.99",
+                "deviceType": "switch",
+                "snmpVersion": "2c",
                 "enabled": False
             }
         )
-        device_id = create_response.json()["id"]
-        
+        data = create_response.json()
+        device = data.get("data", data.get("device", data))
+        device_id = device["id"]
+
         # Delete
         delete_response = await authed_client.delete(
             f"/api/v1/npm/devices/{device_id}"
         )
-        
+
         assert delete_response.status_code in (200, 204)
-        
+
         # Verify gone
         get_response = await authed_client.get(
             f"/api/v1/npm/devices/{device_id}"

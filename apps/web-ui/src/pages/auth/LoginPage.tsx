@@ -1,28 +1,43 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, Input, Alert } from '@netnynja/shared-ui';
-import { useAuthStore } from '../../stores/auth';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button, Input, Alert } from "@netnynja/shared-ui";
+import { useAuthStore } from "../../stores/auth";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, isLoading, error } = useAuthStore();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       await login(username, password);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch {
       // Error is handled in store
     }
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <h2 className="mb-6 text-center text-2xl font-semibold text-gray-900 dark:text-white">
+    <div className="cyber-card p-8">
+      {/* Logo and Brand */}
+      <div className="mb-8 flex flex-col items-center">
+        <img
+          src="/assets/NetNNJA2.jpg"
+          alt="NetNynja Logo"
+          className="h-20 w-20 rounded-xl object-cover shadow-neon-blue"
+        />
+        <h1 className="mt-4 text-2xl font-bold text-primary-500">
+          NetNynja Enterprise
+        </h1>
+        <p className="mt-1 text-sm text-silver-400">
+          Network Management Platform
+        </p>
+      </div>
+
+      <h2 className="mb-6 text-center text-xl font-semibold text-white">
         Sign in to your account
       </h2>
 
@@ -57,6 +72,9 @@ export function LoginPage() {
           Sign in
         </Button>
       </form>
+
+      {/* Version info */}
+      <p className="mt-6 text-center text-xs text-silver-500">Version 0.2.1</p>
     </div>
   );
 }

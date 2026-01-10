@@ -35,6 +35,10 @@ class Settings(BaseSettings):
 
     # NATS
     nats_url: str = Field(default="nats://localhost:4222", alias="NATS_URL")
+    nats_user: str | None = Field(default=None, alias="NATS_USER")
+    nats_password: str | None = Field(default=None, alias="NATS_PASSWORD")
+    nats_tls_enabled: bool = Field(default=False, alias="NATS_TLS_ENABLED")
+    nats_tls_ca: str | None = Field(default=None, alias="NATS_TLS_CA")  # Path to CA cert
 
     # JWT
     jwt_secret: str | None = Field(default=None, alias="JWT_SECRET")

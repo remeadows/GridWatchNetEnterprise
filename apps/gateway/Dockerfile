@@ -14,8 +14,9 @@ RUN apk add --no-cache libc6-compat
 FROM base AS development
 WORKDIR /app
 
-# Install tsx globally for development
-RUN npm install -g tsx pino-pretty
+# Install nmap for network scanning and tsx globally for development
+RUN apk add --no-cache nmap nmap-scripts && \
+    npm install -g tsx pino-pretty
 
 # Copy package.json for deps reference
 COPY package.json ./

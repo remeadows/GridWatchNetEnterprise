@@ -37,6 +37,30 @@ NetNynja Enterprise consolidates four network management applications into a uni
 | Poetry    | 1.7+    | Python package manager          |
 | Git       | 2.40+   | With LF line endings configured |
 
+### Container Requirements
+
+The gateway container automatically includes:
+
+- **nmap 7.97+** - For IPAM network scanning and host discovery
+- **nmap-scripts** - For enhanced NMAP functionality
+
+These are pre-installed in the Docker image and require no manual setup.
+
+#### MAC Address Detection (Fingerprinting)
+
+**Important**: NMAP can only detect MAC addresses for hosts on the same Layer 2 network segment. By default, Docker containers run on a bridge network, which means they cannot see MAC addresses of hosts on your physical LAN.
+
+**To enable MAC address detection**:
+
+1. Edit `docker-compose.yml` and find the `gateway` service
+2. Uncomment `network_mode: host`
+3. Comment out the `networks:` and `ports:` sections for the gateway
+4. Rebuild and restart: `docker compose up -d --build gateway`
+
+**Note**: Host network mode is not supported on Docker Desktop for macOS/Windows. For full fingerprinting on these platforms, run the gateway natively (outside Docker) or use a Linux VM with host network access.
+
+**Hostname Detection**: Hostnames are resolved via DNS reverse lookup. Ensure your DNS server has PTR records configured for the IP addresses you're scanning, or they will appear empty.
+
 ---
 
 ### macOS Installation (Intel & Apple Silicon)
@@ -94,9 +118,16 @@ cp .env.example .env
 npm install
 poetry install
 
-# Start the platform
+# Build and start the platform
+docker compose build           # Build containers (includes nmap)
 docker compose --profile ipam --profile npm --profile stig up -d
 ```
+
+#### macOS-Specific Notes
+
+- **Apple Silicon**: Ensure Rosetta 2 is installed for x86 compatibility: `softwareupdate --install-rosetta`
+- **Network Access**: For NMAP fingerprinting to detect MAC addresses, Docker must have access to the host network
+- **Firewall**: If macOS firewall is enabled, allow Docker to accept incoming connections
 
 ---
 
@@ -179,7 +210,8 @@ Copy-Item .env.example .env
 npm install
 poetry install
 
-# Start the platform
+# Build and start the platform
+docker compose build           # Build containers (includes nmap)
 docker compose --profile ipam --profile npm --profile stig up -d
 ```
 
@@ -192,6 +224,8 @@ docker compose --profile ipam --profile npm --profile stig up -d
   # Run as Administrator
   Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1
   ```
+- **Docker Credential Store**: If Docker pulls fail with credential errors, remove `"credsStore": "desktop"` from `%USERPROFILE%\.docker\config.json`
+- **NMAP Scanning**: NMAP runs inside Docker containers, so no Windows-side installation is needed. For MAC address fingerprinting, ensure Docker Desktop network mode allows access to the target network segment.
 
 ---
 
@@ -302,7 +336,8 @@ cp .env.example .env
 npm install
 poetry install
 
-# Start the platform
+# Build and start the platform
+docker compose build           # Build containers (includes nmap)
 docker compose --profile ipam --profile npm --profile stig up -d
 ```
 
@@ -315,6 +350,12 @@ docker compose --profile ipam --profile npm --profile stig up -d
   ```
 - **SELinux**: Add `:Z` suffix to volume mounts if you encounter permission issues
 - **Resource Limits**: Check `ulimit -n` and increase if needed for large deployments
+- **NMAP Scanning**: NMAP is included in the gateway container. For NMAP to detect MAC addresses, the container must have network access to the target subnet (consider using `--network=host` in production)
+- **Firewall Zones**: If scanning external networks, ensure the Docker interface is in a trusted zone:
+  ```bash
+  sudo firewall-cmd --zone=trusted --add-interface=docker0 --permanent
+  sudo firewall-cmd --reload
+  ```
 
 ---
 
@@ -326,11 +367,17 @@ After completing the platform-specific installation above:
 # Navigate to project directory
 cd netnynja-enterprise
 
+# Build containers (required for NMAP support)
+docker compose build
+
 # Start all services
 docker compose --profile ipam --profile npm --profile stig up -d
 
 # Verify services are running
 docker compose ps
+
+# Verify NMAP is available (optional)
+docker exec netnynja-gateway nmap --version
 
 # View logs
 docker compose logs -f gateway
@@ -511,9 +558,11 @@ See `apps/gateway/tests/benchmarks/README.md` for detailed documentation.
 
 ### IPAM Module
 
-- Network scanning (ICMP, TCP, NMAP)
-- Host fingerprinting with OS detection (TTL-based)
-- Scan management (create, edit, delete, export PDF/CSV)
+- Network scanning (ICMP Ping, TCP Port Scan, NMAP Full Scan)
+- Multi-type scans (run Ping+TCP+NMAP simultaneously)
+- Host fingerprinting with OS detection (TTL-based), hostname resolution, MAC/vendor detection
+- NMAP integration with XML parsing for enhanced discovery
+- Scan management (create, view, delete, export PDF/CSV)
 - Add discovered hosts to NPM monitoring
 - Site designation for networks
 

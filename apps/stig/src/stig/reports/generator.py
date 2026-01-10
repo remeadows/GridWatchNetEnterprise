@@ -7,6 +7,7 @@ from pathlib import Path
 
 import nats
 from nats.js import JetStreamContext
+from nats.js.api import ConsumerConfig, DeliverPolicy, AckPolicy
 
 from ..core.config import settings
 from ..core.logging import configure_logging, get_logger
@@ -146,9 +147,16 @@ class ReportGenerator:
         self._running = True
 
         try:
-            sub = await self._js.subscribe(
+            # Use pull subscription which supports fetch()
+            sub = await self._js.pull_subscribe(
                 "stig.results.*",
                 durable="report-generator",
+                config=ConsumerConfig(
+                    deliver_policy=DeliverPolicy.ALL,
+                    ack_policy=AckPolicy.EXPLICIT,
+                    ack_wait=300,
+                    max_deliver=3,
+                ),
             )
 
             logger.info("report_consumer_started", subject="stig.results.*")
@@ -158,7 +166,7 @@ class ReportGenerator:
                     msgs = await sub.fetch(batch=1, timeout=5)
                     for msg in msgs:
                         await self._process_completion(msg)
-                except nats.errors.TimeoutError:
+                except asyncio.TimeoutError:
                     continue
                 except Exception as e:
                     logger.error("report_processing_error", error=str(e))

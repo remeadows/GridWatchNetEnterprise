@@ -1,10 +1,11 @@
 # NetNynja Enterprise - Project Status
 
 **Version**: 0.2.0
-**Last Updated**: 2026-01-09 13:30 EST
-**Current Phase**: Phase 8 - Cross-Platform Testing (In Progress)
-**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 95%
-**Issues**: 2 Open | 66 Resolved
+**Last Updated**: 2026-01-10 08:15 EST
+**Current Phase**: Phase 9 - CI/CD & Release (In Progress)
+**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 98%
+**Issues**: 12 Open (Security) | 75 Resolved
+**Security Posture**: Medium (Codex Review 2026-01-10)
 
 ---
 
@@ -26,8 +27,8 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | 5     | IPAM Migration            | ✅ Complete    | Week 13-15 |
 | 6     | NPM Integration           | ✅ Complete    | Week 16-18 |
 | 7     | STIG Manager Integration  | ✅ Complete    | Week 19-21 |
-| 8     | Cross-Platform Testing    | 🔄 In Progress | Week 22-24 |
-| 9     | CI/CD & Release           | ⬜ Not Started | Week 25-26 |
+| 8     | Cross-Platform Testing    | ✅ Complete    | Week 22-24 |
+| 9     | CI/CD & Release           | 🔄 In Progress | Week 25-26 |
 
 ---
 
@@ -581,23 +582,73 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 ### Objectives
 
-- [ ] GitHub Actions CI pipeline
-- [ ] Automated testing on all platforms
-- [ ] Container image building and scanning
-- [ ] Release tagging and changelog generation
-- [ ] Multi-platform Docker images (linux/amd64, linux/arm64)
+- [x] GitHub Actions CI pipeline
+- [x] Automated testing on all platforms
+- [x] Container image building and scanning
+- [x] Release tagging and changelog generation
+- [x] Multi-platform Docker images (linux/amd64, linux/arm64)
+
+### GitHub Actions Workflows
+
+| Workflow            | File                      | Triggers                  | Description                                 |
+| ------------------- | ------------------------- | ------------------------- | ------------------------------------------- |
+| Tests               | `test.yml`                | Push to main/develop, PRs | TypeScript and Python tests with coverage   |
+| Security Scan       | `security-scan.yml`       | Push, PRs                 | Trivy, CodeQL, npm audit, safety            |
+| Build Images        | `build-images.yml`        | Push, releases            | Multi-platform Docker builds (amd64, arm64) |
+| Release             | `release.yml`             | Version tags (v*.*.\*)    | Full release automation with changelog      |
+| Validate Workspaces | `validate-workspaces.yml` | Push                      | Cross-platform npm workspace validation     |
+| Validate Poetry     | `validate-poetry.yml`     | Push                      | Cross-platform Python validation            |
+
+### Release Process
+
+1. **Tag Creation**: Push a tag matching `v*.*.*` pattern
+2. **Tests**: All tests run automatically before release
+3. **Image Build**: Multi-platform images built for all 7 services
+4. **Security Scan**: Trivy scans all images for vulnerabilities
+5. **Release Creation**: GitHub release with auto-generated changelog
+6. **Artifact Upload**: Docker Compose bundle with checksums
+
+### Container Images
+
+Published to GitHub Container Registry (`ghcr.io/remeadows/`):
+
+| Image                   | Description            |
+| ----------------------- | ---------------------- |
+| `netnynja-gateway`      | Fastify API Gateway    |
+| `netnynja-web-ui`       | React Frontend         |
+| `netnynja-auth-service` | Authentication Service |
+| `netnynja-ipam`         | IPAM Python Service    |
+| `netnynja-npm`          | NPM Python Service     |
+| `netnynja-stig`         | STIG Python Service    |
+| `netnynja-syslog`       | Syslog Python Service  |
 
 ### Release Artifacts
 
-- [ ] Docker Compose bundle (development)
-- [ ] Helm charts (Kubernetes)
-- [ ] Platform-specific installers (optional)
+- [x] Docker Compose bundle (development)
+- [x] Helm charts (Kubernetes) - `charts/netnynja-enterprise/`
+- [ ] Platform-specific installers (deferred)
+
+### Helm Chart
+
+Located in `charts/netnynja-enterprise/`:
+
+| File                                | Description                      |
+| ----------------------------------- | -------------------------------- |
+| `Chart.yaml`                        | Chart metadata with dependencies |
+| `values.yaml`                       | Default configuration values     |
+| `templates/_helpers.tpl`            | Template helper functions        |
+| `templates/gateway-deployment.yaml` | Gateway deployment and service   |
+| `templates/web-ui-deployment.yaml`  | Web UI deployment and service    |
+| `templates/secrets.yaml`            | Database and JWT secrets         |
+| `templates/ingress.yaml`            | Optional ingress configuration   |
+| `templates/serviceaccount.yaml`     | Service account                  |
 
 ### Deliverables
 
-- [ ] Automated releases on tag push
-- [ ] Container images in registry
-- [ ] Documentation site deployed
+- [x] Automated releases on tag push
+- [x] Container images in registry (on release)
+- [x] Helm charts for Kubernetes deployment
+- [ ] Documentation site deployed (optional)
 
 ---
 
@@ -609,6 +660,51 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 | Cross-platform Docker differences | Medium     | Medium | Early testing, documented workarounds |
 | Performance regression            | Low        | High   | Benchmark suite, load testing         |
 | Authentication breaking changes   | Low        | High   | Feature flags, gradual rollout        |
+
+---
+
+## Security Review (Codex 2026-01-10)
+
+### Summary
+
+| Metric             | Value                      |
+| ------------------ | -------------------------- |
+| Security Posture   | Medium                     |
+| CI Readiness       | At-Risk                    |
+| Critical Issues    | 3 (SR-001, SR-002, SR-004) |
+| High/Medium Issues | 7                          |
+| Low Issues         | 2                          |
+
+### Top 5 Actions for CI Green Path
+
+1. **Remove default admin seed credentials** - Replace with bootstrap flow requiring explicit password
+2. **Fix Prettier failures on Helm templates** - Exclude from Prettier or use prettier-plugin-helm
+3. **Replace default encryption/JWT secrets** - Require non-default values at startup
+4. **Restrict /metrics endpoint** - Add auth or IP allowlist
+5. **Address npm audit highs** - Update react-router-dom and vite
+
+### Priority Timeline
+
+| Timeline | Actions                                                           |
+| -------- | ----------------------------------------------------------------- |
+| < 1 hour | Fix Helm formatting, remove seed password, lock down /metrics     |
+| Same day | Rotate encryption keys, enforce JWT aud/iss, upgrade dependencies |
+| Backlog  | NATS TLS/creds validation, reduce metrics cardinality             |
+
+### Security Checklist (Updated)
+
+- [ ] Default admin seed password removed (SR-001)
+- [ ] JWT_SECRET required in STIG config (SR-002)
+- [ ] JWT audience/issuer verification enabled (SR-003)
+- [ ] SNMPv3 encryption key required, per-record salt (SR-004)
+- [ ] NPM_CREDENTIAL_KEY required, per-instance salt (SR-005)
+- [ ] /metrics endpoint protected (SR-006)
+- [ ] Auth tokens moved to HttpOnly cookies (SR-007)
+- [ ] CORS allowlist required in production (SR-008)
+- [ ] NATS TLS/auth enforced for non-dev (SR-009)
+- [ ] Prometheus labels escaped, cardinality reduced (SR-010)
+- [ ] react-router-dom and vite upgraded (SR-011)
+- [ ] Helm templates excluded from Prettier (SR-012)
 
 ---
 
@@ -646,6 +742,56 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 ## Changelog
 
 ### [Unreleased]
+
+#### Session 2026-01-10: Codex Security Review
+
+**Security Review Completed:**
+
+- Codex security analysis identified 12 findings across Secrets, Auth, Crypto, Messaging, Observability, Dependencies, and CI categories
+- Security posture: Medium | CI readiness: At-risk
+- 3 Critical issues: Default admin seed credentials, hardcoded JWT secret, default encryption key
+- 7 High/Medium issues: JWT verification, CORS defaults, /metrics exposure, localStorage tokens
+- 2 Low issues: NATS TLS/auth, metrics label cardinality
+
+**Issues Added to Tracker (SR-001 through SR-012):**
+
+- SR-001: Default admin seed credentials in repo
+- SR-002: Hardcoded default JWT secret in STIG config
+- SR-003: JWT audience/issuer verification disabled in STIG
+- SR-004: Default encryption key + static salt for SNMPv3 credentials
+- SR-005: NPM crypto uses JWT_SECRET fallback with static salt
+- SR-006: Unauthenticated /metrics endpoint
+- SR-007: Auth tokens stored in localStorage (XSS vulnerable)
+- SR-008: CORS defaults to origin:true with credentials
+- SR-009: NATS connection lacks TLS/auth enforcement
+- SR-010: Prometheus metrics label escaping and cardinality
+- SR-011: npm audit: React Router XSS + esbuild advisory
+- SR-012: Prettier fails on Helm templates (CI blocker)
+
+#### Session 2026-01-10: Issue Fixes and Phase 9 CI/CD
+
+**Bug Fixes:**
+
+- Fixed #104: NPM Poll Now PostgreSQL parameter type error
+  - Created missing database tables (npm.device_metrics, npm.device_groups, npm.volumes, etc.)
+  - Added missing group_id column to npm.devices table
+  - Removed explicit ::boolean casts from INSERT statements
+  - Added ::varchar type hint to UPDATE CASE statement
+- Fixed #105: Intuitive SNMPv3 enablement in Device Properties
+  - Added "Settings" button to DeviceDetailPage with gear icon
+  - Created comprehensive Device Settings modal with polling method toggles
+  - SNMPv3 credential dropdown with link to create new credentials
+  - Poll interval and SNMP port configuration
+
+**Phase 9 - CI/CD & Release:**
+
+- Created `build-images.yml` workflow for multi-platform Docker builds
+- Created `release.yml` workflow for automated releases
+- Built Helm chart in `charts/netnynja-enterprise/` with:
+  - Gateway and Web UI deployments
+  - Secrets management
+  - Ingress configuration
+  - Bitnami subcharts for PostgreSQL, Redis, NATS
 
 #### Session 2026-01-09: Bug Fixes and Documentation
 

@@ -8,6 +8,7 @@ export { NPMDevicesPage as DevicesPage } from "./pages/DevicesPage";
 export { NPMDeviceDetailPage as DeviceDetailPage } from "./pages/DeviceDetailPage";
 export { NPMAlertsPage as AlertsPage } from "./pages/AlertsPage";
 export { SNMPv3CredentialsPage } from "./pages/SNMPv3CredentialsPage";
+export { DeviceGroupsPage } from "./pages/DeviceGroupsPage";
 
 // Module metadata
 export const npmModuleConfig = {

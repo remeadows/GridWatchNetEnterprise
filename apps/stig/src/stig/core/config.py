@@ -33,14 +33,20 @@ class Settings(BaseSettings):
 
     # NATS
     nats_url: str = Field(default="nats://localhost:4222", alias="NATS_URL")
+    nats_user: str | None = Field(default=None, alias="NATS_USER")
+    nats_password: str | None = Field(default=None, alias="NATS_PASSWORD")
+    nats_tls_enabled: bool = Field(default=False, alias="NATS_TLS_ENABLED")
+    nats_tls_ca: str | None = Field(default=None, alias="NATS_TLS_CA")  # Path to CA cert
 
     # Vault
     vault_addr: str = Field(default="http://localhost:8200", alias="VAULT_ADDR")
     vault_token: str | None = Field(default=None, alias="VAULT_TOKEN")
 
-    # JWT
-    jwt_secret: str = Field(default="dev-secret-change-in-production", alias="JWT_SECRET")
+    # JWT - MUST be set via environment variable in production
+    jwt_secret: str = Field(..., alias="JWT_SECRET")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    jwt_issuer: str = Field(default="netnynja-enterprise", alias="JWT_ISSUER")
+    jwt_audience: str = Field(default="netnynja-api", alias="JWT_AUDIENCE")
 
     # Audit settings
     default_ssh_timeout: int = Field(default=30, alias="SSH_TIMEOUT")

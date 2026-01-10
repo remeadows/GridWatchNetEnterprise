@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -23,18 +23,11 @@ const statusMap = {
   unknown: "neutral",
 } as const;
 
-// Extended device type that includes group info
-interface DeviceWithGroup extends Device {
-  groupId?: string | null;
-  groupName?: string | null;
-  groupColor?: string | null;
-}
-
 const getColumns = (
   showGroupColumn: boolean,
-  onPollClick: (device: DeviceWithGroup, e: React.MouseEvent) => void,
-): ColumnDef<DeviceWithGroup>[] => {
-  const baseColumns: ColumnDef<DeviceWithGroup>[] = [
+  onPollClick: (device: Device, e: React.MouseEvent) => void,
+): ColumnDef<Device>[] => {
+  const baseColumns: ColumnDef<Device>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -194,8 +187,7 @@ export function NPMDevicesPage() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showPollModal, setShowPollModal] = useState(false);
-  const [pollTargetDevice, setPollTargetDevice] =
-    useState<DeviceWithGroup | null>(null);
+  const [pollTargetDevice, setPollTargetDevice] = useState<Device | null>(null);
   const [pollMethods, setPollMethods] = useState<{
     icmp: boolean;
     snmp: boolean;
@@ -204,6 +196,10 @@ export function NPMDevicesPage() {
   const [isPolling, setIsPolling] = useState(false);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
+  const [viewMode, setViewMode] = useState<"grouped" | "flat">("grouped");
   const [newGroup, setNewGroup] = useState({
     name: "",
     description: "",
@@ -236,12 +232,55 @@ export function NPMDevicesPage() {
   // Filter devices by group
   const filteredDevices =
     selectedGroupFilter === "ungrouped"
-      ? (devices as DeviceWithGroup[]).filter((d) => !d.groupId)
+      ? devices.filter((d) => !d.groupId)
       : selectedGroupFilter
-        ? (devices as DeviceWithGroup[]).filter(
-            (d) => d.groupId === selectedGroupFilter,
-          )
-        : (devices as DeviceWithGroup[]);
+        ? devices.filter((d) => d.groupId === selectedGroupFilter)
+        : devices;
+
+  // Group devices by their group for collapsed view
+  const devicesByGroup = useMemo(() => {
+    const grouped = new Map<string | null, Device[]>();
+
+    // Initialize with all active groups (even if empty)
+    groups
+      .filter((g) => g.isActive)
+      .forEach((g) => {
+        grouped.set(g.id, []);
+      });
+    // Add ungrouped category
+    grouped.set(null, []);
+
+    // Distribute devices to their groups
+    devices.forEach((device) => {
+      const groupId = device.groupId || null;
+      const existing = grouped.get(groupId) || [];
+      grouped.set(groupId, [...existing, device]);
+    });
+
+    return grouped;
+  }, [devices, groups]);
+
+  // Toggle group collapse
+  const toggleGroupCollapse = (groupId: string | null) => {
+    const key = groupId || "ungrouped";
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  // Expand/collapse all groups
+  const expandAllGroups = () => setCollapsedGroups(new Set());
+  const collapseAllGroups = () => {
+    const allGroupIds = groups.map((g) => g.id);
+    allGroupIds.push("ungrouped");
+    setCollapsedGroups(new Set(allGroupIds));
+  };
 
   // Get selected device IDs
   // With getRowId={(row) => row.id}, the rowSelection keys are the actual device IDs
@@ -296,7 +335,7 @@ export function NPMDevicesPage() {
     }
   };
 
-  const openPollModal = (device: DeviceWithGroup, e?: React.MouseEvent) => {
+  const openPollModal = (device: Device, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -517,22 +556,62 @@ export function NPMDevicesPage() {
         </Card>
       </div>
 
-      {/* Group Filter and Bulk Actions */}
-      <div className="flex items-center gap-4">
-        <div className="w-64">
-          <Select
-            label=""
-            value={selectedGroupFilter}
-            onChange={(e) => {
-              setSelectedGroupFilter(e.target.value);
-              setRowSelection({});
-            }}
-            options={groupOptions}
-          />
+      {/* View Mode Toggle and Bulk Actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 rounded-lg bg-dark-800 p-1">
+            <button
+              onClick={() => setViewMode("grouped")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === "grouped"
+                  ? "bg-primary-600 text-white"
+                  : "text-silver-400 hover:text-silver-200"
+              }`}
+            >
+              Grouped
+            </button>
+            <button
+              onClick={() => setViewMode("flat")}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === "flat"
+                  ? "bg-primary-600 text-white"
+                  : "text-silver-400 hover:text-silver-200"
+              }`}
+            >
+              Flat List
+            </button>
+          </div>
+
+          {viewMode === "grouped" && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={expandAllGroups}>
+                Expand All
+              </Button>
+              <Button size="sm" variant="ghost" onClick={collapseAllGroups}>
+                Collapse All
+              </Button>
+            </div>
+          )}
+
+          {viewMode === "flat" && (
+            <div className="w-64">
+              <Select
+                label=""
+                value={selectedGroupFilter}
+                onChange={(e) => {
+                  setSelectedGroupFilter(e.target.value);
+                  setRowSelection({});
+                }}
+                options={groupOptions}
+              />
+            </div>
+          )}
         </div>
+
         {selectedDeviceIds.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-silver-400">
               {selectedDeviceIds.length} device(s) selected
             </span>
             <Button
@@ -547,41 +626,129 @@ export function NPMDevicesPage() {
             </Button>
           </div>
         )}
-        {/* Show active groups as badges */}
-        <div className="flex flex-wrap gap-2">
-          {groups.slice(0, 5).map((g) => (
-            <button
-              key={g.id}
-              onClick={() => setSelectedGroupFilter(g.id)}
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                selectedGroupFilter === g.id
-                  ? "ring-2 ring-offset-2"
-                  : "hover:opacity-80"
-              }`}
-              style={{ backgroundColor: `${g.color}20`, color: g.color }}
-            >
-              {g.name} ({g.deviceCount})
-            </button>
-          ))}
-        </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <DataTable
-            columns={columns}
-            data={filteredDevices}
-            loading={isLoading}
-            searchable
-            searchPlaceholder="Search devices..."
-            onRowClick={(device) => navigate(`/npm/devices/${device.id}`)}
-            emptyMessage="No devices found. Add your first device to start monitoring."
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            getRowId={(row) => row.id}
-          />
-        </CardContent>
-      </Card>
+      {/* Grouped View */}
+      {viewMode === "grouped" && (
+        <div className="space-y-4">
+          {/* Render each group as a collapsible block */}
+          {Array.from(devicesByGroup.entries()).map(
+            ([groupId, groupDevices]) => {
+              const group = groups.find((g) => g.id === groupId);
+              const groupKey = groupId || "ungrouped";
+              const isCollapsed = collapsedGroups.has(groupKey);
+              const groupColor = group?.color || "#6b7280";
+              const groupName = group?.name || "Ungrouped Devices";
+              const upCount = groupDevices.filter(
+                (d) => d.status === "up",
+              ).length;
+              const downCount = groupDevices.filter(
+                (d) => d.status === "down",
+              ).length;
+
+              return (
+                <Card key={groupKey} className="overflow-hidden">
+                  {/* Collapsible Header */}
+                  <button
+                    onClick={() => toggleGroupCollapse(groupId)}
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-dark-800/50 transition-colors"
+                    style={{ borderLeft: `4px solid ${groupColor}` }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg
+                        className={`h-5 w-5 text-silver-400 transition-transform ${
+                          isCollapsed ? "" : "rotate-90"
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: groupColor }}
+                      />
+                      <span className="font-semibold text-silver-100">
+                        {groupName}
+                      </span>
+                      <Badge variant="default">
+                        {groupDevices.length} devices
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {upCount > 0 && (
+                        <span className="flex items-center gap-1 text-sm text-green-400">
+                          <span className="h-2 w-2 rounded-full bg-green-400" />
+                          {upCount} up
+                        </span>
+                      )}
+                      {downCount > 0 && (
+                        <span className="flex items-center gap-1 text-sm text-red-400">
+                          <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+                          {downCount} down
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded Content */}
+                  {!isCollapsed && (
+                    <CardContent className="pt-0 pb-4">
+                      {groupDevices.length > 0 ? (
+                        <DataTable
+                          columns={columns}
+                          data={groupDevices}
+                          loading={isLoading}
+                          searchable
+                          searchPlaceholder="Search devices in group..."
+                          onRowClick={(device) =>
+                            navigate(`/npm/devices/${device.id}`)
+                          }
+                          emptyMessage="No devices in this group."
+                          rowSelection={rowSelection}
+                          onRowSelectionChange={setRowSelection}
+                          getRowId={(row) => row.id}
+                        />
+                      ) : (
+                        <div className="py-8 text-center text-silver-400">
+                          No devices in this group. Add devices or assign
+                          existing devices to this group.
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            },
+          )}
+        </div>
+      )}
+
+      {/* Flat List View */}
+      {viewMode === "flat" && (
+        <Card>
+          <CardContent className="pt-6">
+            <DataTable
+              columns={columns}
+              data={filteredDevices}
+              loading={isLoading}
+              searchable
+              searchPlaceholder="Search devices..."
+              onRowClick={(device) => navigate(`/npm/devices/${device.id}`)}
+              emptyMessage="No devices found. Add your first device to start monitoring."
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
+              getRowId={(row) => row.id}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add Device Modal */}
       {showAddModal && (

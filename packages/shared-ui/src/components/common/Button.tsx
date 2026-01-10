@@ -3,20 +3,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../utils/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-900 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500",
+          "bg-primary-600 text-white hover:bg-primary-500 focus-visible:ring-primary-500 shadow-[0_0_10px_rgba(0,212,255,0.2)] hover:shadow-[0_0_20px_rgba(0,212,255,0.4)]",
         destructive:
-          "bg-error-600 text-white hover:bg-error-700 focus-visible:ring-error-500",
+          "bg-error-600 text-white hover:bg-error-500 focus-visible:ring-error-500",
         outline:
-          "border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800",
+          "border border-dark-600 bg-transparent text-silver-200 hover:bg-dark-700 hover:border-primary-500/50 focus-visible:ring-primary-500",
         secondary:
-          "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
-        ghost: "hover:bg-gray-100 dark:hover:bg-gray-800",
-        link: "text-primary-600 underline-offset-4 hover:underline dark:text-primary-400",
+          "bg-dark-700 text-silver-200 hover:bg-dark-600 focus-visible:ring-dark-500",
+        ghost: "text-silver-300 hover:bg-dark-700 hover:text-white",
+        link: "text-primary-500 underline-offset-4 hover:underline hover:text-primary-400",
+        accent:
+          "bg-accent-600 text-white hover:bg-accent-500 focus-visible:ring-accent-500 shadow-[0_0_10px_rgba(217,70,239,0.2)] hover:shadow-[0_0_20px_rgba(217,70,239,0.4)]",
+        success:
+          "bg-success-600 text-white hover:bg-success-500 focus-visible:ring-success-500 shadow-[0_0_10px_rgba(34,197,94,0.2)] hover:shadow-[0_0_20px_rgba(34,197,94,0.4)]",
       },
       size: {
         default: "h-10 px-4 py-2",

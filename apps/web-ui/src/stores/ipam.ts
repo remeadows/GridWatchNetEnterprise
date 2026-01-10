@@ -45,7 +45,7 @@ interface IPAMState {
   createNetwork: (data: Partial<Network>) => Promise<Network>;
   updateNetwork: (id: string, data: Partial<Network>) => Promise<Network>;
   deleteNetwork: (id: string) => Promise<void>;
-  startScan: (networkId: string, scanType: string) => Promise<ScanJob>;
+  startScan: (networkId: string, scanTypes: string[]) => Promise<ScanJob>;
   fetchScanHistory: (networkId: string) => Promise<void>;
   fetchScanStatus: (scanId: string) => Promise<void>;
   deleteScan: (scanId: string) => Promise<void>;
@@ -174,13 +174,13 @@ export const useIPAMStore = create<IPAMState>((set) => ({
     }
   },
 
-  startScan: async (networkId: string, scanType: string) => {
+  startScan: async (networkId: string, scanTypes: string[]) => {
     set({ isLoading: true, error: null });
     try {
       const response = await api.post<{ data: ScanJob }>(
         `/api/v1/ipam/networks/${networkId}/scan`,
         {
-          scanType,
+          scanTypes,
         },
       );
       const scanJob = response.data.data;

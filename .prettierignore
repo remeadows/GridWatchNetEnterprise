@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Helm charts (contain Go templates that break Prettier)
+charts/
+**/charts/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Generated files
+*.min.js
+*.min.css
+coverage/
+
+# Docker volumes
+data/
+
+# IDE
+.idea/
+.vscode/
+
+# Package manager locks (prefer consistency)
+pnpm-lock.yaml
+yarn.lock
+
+# Other
+*.log
+*.lock

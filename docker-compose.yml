@@ -241,6 +241,12 @@ services:
     profiles: ["ipam", "npm", "stig"]
     container_name: netnynja-gateway
     restart: unless-stopped
+    # NMAP Fingerprinting Note: To enable MAC address detection for hosts on your
+    # physical LAN, uncomment 'network_mode: host' below and comment out the
+    # 'networks' and 'ports' sections. Host network mode gives the container direct
+    # Layer 2 access to the host's network interfaces. This is required because
+    # MAC addresses can only be detected for hosts on the same network segment.
+    # network_mode: host
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -252,6 +258,11 @@ services:
       JAEGER_ENDPOINT: http://jaeger:4318/v1/traces
       AUTH_SERVICE_URL: http://auth-service:3006
       JWT_SECRET: ${JWT_SECRET:-netnynja-dev-jwt-secret-2025}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-netnynja-dev-encryption-key-32ch}
+      # Rate limiting - relaxed for development/E2E testing
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
+      RATE_LIMIT_AUTH_MAX: ${RATE_LIMIT_AUTH_MAX:-500}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
     volumes:
       - ./apps/gateway/src:/app/src:ro
       - ./packages:/packages
@@ -268,7 +279,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/healthz"]
     logging: *default-logging
     networks:
       - netnynja-network
@@ -303,7 +314,7 @@ services:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck-defaults
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3006/healthz"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3006/healthz"]
     logging: *default-logging
     networks:
       - netnynja-network
@@ -439,6 +450,7 @@ services:
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_TOKEN:-netnynja-dev-token}
       JWT_SECRET: ${JWT_SECRET:-netnynja-dev-jwt-secret-2025}
+      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
       VICTORIAMETRICS_URL: http://victoriametrics:8428
       LOG_LEVEL: DEBUG
     volumes:
@@ -479,6 +491,7 @@ services:
       NATS_URL: nats://nats:4222
       VICTORIAMETRICS_URL: http://victoriametrics:8428
       VAULT_ADDR: http://vault:8200
+      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
     volumes:
       - ./apps/npm/collectors:/app/collectors:ro
     depends_on:
@@ -505,6 +518,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NATS_URL: nats://nats:4222
       VAULT_ADDR: http://vault:8200
+      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
     volumes:
       - ./apps/npm/alerts:/app/alerts:ro
     depends_on:
@@ -578,6 +592,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NATS_URL: nats://nats:4222
       VAULT_ADDR: http://vault:8200
+      JWT_SECRET: ${JWT_SECRET:-netnynja-dev-jwt-secret-2025}
     volumes:
       - ./apps/stig/collectors:/app/collectors:ro
     depends_on:
@@ -602,6 +617,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NATS_URL: nats://nats:4222
       VAULT_ADDR: http://vault:8200
+      JWT_SECRET: ${JWT_SECRET:-netnynja-dev-jwt-secret-2025}
     volumes:
       - ./apps/stig/reports:/app/reports:ro
       - stig_reports:/app/output

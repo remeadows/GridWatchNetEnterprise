@@ -40,7 +40,7 @@ configureAuth({
 // ============================================
 
 const RefreshSchema = z.object({
-  refreshToken: z.string().min(1),
+  refreshToken: z.string().min(1).optional(), // Optional - can come from cookie
 });
 
 const LogoutSchema = z.object({
@@ -258,6 +258,18 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         "User logged in",
       );
 
+      // Set refresh token as HttpOnly cookie for XSS protection
+      const refreshExpirySecs = parseRefreshTokenExpiry(
+        config.JWT_REFRESH_EXPIRY,
+      );
+      reply.setCookie("refreshToken", tokens.refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: refreshExpirySecs,
+      });
+
       return {
         success: true,
         data: {
@@ -289,7 +301,20 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         };
       }
 
-      const { refreshToken } = parseResult.data;
+      // Get refresh token from body or cookie (cookie takes precedence for security)
+      const cookieToken = request.cookies?.refreshToken;
+      const refreshToken = cookieToken || parseResult.data.refreshToken;
+
+      if (!refreshToken) {
+        reply.status(400);
+        return {
+          success: false,
+          error: {
+            code: "MISSING_TOKEN",
+            message: "Refresh token required (via cookie or body)",
+          },
+        };
+      }
 
       try {
         // Verify refresh token signature
@@ -345,6 +370,15 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         await audit.logTokenRefresh(user.id, ipAddress, userAgent);
 
         logger.debug({ userId: user.id }, "Token refreshed");
+
+        // Set new refresh token as HttpOnly cookie
+        reply.setCookie("refreshToken", tokens.refreshToken, {
+          httpOnly: true,
+          secure: config.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+          maxAge: refreshExpiry,
+        });
 
         return {
           success: true,
@@ -409,11 +443,21 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           };
         }
 
-        // Revoke single refresh token if provided
-        if (body.refreshToken) {
-          const tokenHash = await hashToken(body.refreshToken);
+        // Revoke single refresh token if provided (from body or cookie)
+        const cookieToken = request.cookies?.refreshToken;
+        const tokenToRevoke = body.refreshToken || cookieToken;
+        if (tokenToRevoke) {
+          const tokenHash = await hashToken(tokenToRevoke);
           await redis.revokeRefreshToken(userId, tokenHash);
         }
+
+        // Clear refresh token cookie
+        reply.clearCookie("refreshToken", {
+          httpOnly: true,
+          secure: config.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+        });
 
         await audit.logLogout(userId, ipAddress, userAgent);
 
@@ -424,7 +468,13 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
           data: { message: "Logged out successfully" },
         };
       } catch (error) {
-        // Even with invalid token, we still log out
+        // Even with invalid token, we still log out - clear cookie anyway
+        reply.clearCookie("refreshToken", {
+          httpOnly: true,
+          secure: config.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+        });
         logger.warn({ error }, "Logout with invalid token");
         return {
           success: true,

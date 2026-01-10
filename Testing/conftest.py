@@ -290,20 +290,23 @@ async def test_device(
     authed_client: httpx.AsyncClient
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Create and cleanup a test network device."""
-    # Create device
+    # Create device - API uses camelCase field names
     response = await authed_client.post(
         "/api/v1/npm/devices",
         json={
-            "hostname": "e2e-test-device",
-            "ip_address": "10.255.255.1",
-            "device_type": "router",
+            "name": "e2e-test-device",
+            "ipAddress": "10.255.255.1",
+            "deviceType": "router",
             "vendor": "test",
-            "snmp_community": "public",
-            "enabled": True
+            "snmpCommunity": "public",
+            "snmpVersion": "2c",
+            "enabled": False  # Don't actually poll during tests
         }
     )
     assert response.status_code in (200, 201), f"Failed to create test device: {response.text}"
-    device = response.json()
+    data = response.json()
+    # Handle wrapped response
+    device = data.get("data", data.get("device", data))
 
     yield device
 

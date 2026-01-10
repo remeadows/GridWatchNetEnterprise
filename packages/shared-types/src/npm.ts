@@ -41,6 +41,10 @@ export interface Device extends BaseEntity {
   deviceType?: string;
   vendor?: string;
   model?: string;
+  // Group association
+  groupId?: string;
+  groupName?: string;
+  groupColor?: string;
   // Polling methods
   pollIcmp: boolean;
   pollSnmp: boolean;
@@ -238,6 +242,7 @@ export const CreateDeviceSchema = z
     deviceType: z.string().max(100).optional(),
     vendor: z.string().max(100).optional(),
     model: z.string().max(100).optional(),
+    groupId: z.string().uuid().optional(),
     pollIcmp: z.boolean().default(true),
     pollSnmp: z.boolean().default(false),
     snmpv3CredentialId: z.string().uuid().optional(),
@@ -265,6 +270,7 @@ export const UpdateDeviceSchema = z.object({
   deviceType: z.string().max(100).optional(),
   vendor: z.string().max(100).optional(),
   model: z.string().max(100).optional(),
+  groupId: z.string().uuid().nullable().optional(),
   pollIcmp: z.boolean().optional(),
   pollSnmp: z.boolean().optional(),
   snmpv3CredentialId: z.string().uuid().nullable().optional(),

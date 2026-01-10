@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./stores/auth";
-import { useThemeStore } from "./stores/theme";
 import { useEffect } from "react";
 
 // Layouts
@@ -23,6 +22,7 @@ import { NPMDeviceDetailPage } from "./modules/npm/pages/DeviceDetailPage";
 import { NPMAlertsPage } from "./modules/npm/pages/AlertsPage";
 import { SNMPv3CredentialsPage } from "./modules/npm/pages/SNMPv3CredentialsPage";
 import { NPMDiscoveryPage } from "./modules/npm/pages/DiscoveryPage";
+import { DeviceGroupsPage } from "./modules/npm/pages/DeviceGroupsPage";
 
 // STIG module
 import { STIGBenchmarksPage } from "./modules/stig/pages/BenchmarksPage";
@@ -53,18 +53,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { isDark } = useThemeStore();
-
+  // Force dark mode on mount - NetNynja brand is dark cyberpunk only
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDark]);
+    document.documentElement.classList.add("dark");
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-dark-900">
       <Routes>
         {/* Auth routes */}
         <Route element={<AuthLayout />}>
@@ -98,6 +93,7 @@ function App() {
             <Route path="discovery" element={<NPMDiscoveryPage />} />
             <Route path="alerts" element={<NPMAlertsPage />} />
             <Route path="credentials" element={<SNMPv3CredentialsPage />} />
+            <Route path="groups" element={<DeviceGroupsPage />} />
           </Route>
 
           {/* STIG Module */}

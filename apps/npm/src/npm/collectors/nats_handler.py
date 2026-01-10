@@ -41,7 +41,25 @@ class NATSHandler:
     async def connect(self) -> None:
         """Connect to NATS server."""
         try:
-            self.nc = await nats.connect(settings.nats_url)
+            # Build connection options
+            connect_opts: dict = {"servers": settings.nats_url}
+
+            # Add authentication if configured
+            if settings.nats_user and settings.nats_password:
+                connect_opts["user"] = settings.nats_user
+                connect_opts["password"] = settings.nats_password
+                logger.info("nats_auth_enabled", user=settings.nats_user)
+
+            # Add TLS if configured
+            if settings.nats_tls_enabled:
+                import ssl
+                tls_ctx = ssl.create_default_context()
+                if settings.nats_tls_ca:
+                    tls_ctx.load_verify_locations(settings.nats_tls_ca)
+                connect_opts["tls"] = tls_ctx
+                logger.info("nats_tls_enabled")
+
+            self.nc = await nats.connect(**connect_opts)
             self.js = self.nc.jetstream()
 
             # Ensure stream exists

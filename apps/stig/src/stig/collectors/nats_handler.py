@@ -6,7 +6,7 @@ import signal
 
 import nats
 from nats.js import JetStreamContext
-from nats.js.api import ConsumerConfig, DeliverPolicy
+from nats.js.api import ConsumerConfig, DeliverPolicy, AckPolicy
 
 from ..core.config import settings
 from ..core.logging import configure_logging, get_logger
@@ -36,8 +36,45 @@ class NATSHandler:
     async def connect(self) -> None:
         """Connect to NATS server."""
         try:
-            self._nc = await nats.connect(settings.nats_url)
+            # Build connection options
+            connect_opts: dict = {"servers": settings.nats_url}
+
+            # Add authentication if configured
+            if settings.nats_user and settings.nats_password:
+                connect_opts["user"] = settings.nats_user
+                connect_opts["password"] = settings.nats_password
+                logger.info("nats_auth_enabled", user=settings.nats_user)
+
+            # Add TLS if configured
+            if settings.nats_tls_enabled:
+                import ssl
+                tls_ctx = ssl.create_default_context()
+                if settings.nats_tls_ca:
+                    tls_ctx.load_verify_locations(settings.nats_tls_ca)
+                connect_opts["tls"] = tls_ctx
+                logger.info("nats_tls_enabled")
+
+            self._nc = await nats.connect(**connect_opts)
             self._js = self._nc.jetstream()
+
+            # Ensure STIG stream exists
+            stream_name = "STIG"
+            try:
+                stream_info = await self._js.stream_info(stream_name)
+                logger.info("stream_exists", stream=stream_name, subjects=stream_info.config.subjects)
+            except nats.js.errors.NotFoundError:
+                logger.info("creating_jetstream_stream", stream=stream_name)
+                try:
+                    await self._js.add_stream(
+                        name=stream_name,
+                        subjects=["stig.audits.*", "stig.reports.*", "stig.results.*"],
+                        retention="limits",
+                        max_msgs=100000,
+                        max_age=86400 * 7,  # 7 days
+                    )
+                except nats.js.errors.BadRequestError as e:
+                    logger.warning("stream_creation_conflict", error=str(e))
+
             self._ssh_auditor = SSHAuditor()
             logger.info("nats_connected", url=settings.nats_url)
         except Exception as e:
@@ -65,20 +102,17 @@ class NATSHandler:
 
         self._running = True
 
-        # Subscribe to audit jobs stream
+        # Subscribe to audit jobs stream using pull consumer
         try:
-            # Create or get consumer
-            consumer_config = ConsumerConfig(
-                durable_name="audit-job-processor",
-                deliver_policy=DeliverPolicy.ALL,
-                ack_wait=300,  # 5 minutes for long audits
-                max_deliver=3,
-            )
-
-            sub = await self._js.subscribe(
+            sub = await self._js.pull_subscribe(
                 "stig.audits.*",
                 durable="audit-job-processor",
-                config=consumer_config,
+                config=ConsumerConfig(
+                    deliver_policy=DeliverPolicy.ALL,
+                    ack_policy=AckPolicy.EXPLICIT,
+                    ack_wait=300,  # 5 minutes for long audits
+                    max_deliver=3,
+                ),
             )
 
             logger.info("consumer_started", subject="stig.audits.*")
@@ -88,7 +122,7 @@ class NATSHandler:
                     msgs = await sub.fetch(batch=1, timeout=5)
                     for msg in msgs:
                         await self._process_audit_job(msg)
-                except nats.errors.TimeoutError:
+                except asyncio.TimeoutError:
                     # No messages, continue polling
                     continue
                 except Exception as e:

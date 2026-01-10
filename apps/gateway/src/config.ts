@@ -27,7 +27,8 @@ const ConfigSchema = z.object({
   JWT_ISSUER: z.string().default("netnynja-enterprise"),
   JWT_AUDIENCE: z.string().default("netnynja-api"),
 
-  // CORS
+  // CORS - In production, use explicit allowlist (e.g., "https://app.netnynja.com")
+  // Default "true" allows any origin (only safe in development)
   CORS_ORIGIN: z
     .string()
     .transform((val) => {
@@ -35,7 +36,7 @@ const ConfigSchema = z.object({
       if (val === "false") return false;
       return val.split(",").map((s) => s.trim());
     })
-    .default("true"),
+    .default("http://localhost:5173,http://localhost:3000"),
   CORS_CREDENTIALS: z.coerce.boolean().default(true),
   CORS_MAX_AGE: z.coerce.number().default(86400), // Preflight cache duration in seconds (24h)
   CORS_EXPOSED_HEADERS: z
@@ -70,11 +71,33 @@ const ConfigSchema = z.object({
   // Backend Services
   AUTH_SERVICE_URL: z.string().default("http://localhost:3006"),
 
-  // Encryption
-  CREDENTIAL_ENCRYPTION_KEY: z
+  // Encryption - MUST be set via environment variable in production (min 32 chars)
+  CREDENTIAL_ENCRYPTION_KEY: z.string().min(32),
+
+  // Metrics endpoint security
+  METRICS_AUTH_ENABLED: z.coerce.boolean().default(true),
+  METRICS_ALLOWED_IPS: z
     .string()
-    .min(32)
-    .default("netnynja-dev-encryption-key-32ch"),
+    .transform((val) => {
+      if (!val) return [];
+      return val.split(",").map((s) => s.trim());
+    })
+    .default("127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"),
+
+  // Proxy trust configuration
+  // - "true" trusts all proxies (only for development behind trusted load balancer)
+  // - "false" disables proxy trust (direct client connections)
+  // - comma-separated IPs/CIDRs: trust only those proxies (recommended for production)
+  // See: https://fastify.dev/docs/latest/Reference/Server/#trustproxy
+  TRUST_PROXY: z
+    .string()
+    .transform((val) => {
+      if (val === "true") return true;
+      if (val === "false") return false;
+      // Parse as comma-separated list of trusted proxy IPs/CIDRs
+      return val.split(",").map((s) => s.trim());
+    })
+    .default("true"), // Default to true for dev; override in production
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -88,7 +111,35 @@ function loadConfig(): Config {
     process.exit(1);
   }
 
-  return result.data;
+  const config = result.data;
+
+  // Security warnings for production
+  if (config.NODE_ENV === "production") {
+    if (config.CORS_ORIGIN === true) {
+      console.error(
+        "SECURITY ERROR: CORS_ORIGIN=true (allow all origins) is not permitted in production.",
+      );
+      console.error(
+        "Set CORS_ORIGIN to an explicit allowlist (e.g., 'https://app.netnynja.com')",
+      );
+      process.exit(1);
+    }
+
+    // Warn about trustProxy in production (not a fatal error, but security concern)
+    if (config.TRUST_PROXY === true) {
+      console.warn(
+        "SECURITY WARNING: TRUST_PROXY=true accepts X-Forwarded-For from any client.",
+      );
+      console.warn(
+        "In production, set TRUST_PROXY to a comma-separated list of trusted proxy IPs.",
+      );
+      console.warn(
+        "Example: TRUST_PROXY='10.0.0.1,172.16.0.0/12' or TRUST_PROXY='false' for direct connections.",
+      );
+    }
+  }
+
+  return config;
 }
 
 export const config = loadConfig();

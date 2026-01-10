@@ -11,6 +11,22 @@ from ..db import get_db, NetworkRepository
 logger = get_logger(__name__)
 
 
+def escape_label_value(value: str) -> str:
+    """Escape a Prometheus label value.
+
+    Per Prometheus text format spec, label values can contain any Unicode characters.
+    Backslash, double-quote, and line feed must be escaped.
+    """
+    if not value:
+        return ""
+    return (
+        value
+        .replace("\\", "\\\\")  # Backslash must be escaped first
+        .replace('"', '\\"')    # Double quotes must be escaped
+        .replace("\n", "\\n")   # Newlines must be escaped
+    )
+
+
 class MetricsService:
     """Service for pushing and querying metrics from VictoriaMetrics."""
 
@@ -34,11 +50,15 @@ class MetricsService:
         timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
         utilization = (used_addresses / total_addresses * 100) if total_addresses > 0 else 0
 
+        # Escape label values to prevent metric format corruption
+        safe_network_id = escape_label_value(network_id)
+        safe_network_name = escape_label_value(network_name)
+
         metrics = [
-            f'ipam_network_total_addresses{{network_id="{network_id}",network_name="{network_name}"}} {total_addresses} {timestamp}',
-            f'ipam_network_used_addresses{{network_id="{network_id}",network_name="{network_name}"}} {used_addresses} {timestamp}',
-            f'ipam_network_active_addresses{{network_id="{network_id}",network_name="{network_name}"}} {active_addresses} {timestamp}',
-            f'ipam_network_utilization_percent{{network_id="{network_id}",network_name="{network_name}"}} {utilization:.2f} {timestamp}',
+            f'ipam_network_total_addresses{{network_id="{safe_network_id}",network_name="{safe_network_name}"}} {total_addresses} {timestamp}',
+            f'ipam_network_used_addresses{{network_id="{safe_network_id}",network_name="{safe_network_name}"}} {used_addresses} {timestamp}',
+            f'ipam_network_active_addresses{{network_id="{safe_network_id}",network_name="{safe_network_name}"}} {active_addresses} {timestamp}',
+            f'ipam_network_utilization_percent{{network_id="{safe_network_id}",network_name="{safe_network_name}"}} {utilization:.2f} {timestamp}',
         ]
 
         try:
@@ -65,11 +85,16 @@ class MetricsService:
         """Push scan result metrics to VictoriaMetrics."""
         timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
 
+        # Escape label values to prevent metric format corruption
+        safe_network_id = escape_label_value(network_id)
+        safe_network_name = escape_label_value(network_name)
+        safe_scan_type = escape_label_value(scan_type)
+
         metrics = [
-            f'ipam_scan_duration_seconds{{network_id="{network_id}",network_name="{network_name}",scan_type="{scan_type}"}} {duration_seconds:.2f} {timestamp}',
-            f'ipam_scan_total_ips{{network_id="{network_id}",network_name="{network_name}",scan_type="{scan_type}"}} {total_ips} {timestamp}',
-            f'ipam_scan_active_ips{{network_id="{network_id}",network_name="{network_name}",scan_type="{scan_type}"}} {active_ips} {timestamp}',
-            f'ipam_scan_new_ips{{network_id="{network_id}",network_name="{network_name}",scan_type="{scan_type}"}} {new_ips} {timestamp}',
+            f'ipam_scan_duration_seconds{{network_id="{safe_network_id}",network_name="{safe_network_name}",scan_type="{safe_scan_type}"}} {duration_seconds:.2f} {timestamp}',
+            f'ipam_scan_total_ips{{network_id="{safe_network_id}",network_name="{safe_network_name}",scan_type="{safe_scan_type}"}} {total_ips} {timestamp}',
+            f'ipam_scan_active_ips{{network_id="{safe_network_id}",network_name="{safe_network_name}",scan_type="{safe_scan_type}"}} {active_ips} {timestamp}',
+            f'ipam_scan_new_ips{{network_id="{safe_network_id}",network_name="{safe_network_name}",scan_type="{safe_scan_type}"}} {new_ips} {timestamp}',
         ]
 
         try:
@@ -90,7 +115,8 @@ class MetricsService:
         step: str = "1h",
     ) -> list[dict[str, Any]]:
         """Query utilization history from VictoriaMetrics."""
-        query = f'ipam_network_utilization_percent{{network_id="{network_id}"}}'
+        safe_network_id = escape_label_value(network_id)
+        query = f'ipam_network_utilization_percent{{network_id="{safe_network_id}"}}'
 
         try:
             response = await self.client.get(

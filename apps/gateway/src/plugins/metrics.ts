@@ -328,8 +328,49 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  // Expose /metrics endpoint
-  fastify.get("/metrics", async (_request, reply) => {
+  // Helper to check if IP is in CIDR range
+  const isIpInRange = (ip: string, cidr: string): boolean => {
+    if (!cidr.includes("/")) {
+      return ip === cidr;
+    }
+    const [range, bits] = cidr.split("/");
+    const mask = ~(2 ** (32 - parseInt(bits, 10)) - 1);
+    const ipNum = ip
+      .split(".")
+      .reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0);
+    const rangeNum = range
+      .split(".")
+      .reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0);
+    return (ipNum & mask) === (rangeNum & mask);
+  };
+
+  // Check if client IP is allowed
+  const isIpAllowed = (clientIp: string): boolean => {
+    if (!config.METRICS_AUTH_ENABLED) return true;
+    const allowedIps = config.METRICS_ALLOWED_IPS;
+    if (allowedIps.length === 0) return true;
+
+    // Handle IPv6 localhost
+    const normalizedIp =
+      clientIp === "::ffff:127.0.0.1" ? "127.0.0.1" : clientIp;
+
+    for (const allowed of allowedIps) {
+      if (allowed === normalizedIp) return true;
+      if (allowed.includes("/") && isIpInRange(normalizedIp, allowed))
+        return true;
+    }
+    return false;
+  };
+
+  // Expose /metrics endpoint with IP allowlist
+  fastify.get("/metrics", async (request, reply) => {
+    const clientIp = request.ip;
+
+    if (!isIpAllowed(clientIp)) {
+      logger.warn({ clientIp }, "Metrics access denied - IP not in allowlist");
+      return reply.code(403).send("Forbidden");
+    }
+
     try {
       const metricsData = await register.metrics();
       reply.header("Content-Type", register.contentType);
@@ -340,7 +381,10 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  logger.info("Prometheus metrics endpoint enabled at /metrics");
+  logger.info(
+    { authEnabled: config.METRICS_AUTH_ENABLED },
+    "Prometheus metrics endpoint enabled at /metrics",
+  );
 };
 
 export default fp(metricsPlugin, {

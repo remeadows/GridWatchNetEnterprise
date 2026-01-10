@@ -33,9 +33,11 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,
     proxy: {
       "/api": {
-        target: "http://localhost:3001",
+        // Use Docker service name when running in container, localhost for local dev
+        target: isDocker ? "http://gateway:3001" : "http://localhost:3001",
         changeOrigin: true,
       },
     },

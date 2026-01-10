@@ -41,7 +41,7 @@ const fastify = Fastify({
           }
         : undefined,
   },
-  trustProxy: true,
+  trustProxy: config.TRUST_PROXY,
   requestIdHeader: "x-request-id",
   genReqId: () => crypto.randomUUID(),
 });

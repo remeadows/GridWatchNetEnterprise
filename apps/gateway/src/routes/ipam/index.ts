@@ -293,8 +293,16 @@ async function runTcpScan(
   return { total: totalIps, active: activeCount, newIps: newCount };
 }
 
+// Host info extracted from nmap XML
+interface NmapHostInfo {
+  ip: string;
+  hostname?: string;
+  mac?: string;
+  vendor?: string;
+}
+
 /**
- * Run nmap scan on a network
+ * Run nmap scan on a network with fingerprinting
  */
 async function runNmapScan(
   cidr: string,
@@ -306,7 +314,7 @@ async function runNmapScan(
 
   logger.info(
     { scanId, networkId, cidr, totalHosts: totalIps },
-    "Starting nmap scan",
+    "Starting nmap scan with fingerprinting",
   );
 
   // Update scan to running status
@@ -322,18 +330,20 @@ async function runNmapScan(
     throw new Error("nmap is not installed or not in PATH");
   }
 
-  // Run nmap ping scan with XML output
-  const isWindows = os.platform() === "win32";
-  const cmd = `nmap -sn -PE -PA80,443 -oX - ${cidr}`;
+  // Run nmap ping scan with XML output - added -R for DNS resolution
+  const cmd = `nmap -sn -PE -PA80,443 -R -oX - ${cidr}`;
 
   logger.info({ scanId, cmd }, "Executing nmap command");
 
   const { stdout } = await execAsync(cmd, { timeout: 300000 }); // 5 minute timeout
 
-  // Parse nmap XML output
-  const activeIps: string[] = [];
+  // Parse nmap XML output with fingerprinting info
+  const discoveredHosts: NmapHostInfo[] = [];
   const hostRegex = /<host[^>]*>[\s\S]*?<\/host>/g;
   const ipRegex = /<address addr="([^"]+)" addrtype="ipv4"/;
+  const macRegex =
+    /<address addr="([^"]+)" addrtype="mac"(?:\s+vendor="([^"]*)")?/;
+  const hostnameRegex = /<hostname name="([^"]+)"/;
   const statusRegex = /<status state="up"/;
 
   let match;
@@ -342,44 +352,88 @@ async function runNmapScan(
     if (statusRegex.test(hostXml)) {
       const ipMatch = ipRegex.exec(hostXml);
       if (ipMatch && ipMatch[1]) {
-        activeIps.push(ipMatch[1]);
+        const hostInfo: NmapHostInfo = { ip: ipMatch[1] };
+
+        // Extract hostname
+        const hostnameMatch = hostnameRegex.exec(hostXml);
+        if (hostnameMatch && hostnameMatch[1]) {
+          hostInfo.hostname = hostnameMatch[1];
+        }
+
+        // Extract MAC address and vendor
+        const macMatch = macRegex.exec(hostXml);
+        if (macMatch) {
+          hostInfo.mac = macMatch[1];
+          if (macMatch[2]) {
+            hostInfo.vendor = macMatch[2];
+          }
+        }
+
+        discoveredHosts.push(hostInfo);
       }
     }
   }
 
   let newCount = 0;
 
-  // Save discovered IPs to database
-  for (const ip of activeIps) {
+  // Save discovered IPs to database with fingerprint data
+  for (const host of discoveredHosts) {
     const existingResult = await pool.query(
       `SELECT id FROM ipam.addresses WHERE network_id = $1 AND address = $2`,
-      [networkId, ip],
+      [networkId, host.ip],
     );
 
     if (existingResult.rows.length === 0) {
       newCount++;
       await pool.query(
-        `INSERT INTO ipam.addresses (network_id, address, status, last_seen)
-         VALUES ($1, $2, 'active', NOW())
+        `INSERT INTO ipam.addresses (network_id, address, hostname, mac_address, device_type, status, last_seen, discovered_at)
+         VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
          ON CONFLICT (network_id, address) DO UPDATE
-         SET status = 'active', last_seen = NOW()`,
-        [networkId, ip],
+         SET status = 'active', last_seen = NOW(),
+             hostname = COALESCE(EXCLUDED.hostname, ipam.addresses.hostname),
+             mac_address = COALESCE(EXCLUDED.mac_address, ipam.addresses.mac_address),
+             device_type = COALESCE(EXCLUDED.device_type, ipam.addresses.device_type)`,
+        [
+          networkId,
+          host.ip,
+          host.hostname || null,
+          host.mac || null,
+          host.vendor || null,
+        ],
       );
     } else {
+      // Update existing - preserve existing data if nmap didn't find it
       await pool.query(
-        `UPDATE ipam.addresses SET status = 'active', last_seen = NOW()
+        `UPDATE ipam.addresses
+         SET status = 'active',
+             last_seen = NOW(),
+             hostname = COALESCE($3, hostname),
+             mac_address = COALESCE($4, mac_address),
+             device_type = COALESCE($5, device_type)
          WHERE network_id = $1 AND address = $2`,
-        [networkId, ip],
+        [
+          networkId,
+          host.ip,
+          host.hostname || null,
+          host.mac || null,
+          host.vendor || null,
+        ],
       );
     }
   }
 
   logger.info(
-    { scanId, activeCount: activeIps.length, newCount },
-    "nmap scan completed",
+    {
+      scanId,
+      activeCount: discoveredHosts.length,
+      newCount,
+      withHostnames: discoveredHosts.filter((h) => h.hostname).length,
+      withMacs: discoveredHosts.filter((h) => h.mac).length,
+    },
+    "nmap scan with fingerprinting completed",
   );
 
-  return { total: totalIps, active: activeIps.length, newIps: newCount };
+  return { total: totalIps, active: discoveredHosts.length, newIps: newCount };
 }
 
 // Zod schemas
@@ -835,6 +889,15 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
               enum: ["ping", "tcp", "arp", "nmap"],
               default: "ping",
             },
+            scanTypes: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["ping", "tcp", "nmap"],
+              },
+              minItems: 1,
+              maxItems: 3,
+            },
           },
         },
       },
@@ -842,7 +905,19 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { scanType = "ping" } = request.body as { scanType?: string };
+      const body = request.body as {
+        scanType?: string;
+        scanTypes?: string[];
+      };
+
+      // Support both old single scanType and new array scanTypes
+      const scanTypesToRun: string[] =
+        body.scanTypes && body.scanTypes.length > 0
+          ? body.scanTypes
+          : [body.scanType || "ping"];
+
+      // Remove duplicates
+      const uniqueScanTypes = [...new Set(scanTypesToRun)];
 
       // Verify network exists
       const networkResult = await pool.query(
@@ -858,42 +933,65 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
         };
       }
 
-      // Create scan job
+      // Create scan job with combined scan types
+      const combinedScanType = uniqueScanTypes.join("+");
       const scanResult = await pool.query(
         `INSERT INTO ipam.scan_history (network_id, scan_type, started_at, status)
        VALUES ($1, $2, NOW(), 'pending')
        RETURNING id, network_id, scan_type, status, started_at`,
-        [id, scanType],
+        [id, combinedScanType],
       );
 
       const scan = scanResult.rows[0];
       const network = networkResult.rows[0];
 
-      logger.info({ networkId: id, scanId: scan.id, scanType }, "Scan started");
+      logger.info(
+        { networkId: id, scanId: scan.id, scanTypes: uniqueScanTypes },
+        "Multi-type scan started",
+      );
 
       // Run scan in background (don't await - return immediately)
       // Execute scan asynchronously - use setImmediate to ensure it runs on next tick
       setImmediate(async () => {
         logger.info(
-          { scanId: scan.id, scanType, networkCidr: network.network },
-          "Background scan starting",
+          {
+            scanId: scan.id,
+            scanTypes: uniqueScanTypes,
+            networkCidr: network.network,
+          },
+          "Background multi-type scan starting",
         );
         try {
-          let result: { total: number; active: number; newIps: number };
+          // Track cumulative results across all scan types
+          let totalResult = { total: 0, active: 0, newIps: 0 };
+          const discoveredIps = new Set<string>();
 
-          switch (scanType) {
-            case "ping":
-              result = await runPingScan(network.network, scan.id, id, 20);
-              break;
-            case "tcp":
-              result = await runTcpScan(network.network, scan.id, id, 20);
-              break;
-            case "nmap":
-              result = await runNmapScan(network.network, scan.id, id);
-              break;
-            default:
-              // Default to ping scan
-              result = await runPingScan(network.network, scan.id, id, 20);
+          // Run each scan type sequentially
+          for (const scanType of uniqueScanTypes) {
+            logger.info({ scanId: scan.id, scanType }, "Running scan type");
+
+            let result: { total: number; active: number; newIps: number };
+
+            switch (scanType) {
+              case "ping":
+                result = await runPingScan(network.network, scan.id, id, 20);
+                break;
+              case "tcp":
+                result = await runTcpScan(network.network, scan.id, id, 20);
+                break;
+              case "nmap":
+                result = await runNmapScan(network.network, scan.id, id);
+                break;
+              default:
+                // Skip unknown types
+                continue;
+            }
+
+            // Total IPs should be the same for all scan types (subnet size)
+            totalResult.total = result.total;
+            // Active and new IPs accumulate (union - each subsequent scan may find more)
+            totalResult.active = Math.max(totalResult.active, result.active);
+            totalResult.newIps += result.newIps;
           }
 
           // Update scan as completed
@@ -905,18 +1003,23 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
                  active_ips = $2,
                  new_ips = $3
              WHERE id = $4`,
-            [result.total, result.active, result.newIps, scan.id],
+            [
+              totalResult.total,
+              totalResult.active,
+              totalResult.newIps,
+              scan.id,
+            ],
           );
 
           logger.info(
             {
               scanId: scan.id,
-              scanType,
-              totalIps: result.total,
-              activeIps: result.active,
-              newIps: result.newIps,
+              scanTypes: uniqueScanTypes,
+              totalIps: totalResult.total,
+              activeIps: totalResult.active,
+              newIps: totalResult.newIps,
             },
-            "Scan completed",
+            "Multi-type scan completed",
           );
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
@@ -924,7 +1027,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           logger.error(
             {
               scanId: scan.id,
-              scanType,
+              scanTypes: uniqueScanTypes,
               error: errorMessage,
               stack: errorStack,
             },
@@ -955,7 +1058,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           status: "running",
           startedAt: scan.started_at,
         },
-        message: "Scan started",
+        message: `Scan started with ${uniqueScanTypes.length} scan type(s): ${uniqueScanTypes.join(", ")}`,
       };
     },
   );
@@ -981,7 +1084,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       const { scanId } = request.params as { scanId: string };
 
       const result = await pool.query(
-        `SELECT id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message
+        `SELECT id, network_id, scan_type, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message
        FROM ipam.scan_history WHERE id = $1`,
         [scanId],
       );
@@ -1001,8 +1104,6 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           id: scan.id,
           networkId: scan.network_id,
           scanType: scan.scan_type,
-          name: scan.name,
-          notes: scan.notes,
           status: scan.status,
           startedAt: scan.started_at,
           completedAt: scan.completed_at,
@@ -1037,7 +1138,7 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       const query = querySchema.parse(request.query);
 
       const result = await pool.query(
-        `SELECT id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips
+        `SELECT id, network_id, scan_type, status, started_at, completed_at, total_ips, active_ips, new_ips
        FROM ipam.scan_history
        WHERE network_id = $1
        ORDER BY started_at DESC
@@ -1051,8 +1152,6 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
           id: scan.id,
           networkId: scan.network_id,
           scanType: scan.scan_type,
-          name: scan.name,
-          notes: scan.notes,
           status: scan.status,
           startedAt: scan.started_at,
           completedAt: scan.completed_at,
@@ -1120,119 +1219,6 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       logger.info({ scanId }, "Scan deleted");
 
       return reply.status(204).send();
-    },
-  );
-
-  // Update scan attributes
-  fastify.patch(
-    "/scans/:scanId",
-    {
-      schema: {
-        tags: ["IPAM - Scans"],
-        summary: "Update scan attributes",
-        description:
-          "Update a scan's name and/or notes. Only completed or failed scans can be modified.",
-        security: [{ bearerAuth: [] }],
-        params: {
-          type: "object",
-          properties: {
-            scanId: { type: "string", format: "uuid" },
-          },
-          required: ["scanId"],
-        },
-        body: {
-          type: "object",
-          properties: {
-            name: { type: "string", maxLength: 255 },
-            notes: { type: "string" },
-          },
-        },
-      },
-      preHandler: [fastify.requireRole("admin", "operator")],
-    },
-    async (request, reply) => {
-      const { scanId } = request.params as { scanId: string };
-      const { name, notes } = request.body as { name?: string; notes?: string };
-
-      // Check if scan exists and get its status
-      const statusCheck = await pool.query(
-        "SELECT id, status FROM ipam.scan_history WHERE id = $1",
-        [scanId],
-      );
-
-      if (statusCheck.rows.length === 0) {
-        reply.status(404);
-        return {
-          success: false,
-          error: { code: "NOT_FOUND", message: "Scan not found" },
-        };
-      }
-
-      // Don't allow modification of running scans
-      if (
-        statusCheck.rows[0].status === "running" ||
-        statusCheck.rows[0].status === "pending"
-      ) {
-        reply.status(400);
-        return {
-          success: false,
-          error: {
-            code: "BAD_REQUEST",
-            message: "Cannot modify a running or pending scan.",
-          },
-        };
-      }
-
-      // Build update query dynamically
-      const updates: string[] = [];
-      const values: (string | null)[] = [];
-      let paramIndex = 1;
-
-      if (name !== undefined) {
-        updates.push(`name = $${paramIndex++}`);
-        values.push(name || null);
-      }
-      if (notes !== undefined) {
-        updates.push(`notes = $${paramIndex++}`);
-        values.push(notes || null);
-      }
-
-      if (updates.length === 0) {
-        reply.status(400);
-        return {
-          success: false,
-          error: { code: "BAD_REQUEST", message: "No fields to update" },
-        };
-      }
-
-      values.push(scanId);
-
-      const result = await pool.query(
-        `UPDATE ipam.scan_history SET ${updates.join(", ")} WHERE id = $${paramIndex}
-         RETURNING id, network_id, scan_type, name, notes, status, started_at, completed_at, total_ips, active_ips, new_ips, error_message`,
-        values,
-      );
-
-      const scan = result.rows[0];
-      logger.info({ scanId, name, notes }, "Scan updated");
-
-      return {
-        success: true,
-        data: {
-          id: scan.id,
-          networkId: scan.network_id,
-          scanType: scan.scan_type,
-          name: scan.name,
-          notes: scan.notes,
-          status: scan.status,
-          startedAt: scan.started_at,
-          completedAt: scan.completed_at,
-          totalIps: scan.total_ips,
-          activeIps: scan.active_ips,
-          newIps: scan.new_ips,
-          errorMessage: scan.error_message,
-        },
-      };
     },
   );
 

@@ -140,7 +140,9 @@ export function IPAMNetworkDetailPage() {
   const { credentials, fetchCredentials } = useSNMPv3CredentialsStore();
 
   const [showScanModal, setShowScanModal] = useState(false);
-  const [selectedScanType, setSelectedScanType] = useState<string>("ping");
+  const [selectedScanTypes, setSelectedScanTypes] = useState<Set<string>>(
+    new Set(["ping"]),
+  );
   const [isScanning, setIsScanning] = useState(false);
 
   // Edit scan state
@@ -205,11 +207,11 @@ export function IPAMNetworkDetailPage() {
   }, [currentScan?.status, id, fetchAddresses]);
 
   const handleStartScan = useCallback(async () => {
-    if (id) {
+    if (id && selectedScanTypes.size > 0) {
       setShowScanModal(false);
-      await startScan(id, selectedScanType);
+      await startScan(id, Array.from(selectedScanTypes));
     }
-  }, [id, selectedScanType, startScan]);
+  }, [id, selectedScanTypes, startScan]);
 
   const handleDelete = async () => {
     if (id && window.confirm("Are you sure you want to delete this network?")) {
@@ -581,6 +583,8 @@ export function IPAMNetworkDetailPage() {
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             getRowId={(row) => row.id}
+            showPageSizeSelector
+            pageSizeOptions={[10, 25, 50, 100, 250]}
           />
         </CardContent>
       </Card>
@@ -760,25 +764,33 @@ export function IPAMNetworkDetailPage() {
               Start Network Scan
             </h3>
             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-              Select the type of scan to perform on {selectedNetwork?.name}
+              Select scan types to perform on {selectedNetwork?.name} (select
+              one or more)
             </p>
             <div className="space-y-2">
               {SCAN_TYPES.map((type) => (
                 <label
                   key={type.value}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                    selectedScanType === type.value
+                    selectedScanTypes.has(type.value)
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                       : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
                   }`}
                 >
                   <input
-                    type="radio"
-                    name="scanType"
+                    type="checkbox"
                     value={type.value}
-                    checked={selectedScanType === type.value}
-                    onChange={(e) => setSelectedScanType(e.target.value)}
-                    className="h-4 w-4 text-blue-600"
+                    checked={selectedScanTypes.has(type.value)}
+                    onChange={(e) => {
+                      const newSet = new Set(selectedScanTypes);
+                      if (e.target.checked) {
+                        newSet.add(type.value);
+                      } else {
+                        newSet.delete(type.value);
+                      }
+                      setSelectedScanTypes(newSet);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
                   />
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">
@@ -791,11 +803,22 @@ export function IPAMNetworkDetailPage() {
                 </label>
               ))}
             </div>
+            {selectedScanTypes.size === 0 && (
+              <p className="mt-2 text-xs text-red-500">
+                Please select at least one scan type
+              </p>
+            )}
             <div className="mt-6 flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowScanModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleStartScan}>Start Scan</Button>
+              <Button
+                onClick={handleStartScan}
+                disabled={selectedScanTypes.size === 0}
+              >
+                Start Scan ({selectedScanTypes.size} type
+                {selectedScanTypes.size !== 1 ? "s" : ""})
+              </Button>
             </div>
           </div>
         </div>
