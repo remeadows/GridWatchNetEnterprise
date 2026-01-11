@@ -2,9 +2,9 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.1.13
+**Version**: 0.1.14
 **Last Updated**: 2026-01-11 (Session)
-**Open Issues**: 4 | **Resolved Issues**: 108
+**Open Issues**: 3 | **Resolved Issues**: 108 | **Won't Fix**: 1
 
 ## Issue Categories
 
@@ -21,18 +21,18 @@
 
 > Status: PARTIAL | Critical TypeScript errors fixed, remaining issues require CI environment validation
 
-| ID     | Priority | Title                                                               | Workflow                | Status   |
-| ------ | -------- | ------------------------------------------------------------------- | ----------------------- | -------- |
-| CI-001 | 🔴       | Build Gateway fails - npm run build workspace command fails         | build-images.yml        | Resolved |
-| CI-002 | 🔴       | Build Web UI fails - @netnynja/shared-types not found               | build-images.yml        | Resolved |
-| CI-003 | 🔴       | Build Auth Service fails - @netnynja/shared-types not found         | build-images.yml        | Resolved |
-| CI-004 | 🔴       | Build Syslog Service fails - missing main.py                        | build-images.yml        | Resolved |
-| CI-005 | 🟠       | Validate Workspaces fails on all platforms (ubuntu, macos, windows) | validate-workspaces.yml | Open     |
-| CI-006 | 🟠       | Container Vulnerability Scan Docker build errors                    | security-scan.yml       | Resolved |
-| CI-007 | 🟠       | CodeQL Analysis fails - Code scanning not enabled                   | security-scan.yml       | Open     |
-| CI-008 | 🔴       | test.yml invalid workflow - hashFiles() unrecognized function       | test.yml (Line 110)     | Resolved |
-| CI-009 | 🟠       | CodeQL Action v3 deprecation warning                                | security-scan.yml       | Resolved |
-| CI-010 | 🔴       | "Resource not accessible by integration" permission errors          | security-scan.yml       | Resolved |
+| ID     | Priority | Title                                                               | Workflow                | Status    |
+| ------ | -------- | ------------------------------------------------------------------- | ----------------------- | --------- |
+| CI-001 | 🔴       | Build Gateway fails - npm run build workspace command fails         | build-images.yml        | Resolved  |
+| CI-002 | 🔴       | Build Web UI fails - @netnynja/shared-types not found               | build-images.yml        | Resolved  |
+| CI-003 | 🔴       | Build Auth Service fails - @netnynja/shared-types not found         | build-images.yml        | Resolved  |
+| CI-004 | 🔴       | Build Syslog Service fails - missing main.py                        | build-images.yml        | Resolved  |
+| CI-005 | 🟠       | Validate Workspaces fails on all platforms (ubuntu, macos, windows) | validate-workspaces.yml | Open      |
+| CI-006 | 🟠       | Container Vulnerability Scan Docker build errors                    | security-scan.yml       | Resolved  |
+| CI-007 | 🟢       | CodeQL SARIF upload requires GHAS (private repo limitation)         | security-scan.yml       | Won't Fix |
+| CI-008 | 🔴       | test.yml invalid workflow - hashFiles() unrecognized function       | test.yml (Line 110)     | Resolved  |
+| CI-009 | 🟠       | CodeQL Action v3 deprecation warning                                | security-scan.yml       | Resolved  |
+| CI-010 | 🔴       | "Resource not accessible by integration" permission errors          | security-scan.yml       | Resolved  |
 
 **Security Scan Summary (2026-01-11 - Latest):**
 
@@ -43,12 +43,13 @@
 | IaC Scan        | success |
 | Secret Scan     | success |
 
-**CI-007 Details (CodeQL Analysis):**
+**CI-007 Details (CodeQL Analysis - Won't Fix):**
 
-- CodeQL Analysis jobs fail with "Code scanning is not enabled for this repository"
-- SARIF upload fails for same reason
-- **Action Required**: Enable Code Scanning in repository settings (Settings → Security → Code security and analysis)
-- Note: The scans themselves run successfully; only the upload to GitHub Security tab fails
+- CodeQL Analysis jobs run but SARIF upload fails
+- **Root Cause**: Private repository without GitHub Advanced Security (GHAS) license
+- GHAS is required for Code Scanning in private repos (paid feature)
+- **Mitigation**: Scans still run with `continue-on-error: true`, results available in workflow logs
+- SBOM and dependency scan results available as downloadable artifacts
 
 **Build Images Summary (2026-01-11):**
 
