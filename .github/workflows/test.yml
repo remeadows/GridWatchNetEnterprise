@@ -107,7 +107,8 @@ jobs:
   python-tests:
     name: Python Tests
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('pyproject.toml') != '' }}
+    # Note: hashFiles() in job-level 'if' requires explicit check - always run and skip steps if no pyproject
+    # if: hashFiles('pyproject.toml') != '' # This doesn't work at job level
 
     services:
       postgres:
@@ -138,12 +139,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check if pyproject.toml exists
+        id: check-poetry
+        run: |
+          if [ -f "pyproject.toml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No pyproject.toml found, skipping Python tests"
+          fi
+
       - name: Set up Python
+        if: steps.check-poetry.outputs.exists == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install Poetry
+        if: steps.check-poetry.outputs.exists == 'true'
         uses: snok/install-poetry@v1
         with:
           version: latest
@@ -151,6 +164,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Load cached venv
+        if: steps.check-poetry.outputs.exists == 'true'
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
@@ -158,15 +172,17 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.check-poetry.outputs.exists == 'true' && steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
         continue-on-error: true
 
       - name: Install project
+        if: steps.check-poetry.outputs.exists == 'true'
         run: poetry install --no-interaction
         continue-on-error: true
 
       - name: Run pytest
+        if: steps.check-poetry.outputs.exists == 'true'
         run: |
           if poetry run python -c "import pytest" 2>/dev/null; then
             poetry run pytest services/ --tb=short -q || true
@@ -178,6 +194,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/1
 
       - name: Run coverage
+        if: steps.check-poetry.outputs.exists == 'true'
         run: |
           if poetry run python -c "import pytest" 2>/dev/null; then
             poetry run pytest services/ --cov=services --cov-report=xml --cov-report=term-missing || true
