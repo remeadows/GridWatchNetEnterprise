@@ -64,8 +64,9 @@ jobs:
           file: ${{ matrix.image.dockerfile }}
           tags: netnynja/${{ matrix.image.name }}:${{ github.sha }}
           load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Use separate cache scope to avoid conflicts with multi-platform builds
+          cache-from: type=gha,scope=security-${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=security-${{ matrix.image.name }}
           target: production
 
       - name: Run Trivy vulnerability scanner
