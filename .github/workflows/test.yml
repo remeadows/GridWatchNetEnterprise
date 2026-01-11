@@ -72,7 +72,7 @@ jobs:
         run: npm ci
 
       - name: Build packages
-        run: npm run build --workspaces --if-present
+        run: npm run build
 
       - name: Run typecheck
         run: npm run typecheck --workspaces --if-present
@@ -223,7 +223,7 @@ jobs:
         run: npm ci
 
       - name: Build packages
-        run: npm run build --workspaces --if-present
+        run: npm run build
 
       - name: Run ESLint
         run: npm run lint --workspaces --if-present
@@ -254,7 +254,7 @@ jobs:
         run: npm ci
 
       - name: Build packages
-        run: npm run build --workspaces --if-present
+        run: npm run build
 
       - name: Start services with Docker Compose
         run: |
