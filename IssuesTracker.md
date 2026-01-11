@@ -2,9 +2,9 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.1.5
-**Last Updated**: 2026-01-10 11:30 EST
-**Open Issues**: 0 | **Resolved Issues**: 96
+**Version**: 0.1.7
+**Last Updated**: 2026-01-11 (Session)
+**Open Issues**: 3 | **Resolved Issues**: 101
 
 ## Issue Categories
 
@@ -16,6 +16,28 @@
 ---
 
 ## Open Issues
+
+### GitHub Actions CI/CD Failures (2026-01-10)
+
+> Status: PARTIAL | Critical TypeScript errors fixed, remaining issues require CI environment validation
+
+| ID     | Priority | Title                                                               | Workflow                | Status   |
+| ------ | -------- | ------------------------------------------------------------------- | ----------------------- | -------- |
+| CI-001 | 🔴       | Build Gateway fails - TypeScript errors in reports.ts (pdfMake)     | build-images.yml        | Resolved |
+| CI-002 | 🔴       | Build Web UI fails                                                  | build-images.yml        | Resolved |
+| CI-003 | 🔴       | Build Auth Service fails                                            | build-images.yml        | Resolved |
+| CI-004 | 🔴       | Build Syslog Service fails                                          | build-images.yml        | Resolved |
+| CI-005 | 🟠       | Validate Workspaces fails on all platforms (ubuntu, macos, windows) | validate-workspaces.yml | Open     |
+| CI-006 | 🟠       | Container Vulnerability Scan fails (gateway, web-ui)                | security-scan.yml       | Open     |
+| CI-007 | 🟠       | Infrastructure Scan, Secret Detection, CodeQL Analysis fail         | security-scan.yml       | Open     |
+| CI-008 | 🔴       | test.yml invalid workflow - hashFiles() unrecognized function       | test.yml (Line 110)     | Resolved |
+
+**TypeScript Errors Fixed (2026-01-11):**
+
+- ✅ Fixed pdfMake errors in IPAM and NPM reports.ts - Changed from non-existent `pdfMake.createPdf()` to proper `pdfDoc.end()` streaming
+- ✅ Fixed `string | undefined` errors in background-poller.ts, metrics.ts, npm/index.ts with proper null checks
+
+---
 
 ### E2E Review (Codex 2026-01-10)
 

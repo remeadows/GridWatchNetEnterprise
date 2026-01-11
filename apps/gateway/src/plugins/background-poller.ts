@@ -272,9 +272,10 @@ class BackgroundPoller {
         if (code === 0) {
           // Parse latency from output
           const timeMatch = stdout.match(/time[=<](\d+(?:\.\d+)?)\s*ms/i);
-          const latencyMs = timeMatch
-            ? parseFloat(timeMatch[1])
-            : Date.now() - pingStartTime;
+          const latencyMs =
+            timeMatch && timeMatch[1]
+              ? parseFloat(timeMatch[1])
+              : Date.now() - pingStartTime;
           resolveOnce({ success: true, latencyMs });
         } else {
           resolveOnce({ success: false, latencyMs: null });

@@ -12,7 +12,11 @@ import {
   Input,
   Select,
 } from "@netnynja/shared-ui";
-import { useNPMStore, type PollDeviceResponse } from "../../../stores/npm";
+import {
+  useNPMStore,
+  type PollDeviceResponse,
+  type DeviceMetricsPoint,
+} from "../../../stores/npm";
 import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
 import { useDeviceGroupsStore } from "../../../stores/device-groups";
 
@@ -210,16 +214,17 @@ export function NPMDeviceDetailPage() {
     { value: "Other", label: "Other" },
   ];
 
-  const statusMap = {
-    up: "success",
-    down: "error",
-    warning: "warning",
-    unknown: "neutral",
-  } as const;
+  const statusMap: Record<string, "success" | "error" | "warning" | "neutral"> =
+    {
+      up: "success",
+      down: "error",
+      warning: "warning",
+      unknown: "neutral",
+    };
 
   // Transform metrics history for chart
   const chartData =
-    metricsHistory?.metrics.map((m) => ({
+    metricsHistory?.metrics.map((m: DeviceMetricsPoint) => ({
       time: new Date(m.timestamp).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",

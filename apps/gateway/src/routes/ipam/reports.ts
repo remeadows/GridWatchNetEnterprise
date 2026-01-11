@@ -484,17 +484,17 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
       pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
       return new Promise((resolve, reject) => {
-        pdfMake.createPdf(docDefinition).getBuffer(
-          (buffer: Buffer) => {
-            reply.header("Content-Type", "application/pdf");
-            reply.header(
-              "Content-Disposition",
-              `attachment; filename="ipam-scan-report-${scan.network_name.replace(/[^a-zA-Z0-9]/g, "-")}-${now.toISOString().split("T")[0]}.pdf"`,
-            );
-            resolve(reply.send(buffer));
-          },
-          (err: Error) => reject(err),
-        );
+        pdfDoc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          reply.header("Content-Type", "application/pdf");
+          reply.header(
+            "Content-Disposition",
+            `attachment; filename="ipam-scan-report-${scan.network_name.replace(/[^a-zA-Z0-9]/g, "-")}-${now.toISOString().split("T")[0]}.pdf"`,
+          );
+          resolve(reply.send(buffer));
+        });
+        pdfDoc.on("error", (err: Error) => reject(err));
+        pdfDoc.end();
       });
     },
   );
@@ -890,17 +890,17 @@ const reportsRoutes: FastifyPluginAsync = async (fastify) => {
       pdfDoc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
       return new Promise((resolve, reject) => {
-        pdfMake.createPdf(docDefinition).getBuffer(
-          (buffer: Buffer) => {
-            reply.header("Content-Type", "application/pdf");
-            reply.header(
-              "Content-Disposition",
-              `attachment; filename="ipam-network-${network.name.replace(/[^a-zA-Z0-9]/g, "-")}-${now.toISOString().split("T")[0]}.pdf"`,
-            );
-            resolve(reply.send(buffer));
-          },
-          (err: Error) => reject(err),
-        );
+        pdfDoc.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          reply.header("Content-Type", "application/pdf");
+          reply.header(
+            "Content-Disposition",
+            `attachment; filename="ipam-network-${network.name.replace(/[^a-zA-Z0-9]/g, "-")}-${now.toISOString().split("T")[0]}.pdf"`,
+          );
+          resolve(reply.send(buffer));
+        });
+        pdfDoc.on("error", (err: Error) => reject(err));
+        pdfDoc.end();
       });
     },
   );

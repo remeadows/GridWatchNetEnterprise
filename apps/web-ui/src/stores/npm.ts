@@ -288,6 +288,12 @@ interface NPMState {
   ) => Promise<PollDeviceResponse>;
   // Poller status actions
   fetchPollerStatus: () => Promise<void>;
+  // Poll all devices
+  pollAllDevices: () => Promise<{
+    polled: number;
+    succeeded: number;
+    failed: number;
+  }>;
 }
 
 export const useNPMStore = create<NPMState>((set) => ({
@@ -713,5 +719,81 @@ export const useNPMStore = create<NPMState>((set) => ({
       // Silently fail - poller status is non-critical
       console.warn("Failed to fetch poller status:", err);
     }
+  },
+
+  // Poll all devices
+  pollAllDevices: async (): Promise<{
+    polled: number;
+    succeeded: number;
+    failed: number;
+  }> => {
+    const state = useNPMStore.getState();
+    const devicesToPoll = state.devices.filter((d: Device) => d.isActive);
+
+    if (devicesToPoll.length === 0)
+      return { polled: 0, succeeded: 0, failed: 0 };
+
+    set({ isLoading: true, error: null });
+
+    let succeeded = 0;
+    let failed = 0;
+
+    // Poll devices in parallel with concurrency limit of 10
+    const concurrencyLimit = 10;
+    const chunks: Device[][] = [];
+    for (let i = 0; i < devicesToPoll.length; i += concurrencyLimit) {
+      chunks.push(devicesToPoll.slice(i, i + concurrencyLimit));
+    }
+
+    for (const chunk of chunks) {
+      const results = await Promise.allSettled(
+        chunk.map(async (device) => {
+          const methods: ("icmp" | "snmp")[] = [];
+          if (device.pollIcmp) methods.push("icmp");
+          if (device.pollSnmp) methods.push("snmp");
+          if (methods.length === 0) methods.push("icmp"); // Default to ICMP
+
+          const response = await api.post<{ data: PollDeviceResponse }>(
+            `/api/v1/npm/devices/${device.id}/poll`,
+            { methods },
+          );
+          return { deviceId: device.id, result: response.data.data };
+        }),
+      );
+
+      // Update device states based on results
+      const updates: { id: string; status: string; lastPoll: Date }[] = [];
+
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          succeeded++;
+          updates.push({
+            id: result.value.deviceId,
+            status: result.value.result.deviceStatus.status,
+            lastPoll: new Date(result.value.result.deviceStatus.lastPoll),
+          });
+        } else {
+          failed++;
+        }
+      }
+
+      // Batch update state
+      set((state) => ({
+        devices: state.devices.map((d) => {
+          const update = updates.find((u) => u.id === d.id);
+          if (update) {
+            return {
+              ...d,
+              status: update.status as "up" | "down" | "warning" | "unknown",
+              lastPoll: update.lastPoll,
+            };
+          }
+          return d;
+        }),
+      }));
+    }
+
+    set({ isLoading: false });
+    return { polled: devicesToPoll.length, succeeded, failed };
   },
 }));

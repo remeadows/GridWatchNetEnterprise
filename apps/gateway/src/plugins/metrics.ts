@@ -333,7 +333,9 @@ const metricsPlugin: FastifyPluginAsync = async (fastify) => {
     if (!cidr.includes("/")) {
       return ip === cidr;
     }
-    const [range, bits] = cidr.split("/");
+    const parts = cidr.split("/");
+    const range = parts[0] ?? "";
+    const bits = parts[1] ?? "32";
     const mask = ~(2 ** (32 - parseInt(bits, 10)) - 1);
     const ipNum = ip
       .split(".")

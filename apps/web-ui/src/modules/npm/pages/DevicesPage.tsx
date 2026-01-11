@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -172,6 +172,7 @@ export function NPMDevicesPage() {
     fetchDevices,
     createDevice,
     pollDevice,
+    pollAllDevices,
     pollerStatus,
     fetchPollerStatus,
   } = useNPMStore();
@@ -218,6 +219,36 @@ export function NPMDevicesPage() {
     snmpPort: "161",
     pollInterval: "60",
   });
+  const [isPollingAll, setIsPollingAll] = useState(false);
+  const [pollAllProgress, setPollAllProgress] = useState<{
+    polled: number;
+    total: number;
+  } | null>(null);
+  const hasAutoPolled = useRef(false);
+
+  // Auto-poll all devices when page loads (only once)
+  const runPollAll = useCallback(async () => {
+    if (devices.length === 0) return;
+
+    setIsPollingAll(true);
+    setPollAllProgress({
+      polled: 0,
+      total: devices.filter((d: Device) => d.isActive).length,
+    });
+
+    try {
+      const result = await pollAllDevices();
+      setPollAllProgress({ polled: result.polled, total: result.polled });
+      // Brief delay to show completion before hiding
+      setTimeout(() => {
+        setPollAllProgress(null);
+      }, 1500);
+    } catch (err) {
+      console.error("Poll all failed:", err);
+    } finally {
+      setIsPollingAll(false);
+    }
+  }, [devices.length, pollAllDevices]);
 
   useEffect(() => {
     fetchDevices();
@@ -229,12 +260,20 @@ export function NPMDevicesPage() {
     return () => clearInterval(pollerInterval);
   }, [fetchDevices, fetchCredentials, fetchGroups, fetchPollerStatus]);
 
+  // Auto-poll all devices once after initial load
+  useEffect(() => {
+    if (devices.length > 0 && !hasAutoPolled.current && !isLoading) {
+      hasAutoPolled.current = true;
+      runPollAll();
+    }
+  }, [devices.length, isLoading, runPollAll]);
+
   // Filter devices by group
   const filteredDevices =
     selectedGroupFilter === "ungrouped"
-      ? devices.filter((d) => !d.groupId)
+      ? devices.filter((d: Device) => !d.groupId)
       : selectedGroupFilter
-        ? devices.filter((d) => d.groupId === selectedGroupFilter)
+        ? devices.filter((d: Device) => d.groupId === selectedGroupFilter)
         : devices;
 
   // Group devices by their group for collapsed view
@@ -251,7 +290,7 @@ export function NPMDevicesPage() {
     grouped.set(null, []);
 
     // Distribute devices to their groups
-    devices.forEach((device) => {
+    devices.forEach((device: Device) => {
       const groupId = device.groupId || null;
       const existing = grouped.get(groupId) || [];
       grouped.set(groupId, [...existing, device]);
@@ -315,17 +354,17 @@ export function NPMDevicesPage() {
   const handleRemoveFromGroup = async () => {
     if (selectedDeviceIds.length === 0) return;
     // Get the group IDs of selected devices (they might be in different groups)
-    const devicesByGroup = new Map<string, string[]>();
+    const devicesByGroupMap = new Map<string, string[]>();
     selectedDeviceIds.forEach((deviceId) => {
-      const device = filteredDevices.find((d) => d.id === deviceId);
+      const device = filteredDevices.find((d: Device) => d.id === deviceId);
       if (device?.groupId) {
-        const existing = devicesByGroup.get(device.groupId) || [];
-        devicesByGroup.set(device.groupId, [...existing, deviceId]);
+        const existing = devicesByGroupMap.get(device.groupId) || [];
+        devicesByGroupMap.set(device.groupId, [...existing, deviceId]);
       }
     });
 
     try {
-      for (const [groupId, deviceIds] of devicesByGroup) {
+      for (const [groupId, deviceIds] of devicesByGroupMap) {
         await removeDevicesFromGroup(groupId, deviceIds);
       }
       setRowSelection({});
@@ -472,8 +511,37 @@ export function NPMDevicesPage() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowGroupModal(true)}>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={runPollAll}
+            disabled={isPollingAll || devices.length === 0}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 hover:border-cyan-700 shadow-lg shadow-cyan-600/25"
+          >
+            <svg
+              className={`mr-2 h-4 w-4 ${isPollingAll ? "animate-spin" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {isPollingAll
+              ? pollAllProgress
+                ? `Polling ${pollAllProgress.polled}/${pollAllProgress.total}...`
+                : "Polling..."
+              : "Poll All"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowGroupModal(true)}
+            className="bg-violet-600 hover:bg-violet-700 text-white border-violet-600 hover:border-violet-700 shadow-lg shadow-violet-600/25"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -489,7 +557,10 @@ export function NPMDevicesPage() {
             </svg>
             New Group
           </Button>
-          <Button onClick={() => setShowAddModal(true)}>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 hover:border-emerald-700 shadow-lg shadow-emerald-600/25"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -515,7 +586,7 @@ export function NPMDevicesPage() {
             <StatusIndicator status="success" size="lg" />
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {devices.filter((d) => d.status === "up").length}
+                {devices.filter((d: Device) => d.status === "up").length}
               </p>
               <p className="text-sm text-gray-500">Devices Up</p>
             </div>
@@ -526,7 +597,7 @@ export function NPMDevicesPage() {
             <StatusIndicator status="error" size="lg" pulse />
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {devices.filter((d) => d.status === "down").length}
+                {devices.filter((d: Device) => d.status === "down").length}
               </p>
               <p className="text-sm text-gray-500">Devices Down</p>
             </div>
@@ -537,7 +608,7 @@ export function NPMDevicesPage() {
             <StatusIndicator status="warning" size="lg" />
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {devices.filter((d) => d.status === "warning").length}
+                {devices.filter((d: Device) => d.status === "warning").length}
               </p>
               <p className="text-sm text-gray-500">Warnings</p>
             </div>

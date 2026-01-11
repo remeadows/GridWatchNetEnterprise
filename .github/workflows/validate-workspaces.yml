@@ -153,13 +153,15 @@ jobs:
             const turbo = require('./turbo.json');
             const requiredTasks = ['build', 'dev', 'test', 'lint', 'typecheck'];
 
-            console.log('Pipeline tasks:', Object.keys(turbo.pipeline || {}));
+            // Support both Turbo 1.x (pipeline) and Turbo 2.x (tasks)
+            const tasks = turbo.tasks || turbo.pipeline || {};
+            console.log('Turbo tasks:', Object.keys(tasks));
 
             for (const task of requiredTasks) {
-              if (!turbo.pipeline || !turbo.pipeline[task]) {
-                console.warn('WARNING: Pipeline task \"' + task + '\" not defined');
+              if (!tasks[task]) {
+                console.warn('WARNING: Task \"' + task + '\" not defined');
               } else {
-                console.log('✓ Pipeline task \"' + task + '\" configured');
+                console.log('✓ Task \"' + task + '\" configured');
               }
             }
           "

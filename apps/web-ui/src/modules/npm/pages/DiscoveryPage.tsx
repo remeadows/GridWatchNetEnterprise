@@ -10,7 +10,12 @@ import {
   Select,
   StatusIndicator,
 } from "@netnynja/shared-ui";
-import { useNPMStore, type DiscoveryJob } from "../../../stores/npm";
+import {
+  useNPMStore,
+  type DiscoveryJob,
+  type DiscoveredHost,
+  type SiteInfo,
+} from "../../../stores/npm";
 import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
 
 const statusMap: Record<string, "success" | "error" | "warning" | "neutral"> = {
@@ -73,7 +78,9 @@ export function NPMDiscoveryPage() {
 
   // Auto-refresh running jobs
   useEffect(() => {
-    const hasRunningJobs = discoveryJobs.some((j) => j.status === "running");
+    const hasRunningJobs = discoveryJobs.some(
+      (j: DiscoveryJob) => j.status === "running",
+    );
     if (hasRunningJobs) {
       const interval = setInterval(() => {
         fetchDiscoveryJobs();
@@ -140,8 +147,8 @@ export function NPMDiscoveryPage() {
     siteFilter === "all"
       ? discoveredHosts
       : siteFilter === "unassigned"
-        ? discoveredHosts.filter((h) => !h.site)
-        : discoveredHosts.filter((h) => h.site === siteFilter);
+        ? discoveredHosts.filter((h: DiscoveredHost) => !h.site)
+        : discoveredHosts.filter((h: DiscoveredHost) => h.site === siteFilter);
 
   const handleAddSelected = async () => {
     if (selectedHosts.size === 0 || !selectedJob) return;
@@ -172,9 +179,10 @@ export function NPMDiscoveryPage() {
 
   const selectAllReachable = () => {
     const reachableHosts = discoveredHosts.filter(
-      (h) => (h.icmpReachable || h.snmpReachable) && !h.isAddedToMonitoring,
+      (h: DiscoveredHost) =>
+        (h.icmpReachable || h.snmpReachable) && !h.isAddedToMonitoring,
     );
-    setSelectedHosts(new Set(reachableHosts.map((h) => h.id)));
+    setSelectedHosts(new Set(reachableHosts.map((h: DiscoveredHost) => h.id)));
   };
 
   const credentialOptions = [
@@ -221,19 +229,29 @@ export function NPMDiscoveryPage() {
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-amber-600">
-            {discoveryJobs.filter((j) => j.status === "running").length}
+            {
+              discoveryJobs.filter((j: DiscoveryJob) => j.status === "running")
+                .length
+            }
           </p>
           <p className="text-sm text-gray-500">Running</p>
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-green-600">
-            {discoveryJobs.filter((j) => j.status === "completed").length}
+            {
+              discoveryJobs.filter(
+                (j: DiscoveryJob) => j.status === "completed",
+              ).length
+            }
           </p>
           <p className="text-sm text-gray-500">Completed</p>
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {discoveryJobs.reduce((acc, j) => acc + j.discoveredHosts, 0)}
+            {discoveryJobs.reduce(
+              (acc: number, j: DiscoveryJob) => acc + j.discoveredHosts,
+              0,
+            )}
           </p>
           <p className="text-sm text-gray-500">Devices Found</p>
         </Card>
@@ -256,7 +274,7 @@ export function NPMDiscoveryPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {discoveryJobs.map((job) => (
+              {discoveryJobs.map((job: DiscoveryJob) => (
                 <div
                   key={job.id}
                   className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-700"
@@ -525,11 +543,16 @@ export function NPMDiscoveryPage() {
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
                   }`}
                 >
-                  Unassigned ({discoveredHosts.filter((h) => !h.site).length})
+                  Unassigned (
+                  {
+                    discoveredHosts.filter((h: DiscoveredHost) => !h.site)
+                      .length
+                  }
+                  )
                 </button>
                 {jobSites
-                  .filter((s) => s.site !== null)
-                  .map((siteInfo) => (
+                  .filter((s: SiteInfo) => s.site !== null)
+                  .map((siteInfo: SiteInfo) => (
                     <button
                       key={siteInfo.site!}
                       onClick={() => setSiteFilter(siteInfo.site!)}
@@ -545,7 +568,9 @@ export function NPMDiscoveryPage() {
               </div>
 
               {/* Add to Monitoring Controls */}
-              {discoveredHosts.some((h) => !h.isAddedToMonitoring) && (
+              {discoveredHosts.some(
+                (h: DiscoveredHost) => !h.isAddedToMonitoring,
+              ) && (
                 <div className="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4">
@@ -650,7 +675,7 @@ export function NPMDiscoveryPage() {
                           checked={
                             selectedHosts.size ===
                             discoveredHosts.filter(
-                              (h) => !h.isAddedToMonitoring,
+                              (h: DiscoveredHost) => !h.isAddedToMonitoring,
                             ).length
                           }
                           onChange={(e) => {
@@ -658,8 +683,11 @@ export function NPMDiscoveryPage() {
                               setSelectedHosts(
                                 new Set(
                                   discoveredHosts
-                                    .filter((h) => !h.isAddedToMonitoring)
-                                    .map((h) => h.id),
+                                    .filter(
+                                      (h: DiscoveredHost) =>
+                                        !h.isAddedToMonitoring,
+                                    )
+                                    .map((h: DiscoveredHost) => h.id),
                                 ),
                               );
                             } else {
@@ -702,7 +730,7 @@ export function NPMDiscoveryPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredHosts.map((host) => (
+                    {filteredHosts.map((host: DiscoveredHost) => (
                       <tr
                         key={host.id}
                         className={`border-b border-gray-100 dark:border-gray-800 ${
@@ -842,8 +870,8 @@ export function NPMDiscoveryPage() {
                   >
                     <option value="">-- Remove Site Assignment --</option>
                     {jobSites
-                      .filter((s) => s.site !== null)
-                      .map((siteInfo) => (
+                      .filter((s: SiteInfo) => s.site !== null)
+                      .map((siteInfo: SiteInfo) => (
                         <option key={siteInfo.site!} value={siteInfo.site!}>
                           {siteInfo.site} ({siteInfo.count} hosts)
                         </option>

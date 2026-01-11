@@ -840,9 +840,10 @@ const npmRoutes: FastifyPluginAsync = async (fastify) => {
               if (code === 0) {
                 // Parse latency from output
                 const timeMatch = stdout.match(/time[=<](\d+(?:\.\d+)?)\s*ms/i);
-                const parsedLatency = timeMatch
-                  ? parseFloat(timeMatch[1])
-                  : latencyMs;
+                const parsedLatency =
+                  timeMatch && timeMatch[1]
+                    ? parseFloat(timeMatch[1])
+                    : latencyMs;
                 resolve({ success: true, latencyMs: parsedLatency });
               } else {
                 resolve({ success: false });
