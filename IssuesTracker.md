@@ -2,9 +2,9 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.1.15
+**Version**: 0.1.16
 **Last Updated**: 2026-01-11 (Session)
-**Open Issues**: 3 | **Resolved Issues**: 109 | **Won't Fix**: 0
+**Open Issues**: 4 | **Resolved Issues**: 109 | **Deferred**: 1
 
 ## Issue Categories
 
@@ -33,15 +33,19 @@
 | CI-008 | 🔴       | test.yml invalid workflow - hashFiles() unrecognized function       | test.yml (Line 110)     | Resolved |
 | CI-009 | 🟠       | CodeQL Action v3 deprecation warning                                | security-scan.yml       | Resolved |
 | CI-010 | 🔴       | "Resource not accessible by integration" permission errors          | security-scan.yml       | Resolved |
+| CI-011 | 🟡       | Container Scan (gateway) build intermittently fails in CI           | security-scan.yml       | Open     |
+| CI-012 | 🟢       | npm audit: esbuild/vite moderate vulnerability (dev server only)    | Dependency              | Deferred |
 
 **Security Scan Summary (2026-01-11 - Latest):**
 
-| Scan Type       | Status  |
-| --------------- | ------- |
-| Container Scan  | success |
-| Dependency Scan | success |
-| IaC Scan        | success |
-| Secret Scan     | success |
+| Scan Type       | Status                          |
+| --------------- | ------------------------------- |
+| Container Scan  | partial (web-ui ✅, gateway ❌) |
+| Dependency Scan | success                         |
+| IaC Scan        | success                         |
+| Secret Scan     | success                         |
+| CodeQL (JS/TS)  | success                         |
+| CodeQL (Python) | success                         |
 
 **CI-007 Details (CodeQL Analysis - Resolved):**
 
@@ -86,6 +90,20 @@
 - ✅ CI-006: Fixed security-scan.yml container builds
   - Removed redundant npm ci/build steps (Dockerfiles are self-contained)
   - Container scans now build successfully
+- 🔄 CI-011: Gateway container build fails intermittently in security-scan
+  - Applied cache scope fix (`scope=security-${{ matrix.image.name }}`) to prevent conflicts with multi-platform builds
+  - Web UI builds successfully, Gateway fails
+  - Builds work locally with `docker build --no-cache`
+  - May be transient CI resource issue
+
+**CI-012 Details (npm audit esbuild/vite - Deferred):**
+
+- **Vulnerability**: GHSA-67mh-4wv8-2f99 (moderate severity)
+- **Affected**: esbuild <=0.24.2 via vite 0.11.0-6.1.6
+- **Impact**: Development server only - allows any website to read dev server responses
+- **Not a production risk**: Only affects `vite dev` server, not production builds
+- **Fix**: Upgrade vite to 7.3.1+ (major version bump from 5.x)
+- **Deferred**: Requires testing React 18 compatibility with Vite 7.x, scheduled for future sprint
 
 ---
 
