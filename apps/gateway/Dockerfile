@@ -48,10 +48,11 @@ RUN mkdir -p node_modules/@netnynja && \
     ln -s ../../packages/shared-auth node_modules/@netnynja/shared-auth
 
 # Build shared packages first, then gateway (with increased memory for CI)
+# Skip DTS generation in Docker (not needed for production runtime, avoids type resolution issues)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build -w packages/shared-types && \
     npm run build -w packages/shared-auth && \
-    npm run build -w apps/gateway
+    cd apps/gateway && npx tsup --no-dts
 
 # ============================================
 # Development stage (uses volume mounts)

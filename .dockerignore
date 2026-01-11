@@ -32,6 +32,10 @@ secrets/
 # Dependencies (rebuilt in container)
 # ===========================================
 node_modules/
+**/node_modules/
+packages/*/node_modules
+services/*/node_modules
+apps/*/node_modules
 .pnp/
 .pnp.js
 
@@ -48,11 +52,13 @@ venv/
 # Build Outputs
 # ===========================================
 dist/
+**/dist/
 build/
 .next/
 out/
 *.tsbuildinfo
 .turbo/
+**/.turbo/
 
 # ===========================================
 # IDE & Editor
