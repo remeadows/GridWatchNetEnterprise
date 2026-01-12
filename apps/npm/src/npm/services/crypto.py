@@ -1,11 +1,9 @@
 """Cryptographic utilities for secure credential storage."""
 
-import base64
+import hashlib
 import os
 
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from ..core.config import settings
 from ..core.logging import get_logger
@@ -16,64 +14,75 @@ logger = get_logger(__name__)
 class CryptoService:
     """Service for encrypting/decrypting sensitive data.
 
-    Uses per-encryption random salts stored with the ciphertext for security.
-    Format: base64(salt + encrypted_data)
+    Uses AES-256-GCM (FIPS compliant) for encryption.
+    Compatible with the gateway TypeScript encryption.
+    Format: iv_hex:auth_tag_hex:encrypted_hex
     """
 
-    # Salt length for PBKDF2 key derivation
-    SALT_LENGTH = 16
+    # IV length for AES-GCM (12 bytes is recommended)
+    IV_LENGTH = 12
 
     def __init__(self, key: str | None = None) -> None:
         """Initialize with encryption key.
 
         Uses NPM_CREDENTIAL_KEY from settings (required in production).
         """
-        self._key = key or settings.credential_encryption_key
-
-    def _derive_fernet(self, salt: bytes) -> Fernet:
-        """Derive Fernet instance from key and salt."""
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
+        raw_key = key or settings.credential_encryption_key
+        # Derive 32-byte key using scrypt (matching Node.js crypto.scryptSync)
+        # Node.js: crypto.scryptSync(key, 'salt', 32)
+        self._key = hashlib.scrypt(
+            raw_key.encode(),
+            salt=b"salt",
+            n=16384,  # Default N value for scrypt
+            r=8,      # Default r value
+            p=1,      # Default p value
+            dklen=32,
         )
-        key = base64.urlsafe_b64encode(kdf.derive(self._key.encode()))
-        return Fernet(key)
 
     def encrypt(self, plaintext: str) -> str:
-        """Encrypt a string with a random salt and return base64-encoded result.
+        """Encrypt a string and return in iv:authTag:encrypted format.
 
-        The salt is prepended to the encrypted data for later decryption.
+        Compatible with the gateway TypeScript encryption.
         """
         if not plaintext:
             return ""
         try:
-            # Generate random salt for this encryption
-            salt = os.urandom(self.SALT_LENGTH)
-            fernet = self._derive_fernet(salt)
-            encrypted = fernet.encrypt(plaintext.encode())
-            # Combine salt + encrypted data
-            combined = salt + encrypted
-            return base64.urlsafe_b64encode(combined).decode()
+            # Generate random IV
+            iv = os.urandom(self.IV_LENGTH)
+            aesgcm = AESGCM(self._key)
+            # Encrypt and get ciphertext with auth tag appended
+            ciphertext_with_tag = aesgcm.encrypt(iv, plaintext.encode(), None)
+            # AES-GCM appends the 16-byte auth tag to the ciphertext
+            ciphertext = ciphertext_with_tag[:-16]
+            auth_tag = ciphertext_with_tag[-16:]
+            # Format: iv:authTag:encrypted (matching Node.js format)
+            return f"{iv.hex()}:{auth_tag.hex()}:{ciphertext.hex()}"
         except Exception as e:
             logger.error("encryption_failed", error=str(e))
             raise ValueError("Failed to encrypt data") from e
 
     def decrypt(self, ciphertext: str) -> str:
-        """Decrypt a base64-encoded ciphertext string.
+        """Decrypt a string in iv:authTag:encrypted format.
 
-        Extracts the salt from the beginning of the decoded data.
+        Compatible with the gateway TypeScript encryption.
         """
         if not ciphertext:
             return ""
         try:
-            combined = base64.urlsafe_b64decode(ciphertext.encode())
-            # Extract salt and encrypted data
-            salt = combined[:self.SALT_LENGTH]
-            encrypted = combined[self.SALT_LENGTH:]
-            fernet = self._derive_fernet(salt)
-            decrypted = fernet.decrypt(encrypted)
+            parts = ciphertext.split(":")
+            if len(parts) != 3:
+                raise ValueError(f"Invalid encrypted data format: expected 3 parts, got {len(parts)}")
+
+            iv_hex, auth_tag_hex, encrypted_hex = parts
+            iv = bytes.fromhex(iv_hex)
+            auth_tag = bytes.fromhex(auth_tag_hex)
+            encrypted = bytes.fromhex(encrypted_hex)
+
+            # AES-GCM expects ciphertext + auth_tag concatenated
+            ciphertext_with_tag = encrypted + auth_tag
+
+            aesgcm = AESGCM(self._key)
+            decrypted = aesgcm.decrypt(iv, ciphertext_with_tag, None)
             return decrypted.decode()
         except Exception as e:
             logger.error("decryption_failed", error=str(e))

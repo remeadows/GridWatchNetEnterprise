@@ -60,8 +60,8 @@ COPY pyproject.toml README.md ./
 COPY src/ ./src/
 RUN pip install .
 
-# Collector worker command
-CMD ["python", "-m", "npm.collectors.snmp_poller"]
+# Collector worker command (SNMPv3)
+CMD ["python", "-m", "npm.collectors.snmpv3_poller"]
 
 # ==================================================
 # Alerts stage (for alert evaluation)

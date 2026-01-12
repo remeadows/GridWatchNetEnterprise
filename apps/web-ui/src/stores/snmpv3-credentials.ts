@@ -34,10 +34,15 @@ export interface TestCredentialResult {
   port: number;
   credentialId: string;
   credentialName: string;
-  message: string;
+  responseTimeMs?: number;
+  // Success fields
   sysDescr?: string;
   sysName?: string;
-  responseTime?: number;
+  sysUptime?: number;
+  sysContact?: string;
+  sysLocation?: string;
+  // Error field
+  error?: string;
 }
 
 interface SNMPv3CredentialsState {

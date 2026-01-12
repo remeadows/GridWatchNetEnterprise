@@ -235,8 +235,8 @@ services:
 
   gateway:
     build:
-      context: ./apps/gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/gateway/Dockerfile
       target: development
     profiles: ["ipam", "npm", "stig"]
     container_name: netnynja-gateway
@@ -286,8 +286,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/auth-service/Dockerfile
       target: development
     profiles: ["ipam", "npm", "stig"]
     container_name: netnynja-auth-service
@@ -321,8 +321,8 @@ services:
 
   web-ui:
     build:
-      context: ./apps/web-ui
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web-ui/Dockerfile
       target: development
     profiles: ["ipam", "npm", "stig"]
     container_name: netnynja-web-ui
@@ -450,7 +450,7 @@ services:
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: ${VAULT_DEV_TOKEN:-netnynja-dev-token}
       JWT_SECRET: ${JWT_SECRET:-netnynja-dev-jwt-secret-2025}
-      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
+      NPM_CREDENTIAL_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-netnynja-dev-encryption-key-32ch}
       VICTORIAMETRICS_URL: http://victoriametrics:8428
       LOG_LEVEL: DEBUG
     volumes:
@@ -491,7 +491,7 @@ services:
       NATS_URL: nats://nats:4222
       VICTORIAMETRICS_URL: http://victoriametrics:8428
       VAULT_ADDR: http://vault:8200
-      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
+      NPM_CREDENTIAL_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-netnynja-dev-encryption-key-32ch}
     volumes:
       - ./apps/npm/collectors:/app/collectors:ro
     depends_on:
@@ -518,7 +518,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NATS_URL: nats://nats:4222
       VAULT_ADDR: http://vault:8200
-      NPM_CREDENTIAL_KEY: ${NPM_CREDENTIAL_KEY:-netnynja-npm-dev-credential-key-2025}
+      NPM_CREDENTIAL_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-netnynja-dev-encryption-key-32ch}
     volumes:
       - ./apps/npm/alerts:/app/alerts:ro
     depends_on:

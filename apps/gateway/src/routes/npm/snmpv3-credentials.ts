@@ -9,6 +9,7 @@ import crypto from "crypto";
 import { pool } from "../../db";
 import { logger } from "../../logger";
 import { config } from "../../config";
+import { testSNMPv3Credential } from "../../snmp";
 
 // Encryption utilities using AES-256-GCM (FIPS compliant)
 const ALGORITHM = "aes-256-gcm";
@@ -658,13 +659,6 @@ const snmpv3CredentialsRoutes: FastifyPluginAsync = async (fastify) => {
         };
       }
 
-      // TODO: Implement actual SNMP test using net-snmp or similar library
-      // For now, return a placeholder response indicating the test endpoint is ready
-      // Real implementation would:
-      // 1. Create SNMPv3 session with the decrypted credentials
-      // 2. Send SNMP GET request for sysDescr (OID: 1.3.6.1.2.1.1.1.0)
-      // 3. Return success/failure with device info
-
       logger.info(
         {
           credentialId: id,
@@ -674,7 +668,37 @@ const snmpv3CredentialsRoutes: FastifyPluginAsync = async (fastify) => {
         "SNMPv3 credential test requested",
       );
 
-      // Placeholder response - actual SNMP implementation needed
+      // Perform actual SNMPv3 test
+      const testResult = await testSNMPv3Credential(
+        body.targetIp,
+        body.port,
+        {
+          username: credential.username,
+          securityLevel: credential.security_level,
+          authProtocol: credential.auth_protocol,
+          authPassword,
+          privProtocol: credential.priv_protocol,
+          privPassword,
+          contextName: credential.context_name,
+          contextEngineId: credential.context_engine_id,
+        },
+      );
+
+      if (!testResult.success) {
+        return {
+          success: false,
+          data: {
+            tested: true,
+            targetIp: body.targetIp,
+            port: body.port,
+            credentialId: id,
+            credentialName: credential.name,
+            responseTimeMs: testResult.responseTimeMs,
+            error: testResult.error,
+          },
+        };
+      }
+
       return {
         success: true,
         data: {
@@ -683,12 +707,12 @@ const snmpv3CredentialsRoutes: FastifyPluginAsync = async (fastify) => {
           port: body.port,
           credentialId: id,
           credentialName: credential.name,
-          message:
-            "SNMPv3 test endpoint ready. Actual SNMP testing requires net-snmp integration.",
-          // In real implementation, would return:
-          // sysDescr: "...",
-          // sysName: "...",
-          // responseTime: 42, // ms
+          responseTimeMs: testResult.responseTimeMs,
+          sysDescr: testResult.sysDescr,
+          sysName: testResult.sysName,
+          sysUptime: testResult.sysUptime,
+          sysContact: testResult.sysContact,
+          sysLocation: testResult.sysLocation,
         },
       };
     },
