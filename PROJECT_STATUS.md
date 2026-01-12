@@ -1,11 +1,11 @@
 # NetNynja Enterprise - Project Status
 
-**Version**: 0.2.0
-**Last Updated**: 2026-01-10 08:15 EST
+**Version**: 0.2.2
+**Last Updated**: 2026-01-12 12:00 EST
 **Current Phase**: Phase 9 - CI/CD & Release (In Progress)
-**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 98%
-**Issues**: 12 Open (Security) | 75 Resolved
-**Security Posture**: Medium (Codex Review 2026-01-10)
+**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 99%
+**Issues**: 2 Open | 116 Resolved
+**Security Posture**: Strong (Codex Review 2026-01-10, Remediated)
 
 ---
 
@@ -742,6 +742,37 @@ Located in `charts/netnynja-enterprise/`:
 ## Changelog
 
 ### [Unreleased]
+
+#### Session 2026-01-12: NPM Enhanced Device Metrics
+
+**NPM Module Enhancements:**
+
+- Added disk/storage metrics collection via SNMP (Sophos SFOS-FIREWALL-MIB)
+  - Disk utilization percentage, total capacity, used space
+  - Swap utilization percentage and total capacity
+- Added interface traffic summaries (IF-MIB RFC 2863)
+  - Total inbound/outbound octets aggregation
+  - Total inbound/outbound error counts
+  - 64-bit counter support (HC counters) for high-speed interfaces
+- Added Sophos service status monitoring (20+ services)
+  - Anti-Virus, IPS, Web Filter, VPN, etc.
+  - Service status displayed on Device Detail page
+- Database schema updates:
+  - Migration script for existing databases (001_add_disk_service_metrics.sql)
+  - New columns in npm.device_metrics table
+  - JSONB services_status column with GIN index
+- Frontend enhancements:
+  - Disk Utilization card on Device Detail page
+  - Swap Usage, Traffic In/Out, Interface Errors cards
+  - Service Status card with color-coded indicators
+- Fixed pysnmp 7.x async iteration issue (bulk_cmd → next_cmd)
+
+**Bug Fixes:**
+
+- APP-008: Fixed STIG Library page 500 error (missing database tables)
+- APP-009: Fixed auto-polling not working (database tables missing)
+- APP-010: Fixed NPM Poll Now fails (created npm.device_metrics table)
+- APP-011: Fixed Sidebar collapse toggle button not visible
 
 #### Session 2026-01-10: Codex Security Review
 

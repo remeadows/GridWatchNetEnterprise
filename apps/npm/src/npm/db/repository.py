@@ -6,7 +6,7 @@ from uuid import UUID
 
 from asyncpg import Connection
 
-from ..models.device import Device, DeviceCreate, DeviceUpdate, DeviceStatus, DeviceWithInterfaces
+from ..models.device import Device, DeviceCreate, DeviceUpdate, DeviceStatus, DeviceWithInterfaces, LatestDeviceMetrics
 from ..models.interface import Interface, InterfaceCreate, InterfaceUpdate, InterfaceStatus
 from ..models.alert import (
     Alert, AlertCreate, AlertUpdate, AlertStatus,
@@ -130,12 +130,63 @@ class DeviceRepository:
             UUID(device_id)
         )
 
+        # Get latest device metrics
+        latest_metrics = await self._get_latest_metrics(device_id)
+
         return DeviceWithInterfaces(
             **device.model_dump(),
             interfaces=interfaces,
             interface_count=len(interfaces),
             active_alerts=alert_count or 0,
+            latest_metrics=latest_metrics,
         )
+
+    async def _get_latest_metrics(self, device_id: str) -> LatestDeviceMetrics | None:
+        """Get the most recent metrics for a device."""
+        query = """
+            SELECT
+                collected_at,
+                icmp_latency_ms,
+                icmp_packet_loss_percent,
+                icmp_reachable,
+                cpu_utilization_percent as cpu_utilization,
+                memory_utilization_percent as memory_utilization,
+                memory_total_bytes,
+                memory_used_bytes,
+                uptime_seconds,
+                disk_utilization_percent as disk_utilization,
+                disk_total_bytes,
+                disk_used_bytes,
+                swap_utilization_percent as swap_utilization,
+                swap_total_bytes,
+                total_interfaces,
+                interfaces_up,
+                interfaces_down,
+                total_in_octets,
+                total_out_octets,
+                total_in_errors,
+                total_out_errors,
+                services_status,
+                is_available
+            FROM npm.device_metrics
+            WHERE device_id = $1
+            ORDER BY collected_at DESC
+            LIMIT 1
+        """
+        row = await self.conn.fetchrow(query, UUID(device_id))
+        if not row:
+            return None
+
+        data = _row_to_dict(row)
+        # Parse services_status from JSON if present
+        if data.get("services_status"):
+            import json
+            if isinstance(data["services_status"], str):
+                data["services_status"] = json.loads(data["services_status"])
+        else:
+            data["services_status"] = {}
+
+        return LatestDeviceMetrics(**data)
 
     async def find_by_ip(self, ip_address: str) -> Device | None:
         """Find a device by IP address."""

@@ -188,6 +188,19 @@ export interface CurrentDeviceMetrics {
   interfacesUp: number | null;
   interfacesDown: number | null;
   isAvailable: boolean;
+  // Disk/Storage metrics
+  diskPercent: number | null;
+  diskTotalBytes: number | null;
+  diskUsedBytes: number | null;
+  swapPercent: number | null;
+  swapTotalBytes: number | null;
+  // Interface traffic summary
+  totalInOctets: number | null;
+  totalOutOctets: number | null;
+  totalInErrors: number | null;
+  totalOutErrors: number | null;
+  // Service status (vendor-specific)
+  servicesStatus: Record<string, boolean> | null;
 }
 
 export interface Last24HoursStats {

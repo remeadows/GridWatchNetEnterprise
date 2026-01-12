@@ -95,12 +95,48 @@ class Device(DeviceBase):
         from_attributes = True
 
 
+class LatestDeviceMetrics(BaseModel):
+    """Latest metrics snapshot for a device."""
+
+    collected_at: datetime | None = None
+    # ICMP
+    icmp_latency_ms: float | None = None
+    icmp_packet_loss_percent: float | None = None
+    icmp_reachable: bool | None = None
+    # SNMP
+    cpu_utilization: float | None = None
+    memory_utilization: float | None = None
+    memory_total_bytes: int | None = None
+    memory_used_bytes: int | None = None
+    uptime_seconds: int | None = None
+    # Disk/Storage
+    disk_utilization: float | None = None
+    disk_total_bytes: int | None = None
+    disk_used_bytes: int | None = None
+    swap_utilization: float | None = None
+    swap_total_bytes: int | None = None
+    # Interface summary
+    total_interfaces: int = 0
+    interfaces_up: int = 0
+    interfaces_down: int = 0
+    total_in_octets: int = 0
+    total_out_octets: int = 0
+    total_in_errors: int = 0
+    total_out_errors: int = 0
+    # Service status (vendor-specific)
+    services_status: dict[str, bool] = Field(default_factory=dict)
+    # Availability
+    is_available: bool = False
+
+
 class DeviceWithInterfaces(Device):
     """Device model with associated interfaces."""
 
     interfaces: list["Interface"] = Field(default_factory=list)
     interface_count: int = 0
     active_alerts: int = 0
+    # Latest metrics snapshot
+    latest_metrics: LatestDeviceMetrics | None = None
 
     class Config:
         from_attributes = True

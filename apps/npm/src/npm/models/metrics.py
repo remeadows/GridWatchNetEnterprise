@@ -38,6 +38,12 @@ class DeviceMetrics(BaseModel):
     memory_used_bytes: int | None = None
     temperature: float | None = None
     uptime_seconds: int | None = None
+    # Disk/Storage metrics
+    disk_utilization: float | None = None
+    disk_total_bytes: int | None = None
+    disk_used_bytes: int | None = None
+    swap_utilization: float | None = None
+    swap_total_bytes: int | None = None
     # Interface summary
     interface_count: int = 0
     interface_up_count: int = 0
@@ -46,6 +52,8 @@ class DeviceMetrics(BaseModel):
     total_out_octets: int = 0
     total_in_errors: int = 0
     total_out_errors: int = 0
+    # Service status (Sophos/vendor-specific)
+    services_status: dict[str, bool] = Field(default_factory=dict)
     # Availability
     is_available: bool = False
 

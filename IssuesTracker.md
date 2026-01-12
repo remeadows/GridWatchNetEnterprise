@@ -2,9 +2,9 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.1.17
-**Last Updated**: 2026-01-11 (Session)
-**Open Issues**: 4 | **Resolved Issues**: 110 | **Deferred**: 1
+**Version**: 0.1.18
+**Last Updated**: 2026-01-12 12:00 EST
+**Open Issues**: 2 | **Resolved Issues**: 116 | **Deferred**: 1
 
 ## Issue Categories
 
@@ -122,22 +122,36 @@
 
 ### Application Runtime Issues (2026-01-11)
 
-| ID      | Priority | Title                                                  | Category | Status |
-| ------- | -------- | ------------------------------------------------------ | -------- | ------ |
-| APP-008 | 🟠       | STIG Library page returns 500 error on page load       | STIG     | Open   |
-| APP-009 | 🟠       | Auto-polling not working and Poll Now button no effect | Polling  | Open   |
+| ID      | Priority | Title                                                  | Category | Status   |
+| ------- | -------- | ------------------------------------------------------ | -------- | -------- |
+| APP-008 | 🟠       | STIG Library page returns 500 error on page load       | STIG     | Resolved |
+| APP-009 | 🟠       | Auto-polling not working and Poll Now button no effect | Polling  | Resolved |
+| APP-010 | 🟠       | NPM Poll Now fails: npm.device_metrics does not exist  | NPM      | Resolved |
+| APP-011 | 🟡       | Sidebar collapse toggle button not visible             | UI       | Resolved |
 
-**APP-008 Details:**
+**APP-008 Details (Resolved 2026-01-12):**
 
 - **Symptom**: STIG Library page displays "Request failed with status code 500"
-- **Location**: `/stig/library` route
-- **Impact**: Users cannot view or upload STIG definitions
+- **Root cause**: `stig` schema existed but tables were never created (database volume persisted data from before tables were added to init.sql)
+- **Fix**: Created all 5 missing STIG tables: `stig.targets`, `stig.definitions`, `stig.definition_rules`, `stig.audit_jobs`, `stig.audit_results` with indexes
 
-**APP-009 Details:**
+**APP-009 Details (Resolved 2026-01-12):**
 
 - **Symptom**: Application does not auto-poll for updates; "Poll Now" button has no visible effect
-- **Location**: Background poller / UI polling controls
-- **Impact**: Real-time data updates not functioning; manual refresh required
+- **Root cause**: Same as APP-010 - missing metrics tables caused database errors
+- **Fix**: Created npm.device_metrics and related partitioned tables; polling now works
+
+**APP-010 Details (Resolved 2026-01-12):**
+
+- **Symptom**: Poll Now button shows "Failed - relation npm.device_metrics does not exist"
+- **Root cause**: NPM metrics tables (device_metrics, interface_metrics, volume_metrics) were not created in database
+- **Fix**: Created partitioned metrics tables with proper composite primary keys (id, collected_at) and indexes
+
+**APP-011 Details (Resolved 2026-01-12):**
+
+- **Symptom**: Sidebar collapsed but no way to expand it - toggle button not visible
+- **Root cause**: Sidebar header (including toggle button) only rendered when `header` prop was truthy; collapsed state passed no header
+- **Fix**: Changed condition from `{header && (...)}` to `{(header || onToggleCollapse) && (...)}` in Sidebar.tsx; rebuilt shared-ui package
 
 ---
 
@@ -317,6 +331,9 @@
 | #103 | 🔴       | NPM - Continuous background polling needed (default 5 min interval) | -        | Resolved |
 | #104 | 🔴       | NPM - Poll Now fails with PostgreSQL parameter type error           | -        | Resolved |
 | #105 | 🟠       | NPM - Need intuitive way to enable SNMPv3 in Device Properties      | -        | Resolved |
+| #113 | 🟠       | NPM - Add disk/storage metrics collection (Sophos SFOS)             | -        | Resolved |
+| #114 | 🟠       | NPM - Add interface traffic summaries (IF-MIB)                      | -        | Resolved |
+| #115 | 🟡       | NPM - Add Sophos service status monitoring                          | -        | Resolved |
 | #106 | 🟠       | IPAM - Allow multi-select scan types (Ping+TCP+NMAP simultaneously) | -        | Resolved |
 | #107 | 🟠       | IPAM - Fingerprinting not working (hostname, MAC, vendor)           | -        | Resolved |
 | #108 | 🟡       | IPAM - Show all results on page (pagination controls needed)        | -        | Resolved |
@@ -423,6 +440,9 @@
 | SEC-004 | 🟢       | trustProxy accepts any X-Forwarded-For header                    | 2026-01-10    | Made trustProxy configurable via TRUST_PROXY environment variable. Supports "true" (trust all), "false" (disable), or comma-separated IPs/CIDRs (recommended for production). Added production warning when TRUST_PROXY=true. Files modified: apps/gateway/src/config.ts, apps/gateway/src/index.ts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | SR-009  | 🟢       | NATS connection lacks TLS/auth enforcement                       | 2026-01-10    | Added NATS TLS and authentication support to all Python services: Added nats_user, nats_password, nats_tls_enabled, nats_tls_ca config fields to apps/ipam/src/ipam/core/config.py, apps/npm/src/npm/core/config.py, apps/stig/src/stig/core/config.py; Updated nats_handler.py connect() methods in IPAM, NPM, and STIG to build connection options with optional auth credentials and TLS context; Logs nats_auth_enabled and nats_tls_enabled when configured. Production environments can now require NATS_USER, NATS_PASSWORD, and NATS_TLS_ENABLED=true via environment variables.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | SR-010  | 🟢       | Prometheus metrics label escaping and cardinality                | 2026-01-10    | Added escape_label_value() helper function to both apps/npm/src/npm/services/metrics.py and apps/ipam/src/ipam/services/metrics.py; Function escapes backslash, double-quote, and newline characters per Prometheus text format specification; Applied escaping to all label values in push_device_metrics, push_interface_metrics, push_network_utilization, push_scan_metrics, query_metric_history, and query_utilization_history methods. Prevents metric format corruption when device/network names contain special characters.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| #113    | 🟠       | NPM - Add disk/storage metrics collection (Sophos SFOS)          | 2026-01-12    | Added Sophos SFOS-FIREWALL-MIB OIDs for disk metrics: sfosDiskPercentUsage (1.3.6.1.4.1.2604.5.1.2.4.2.0), sfosDiskCapacity (1.3.6.1.4.1.2604.5.1.2.4.1.0), sfosSwapPercentUsage (1.3.6.1.4.1.2604.5.1.2.5.4.0), sfosSwapCapacity (1.3.6.1.4.1.2604.5.1.2.5.3.0). Updated DeviceMetrics model with disk_utilization, disk_total_bytes, disk_used_bytes, swap_utilization, swap_total_bytes. Created database migration 001_add_disk_service_metrics.sql. Added Disk Utilization card to DeviceDetailPage.tsx.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| #114    | 🟠       | NPM - Add interface traffic summaries (IF-MIB)                   | 2026-01-12    | Added IF-MIB OIDs for interface traffic: ifHCInOctets, ifHCOutOctets (64-bit counters), ifInErrors, ifOutErrors. Implemented walk() method using next_cmd for table iteration. Added total_in_octets, total_out_octets, total_in_errors, total_out_errors to DeviceMetrics model and database schema. Frontend displays Traffic In/Out and Interface Errors cards on Device Detail page with byte formatting.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| #115    | 🟡       | NPM - Add Sophos service status monitoring                       | 2026-01-12    | Added 20+ Sophos service status OIDs from SFOS-FIREWALL-MIB including sfosAntiVirusStatus, sfosAntiSpamStatus, sfosIPSStatus, sfosWebCategoryStatus, etc. Added services_status JSONB column to npm.device_metrics with GIN index. Created Service Status card on DeviceDetailPage.tsx with color-coded indicators (green=running, red=stopped). Service status parsing handles both integer (0/1) and string ("running"/"active") values.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ---
 

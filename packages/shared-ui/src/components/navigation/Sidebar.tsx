@@ -56,13 +56,16 @@ export function Sidebar({
           />
         </>
       )}
-      {header && (
+      {(header || onToggleCollapse) && (
         <div className="relative z-10 flex h-16 items-center justify-between border-b border-dark-700 px-4">
           {header}
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
-              className="rounded-md p-1.5 text-silver-400 hover:bg-dark-800 hover:text-primary-400"
+              className={cn(
+                "rounded-md p-1.5 text-silver-400 hover:bg-dark-800 hover:text-primary-400",
+                collapsed && "mx-auto"
+              )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <svg

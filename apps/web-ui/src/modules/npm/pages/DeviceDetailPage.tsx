@@ -338,7 +338,7 @@ export function NPMDeviceDetailPage() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Row 1: Core metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="CPU Utilization"
@@ -383,6 +383,14 @@ export function NPMDeviceDetailPage() {
           }
         />
         <StatsCard
+          title="Disk Utilization"
+          value={
+            current?.diskPercent !== null && current?.diskPercent !== undefined
+              ? `${current.diskPercent.toFixed(1)}%`
+              : "N/A"
+          }
+        />
+        <StatsCard
           title="Latency"
           value={
             current?.latencyMs !== null && current?.latencyMs !== undefined
@@ -401,6 +409,11 @@ export function NPMDeviceDetailPage() {
               : undefined
           }
         />
+        <StatsCard title="Uptime" value={current?.uptimeFormatted || "N/A"} />
+      </div>
+
+      {/* Stats - Row 2: Storage and availability */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="Availability (24h)"
           value={
@@ -410,7 +423,38 @@ export function NPMDeviceDetailPage() {
               : "N/A"
           }
         />
-        <StatsCard title="Uptime" value={current?.uptimeFormatted || "N/A"} />
+        <StatsCard
+          title="Swap Usage"
+          value={
+            current?.swapPercent !== null && current?.swapPercent !== undefined
+              ? `${current.swapPercent.toFixed(1)}%`
+              : "N/A"
+          }
+        />
+        <StatsCard
+          title="Traffic In"
+          value={
+            current?.totalInOctets !== null && current?.totalInOctets !== undefined
+              ? formatBytes(current.totalInOctets)
+              : "N/A"
+          }
+        />
+        <StatsCard
+          title="Traffic Out"
+          value={
+            current?.totalOutOctets !== null && current?.totalOutOctets !== undefined
+              ? formatBytes(current.totalOutOctets)
+              : "N/A"
+          }
+        />
+        <StatsCard
+          title="Interface Errors"
+          value={
+            current?.totalInErrors !== null || current?.totalOutErrors !== null
+              ? `${(current?.totalInErrors ?? 0) + (current?.totalOutErrors ?? 0)}`
+              : "N/A"
+          }
+        />
       </div>
 
       {/* Device Details */}
@@ -516,6 +560,62 @@ export function NPMDeviceDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* Service Status (Sophos/vendor-specific) */}
+      {current?.servicesStatus && Object.keys(current.servicesStatus).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Service Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {Object.entries(current.servicesStatus).map(([serviceName, isRunning]) => {
+                // Format service name: "ips_service" -> "IPS Service"
+                const displayName = serviceName
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, c => c.toUpperCase())
+                  .replace(/Ips/g, 'IPS')
+                  .replace(/Vpn/g, 'VPN')
+                  .replace(/Av /g, 'AV ')
+                  .replace(/As /g, 'Anti-Spam ')
+                  .replace(/Dns/g, 'DNS')
+                  .replace(/Ha /g, 'HA ')
+                  .replace(/Http/g, 'HTTP')
+                  .replace(/Ftp/g, 'FTP')
+                  .replace(/Pop3/g, 'POP3')
+                  .replace(/Imap4/g, 'IMAP4')
+                  .replace(/Smtp/g, 'SMTP')
+                  .replace(/Ssh/g, 'SSH')
+                  .replace(/Ntp/g, 'NTP')
+                  .replace(/Ipsec/g, 'IPsec')
+                  .replace(/Ssl/g, 'SSL');
+                return (
+                  <div
+                    key={serviceName}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
+                      isRunning
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : 'bg-red-50 dark:bg-red-900/20'
+                    }`}
+                  >
+                    <StatusIndicator
+                      status={isRunning ? 'success' : 'error'}
+                      size="sm"
+                    />
+                    <span className={`text-sm font-medium ${
+                      isRunning
+                        ? 'text-green-700 dark:text-green-400'
+                        : 'text-red-700 dark:text-red-400'
+                    }`}>
+                      {displayName}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Metrics Chart */}
       <Card>

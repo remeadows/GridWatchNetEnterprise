@@ -377,10 +377,22 @@ CREATE TABLE npm.device_metrics (
     uptime_seconds BIGINT,
     -- Temperature (if available)
     temperature_celsius NUMERIC(5, 2),
+    -- Disk/Storage metrics
+    disk_utilization_percent NUMERIC(5, 2),
+    disk_total_bytes BIGINT,
+    disk_used_bytes BIGINT,
+    swap_utilization_percent NUMERIC(5, 2),
+    swap_total_bytes BIGINT,
     -- Interface summary
     total_interfaces INTEGER,
     interfaces_up INTEGER,
     interfaces_down INTEGER,
+    total_in_octets BIGINT,
+    total_out_octets BIGINT,
+    total_in_errors BIGINT,
+    total_out_errors BIGINT,
+    -- Service status (vendor-specific, stored as JSON)
+    services_status JSONB,
     -- Availability calculation (based on poll results)
     is_available BOOLEAN DEFAULT false
 ) PARTITION BY RANGE (collected_at);
