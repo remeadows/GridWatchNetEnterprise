@@ -12,6 +12,18 @@ const ConfigSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
 
+  // Proxy settings
+  // Set to 'true' when behind a reverse proxy (nginx, load balancer)
+  // Set to 'false' when directly exposed to the internet
+  // Default: true in development for local dev servers, false in production
+  TRUST_PROXY: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (val === undefined) return undefined;
+      return val === "true" || val === "1";
+    }),
+
   // Database
   POSTGRES_URL: z.string(),
 

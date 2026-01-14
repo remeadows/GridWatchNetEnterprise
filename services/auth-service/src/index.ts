@@ -14,6 +14,14 @@ import { registerRoutes } from "./routes";
 import { pool, closePool, checkHealth as checkDbHealth } from "./db";
 import { redis, closeRedis, checkHealth as checkRedisHealth } from "./redis";
 
+// Determine trustProxy value:
+// - If TRUST_PROXY is explicitly set, use that value
+// - Otherwise, default to true in development (for dev servers), false in production
+const trustProxyValue =
+  config.TRUST_PROXY !== undefined
+    ? config.TRUST_PROXY
+    : config.NODE_ENV === "development";
+
 const fastify = Fastify({
   logger: {
     level: config.LOG_LEVEL,
@@ -25,7 +33,7 @@ const fastify = Fastify({
           }
         : undefined,
   },
-  trustProxy: true,
+  trustProxy: trustProxyValue,
 });
 
 async function start(): Promise<void> {

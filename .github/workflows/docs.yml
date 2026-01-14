@@ -1,0 +1,91 @@
+# Documentation Site Deployment (GitHub Pages)
+# Deploys API documentation and project overview to GitHub Pages
+#
+# Trigger: Manual dispatch or on release
+# URL: https://<org>.github.io/netnynja-enterprise/
+
+name: Deploy Documentation
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Copy documentation files
+        run: |
+          cp README.md docs/index.md
+          cp DOCKER_STRUCTURE.md docs/docker-structure.md 2>/dev/null || true
+          cp CONTEXT.md docs/architecture.md 2>/dev/null || true
+
+      - name: Generate OpenAPI spec
+        run: |
+          # Start gateway in background to extract OpenAPI spec
+          cd apps/gateway
+          timeout 30 npm run dev &
+          sleep 10
+          curl -s http://localhost:3001/docs/json > ../../docs/openapi.json || echo '{}' > ../../docs/openapi.json
+          kill %1 2>/dev/null || true
+        continue-on-error: true
+
+      - name: Create docs index
+        run: |
+          cat > docs/_config.yml << 'EOF'
+          title: NetNynja Enterprise
+          description: Unified Network Management Platform
+          theme: jekyll-theme-minimal
+          plugins:
+            - jekyll-relative-links
+          relative_links:
+            enabled: true
+            collections: true
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./docs"
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
