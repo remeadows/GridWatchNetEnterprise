@@ -1,11 +1,12 @@
 # NetNynja Enterprise - Project Status
 
 **Version**: 0.2.3
-**Last Updated**: 2026-01-14 14:30 EST
-**Current Phase**: Phase 9 - CI/CD & Release (In Progress)
+**Last Updated**: 2026-01-14 18:50 EST
+**Current Phase**: Phase 9 - CI/CD & Release (Complete)
 **Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 100%
 **Issues**: 0 Open | 130 Resolved | 1 Deferred
 **Security Posture**: Low (All Codex Review 2026-01-14 findings resolved)
+**Release Status**: v0.2.3 Released ✅ (CI: PASS)
 
 ---
 
@@ -17,18 +18,18 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 ## Phase Overview
 
-| Phase | Name                      | Status         | Target     |
-| ----- | ------------------------- | -------------- | ---------- |
-| 0     | Repository Setup          | ✅ Complete    | Week 1-2   |
-| 1     | Shared Infrastructure     | ✅ Complete    | Week 3-4   |
-| 2     | Unified Authentication    | ✅ Complete    | Week 5-6   |
-| 3     | API Gateway Consolidation | ✅ Complete    | Week 7-9   |
-| 4     | Frontend Unification      | ✅ Complete    | Week 10-12 |
-| 5     | IPAM Migration            | ✅ Complete    | Week 13-15 |
-| 6     | NPM Integration           | ✅ Complete    | Week 16-18 |
-| 7     | STIG Manager Integration  | ✅ Complete    | Week 19-21 |
-| 8     | Cross-Platform Testing    | ✅ Complete    | Week 22-24 |
-| 9     | CI/CD & Release           | 🔄 In Progress | Week 25-26 |
+| Phase | Name                      | Status      | Target     |
+| ----- | ------------------------- | ----------- | ---------- |
+| 0     | Repository Setup          | ✅ Complete | Week 1-2   |
+| 1     | Shared Infrastructure     | ✅ Complete | Week 3-4   |
+| 2     | Unified Authentication    | ✅ Complete | Week 5-6   |
+| 3     | API Gateway Consolidation | ✅ Complete | Week 7-9   |
+| 4     | Frontend Unification      | ✅ Complete | Week 10-12 |
+| 5     | IPAM Migration            | ✅ Complete | Week 13-15 |
+| 6     | NPM Integration           | ✅ Complete | Week 16-18 |
+| 7     | STIG Manager Integration  | ✅ Complete | Week 19-21 |
+| 8     | Cross-Platform Testing    | ✅ Complete | Week 22-24 |
+| 9     | CI/CD & Release           | ✅ Complete | Week 25-26 |
 
 ---
 
@@ -774,7 +775,34 @@ Located in `charts/netnynja-enterprise/`:
 
 ## Changelog
 
+### [0.2.3] - 2026-01-14
+
+**Release v0.2.3 - Security Hardening Complete**
+
+CI/CD Status: All workflows passed (Release, Build Images, Tests, Security Scan, Validate Workspaces)
+
+Key Changes:
+
+- All Codex Review 2026-01-14 security findings resolved
+- NATS production config with TLS/auth support (SEC-008)
+- Configurable trustProxy setting (SEC-009)
+- Database/cache ports bound to localhost only (SEC-007)
+- Windows-native preflight script (APP-012, APP-013)
+- OpenAPI endpoint fix (APP-014)
+- Windows Hyper-V port compatibility (NATS 8322, Vault 8300)
+- 30 vendor MIB files for NPM SNMPv3 polling
+- 500+ OID mappings for device metrics collection
+- macOS ARM64, RHEL 9.x, Windows 11 platform validation
+- IPAM scan latency and open ports capture
+
+Security Posture: LOW (0 open findings)
+E2E Status: READY (14/14 preflight checks)
+
 ### [Unreleased]
+
+(No unreleased changes)
+
+### Session History
 
 #### Session 2026-01-14 (Late PM): Final Security Hardening
 
