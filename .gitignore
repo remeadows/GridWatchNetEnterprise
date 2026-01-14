@@ -133,3 +133,4 @@ data/
 *.local.ts
 *.local.js
 *.local.json
+tmpclaude-*-cwd
