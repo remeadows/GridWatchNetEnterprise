@@ -17,13 +17,54 @@
 
 ## ⏭️ NEXT (Queued / Ready)
 
-- [ ] SEC-011 — Implement Docker Scout remediation plan (Priority 1: Monitor zlib CVE-2026-22184, Priority 2: Update cross-spawn/glob)
 - [ ] CI-012 — Upgrade Vite 5.x to 7.x (npm audit esbuild/vite moderate vulnerability) - Deferred
 - [ ] Phase 9 — Documentation site deployment (optional)
 
 ## ⛔ BLOCKED (Waiting / External Dependency)
 
-(none)
+- [ ] SEC-011 — zlib CVE-2026-22184 (Critical) - No upstream fix available, monitoring Alpine/Node releases
+
+---
+
+## 📋 SEC-011: Docker Scout Vulnerability Remediation Plan
+
+**Status**: Active Monitoring | **Owner**: DevOps | **Created**: 2026-01-15
+
+### Current Vulnerabilities (Docker Scout Assessment)
+
+| Severity | CVE            | Package     | Fix Available       | Action           |
+| -------- | -------------- | ----------- | ------------------- | ---------------- |
+| Critical | CVE-2026-22184 | zlib        | ❌ No               | Monitor upstream |
+| High     | CVE-2024-21538 | cross-spawn | ✅ Yes (via Vite 7) | Scheduled        |
+| High     | CVE-2025-64756 | glob        | ✅ Yes (via Vite 7) | Scheduled        |
+| High     | CVE-2024-23342 | ecdsa       | ⏳ Pending          | Monitor          |
+| High     | CVE-2025-6020  | PAM         | ⏳ Pending          | Monitor          |
+| High     | CVE-2025-68973 | GnuPG       | ⏳ Pending          | Monitor          |
+
+### Remediation Strategy
+
+**Tier 1: Monitor (No Fix Available)**
+
+- zlib CVE-2026-22184: Subscribe to Alpine Linux security announcements
+- Compensating control: Container network isolation, minimal attack surface
+
+**Tier 2: Scheduled Updates (CI-012)**
+
+- cross-spawn, glob: Fixed by upgrading Vite 5.x → 7.x
+- Requires React 18 compatibility testing
+- Target: Next sprint after stability validation
+
+**Tier 3: Rebuild on Upstream Fix**
+
+- When Alpine releases fixed packages: `docker compose build --no-cache`
+- Re-run Docker Scout scan to verify remediation
+
+### Monitoring Checklist
+
+- [ ] Subscribe to Alpine Linux security mailing list
+- [ ] Subscribe to Node.js security announcements
+- [ ] Set calendar reminder for weekly vulnerability review
+- [ ] Document risk acceptance for CVE-2026-22184 in security register
 
 ---
 
