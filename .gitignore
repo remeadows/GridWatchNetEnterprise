@@ -134,3 +134,22 @@ data/
 *.local.js
 *.local.json
 tmpclaude-*-cwd
+
+# ===========================================
+# Phase 1 Optimization - Prevent Clutter
+# ===========================================
+# Duplicate asset directories (use apps/web-ui/public/assets/)
+AppPhoto/
+
+# Test report accumulation
+tests/*/reports/*.html
+tests/*/reports/*.json
+
+# Editor backup files
+*.bak
+*.swp
+*.swo
+*~
+
+# macOS extended attributes
+._*
