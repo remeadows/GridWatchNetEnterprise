@@ -314,7 +314,11 @@ export function STIGLibraryPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowImportModal(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setShowImportModal(true)}
+            className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -330,7 +334,10 @@ export function STIGLibraryPage() {
             </svg>
             Import Checklist
           </Button>
-          <Button onClick={() => setShowUploadModal(true)}>
+          <Button
+            onClick={() => setShowUploadModal(true)}
+            className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -350,24 +357,24 @@ export function STIGLibraryPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8">
+      <div className="rounded-lg bg-white/90 p-2 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700">
+        <nav className="flex space-x-4">
           <button
             onClick={() => setActiveTab("library")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-4 rounded-md font-medium text-sm transition-colors ${
               activeTab === "library"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             STIG Library ({benchmarks.length})
           </button>
           <button
             onClick={() => setActiveTab("imports")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-4 rounded-md font-medium text-sm transition-colors ${
               activeTab === "imports"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             Import History ({importHistory.length})
@@ -443,16 +450,17 @@ export function STIGLibraryPage() {
                       cell: ({ row }) => (
                         <div className="flex gap-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleViewRules(row.original)}
+                            className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
                           >
                             View Rules
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="sm"
-                            className="text-red-600 hover:text-red-700"
+                            className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
                             onClick={() =>
                               setShowDeleteConfirm(row.original.id)
                             }
@@ -797,12 +805,14 @@ export function STIGLibraryPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(null)}
+                className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleDelete(showDeleteConfirm)}
+                className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
               >
                 Delete
               </Button>

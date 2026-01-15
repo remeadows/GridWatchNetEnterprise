@@ -59,6 +59,27 @@
     font-weight: 600;
   }
 
+  /* Make muted/secondary text more readable against dark backgrounds with images
+     Override Tailwind's gray-400/gray-500 in dark mode to be much brighter */
+  .dark .text-gray-400,
+  .text-gray-400 {
+    color: #e2e8f0 !important; /* slate-200 - very bright */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.6);
+  }
+
+  .dark .text-gray-500,
+  .text-gray-500 {
+    color: #cbd5e1 !important; /* slate-300 - much brighter */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Also fix silver-400/silver-500 which are used in some places */
+  .text-silver-400,
+  .text-silver-500 {
+    color: #e2e8f0 !important; /* very bright silver */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.6);
+  }
+
   a {
     color: #00d4ff;
     transition: color 150ms;
@@ -239,4 +260,247 @@
 ::-moz-selection {
   background: rgba(0, 212, 255, 0.3);
   color: #ffffff;
+}
+
+/* ==========================================================================
+   Display Density System
+   Controls font sizes, spacing, and padding throughout the application
+   ========================================================================== */
+
+/* Condensed density - maximum data density for power users */
+.density-condensed {
+  --density-font-xs: 0.5625rem;  /* 9px */
+  --density-font-sm: 0.625rem;   /* 10px */
+  --density-font-base: 0.6875rem; /* 11px */
+  --density-font-lg: 0.75rem;    /* 12px */
+  --density-font-xl: 0.8125rem;  /* 13px */
+  --density-font-2xl: 0.9375rem; /* 15px */
+
+  --density-spacing-1: 0.0625rem; /* 1px */
+  --density-spacing-2: 0.125rem;  /* 2px */
+  --density-spacing-3: 0.25rem;   /* 4px */
+  --density-spacing-4: 0.375rem;  /* 6px */
+  --density-spacing-5: 0.5rem;    /* 8px */
+  --density-spacing-6: 0.625rem;  /* 10px */
+
+  --density-padding-card: 0.375rem;
+  --density-padding-cell: 0.25rem 0.375rem;
+  --density-line-height: 1.25;
+  --density-gap: 0.375rem;
+}
+
+/* Default density - balanced view (base styles) */
+.density-default {
+  --density-font-xs: 0.75rem;    /* 12px */
+  --density-font-sm: 0.875rem;   /* 14px */
+  --density-font-base: 1rem;     /* 16px */
+  --density-font-lg: 1.125rem;   /* 18px */
+  --density-font-xl: 1.25rem;    /* 20px */
+  --density-font-2xl: 1.5rem;    /* 24px */
+
+  --density-spacing-1: 0.25rem;  /* 4px */
+  --density-spacing-2: 0.5rem;   /* 8px */
+  --density-spacing-3: 0.75rem;  /* 12px */
+  --density-spacing-4: 1rem;     /* 16px */
+  --density-spacing-5: 1.25rem;  /* 20px */
+  --density-spacing-6: 1.5rem;   /* 24px */
+
+  --density-padding-card: 1rem;
+  --density-padding-cell: 0.75rem 1rem;
+  --density-line-height: 1.5;
+  --density-gap: 1rem;
+}
+
+/* Compact density - more data on screen */
+.density-compact {
+  --density-font-xs: 0.65rem;    /* ~10px */
+  --density-font-sm: 0.75rem;    /* 12px */
+  --density-font-base: 0.8125rem; /* 13px */
+  --density-font-lg: 0.875rem;   /* 14px */
+  --density-font-xl: 1rem;       /* 16px */
+  --density-font-2xl: 1.125rem;  /* 18px */
+
+  --density-spacing-1: 0.125rem; /* 2px */
+  --density-spacing-2: 0.25rem;  /* 4px */
+  --density-spacing-3: 0.375rem; /* 6px */
+  --density-spacing-4: 0.5rem;   /* 8px */
+  --density-spacing-5: 0.75rem;  /* 12px */
+  --density-spacing-6: 1rem;     /* 16px */
+
+  --density-padding-card: 0.5rem;
+  --density-padding-cell: 0.375rem 0.5rem;
+  --density-line-height: 1.35;
+  --density-gap: 0.5rem;
+}
+
+/* Comfortable density - more breathing room */
+.density-comfortable {
+  --density-font-xs: 0.8125rem;  /* 13px */
+  --density-font-sm: 0.9375rem;  /* 15px */
+  --density-font-base: 1.0625rem; /* 17px */
+  --density-font-lg: 1.25rem;    /* 20px */
+  --density-font-xl: 1.5rem;     /* 24px */
+  --density-font-2xl: 1.75rem;   /* 28px */
+
+  --density-spacing-1: 0.375rem; /* 6px */
+  --density-spacing-2: 0.75rem;  /* 12px */
+  --density-spacing-3: 1rem;     /* 16px */
+  --density-spacing-4: 1.5rem;   /* 24px */
+  --density-spacing-5: 1.75rem;  /* 28px */
+  --density-spacing-6: 2rem;     /* 32px */
+
+  --density-padding-card: 1.5rem;
+  --density-padding-cell: 1rem 1.25rem;
+  --density-line-height: 1.65;
+  --density-gap: 1.5rem;
+}
+
+/* Apply density to common elements */
+.density-condensed,
+.density-compact,
+.density-default,
+.density-comfortable {
+  /* Typography scaling */
+  font-size: var(--density-font-base);
+  line-height: var(--density-line-height);
+}
+
+/* Page titles */
+.density-condensed h1 { font-size: var(--density-font-lg); }
+.density-compact h1 { font-size: var(--density-font-xl); }
+.density-default h1 { font-size: var(--density-font-2xl); }
+.density-comfortable h1 { font-size: var(--density-font-2xl); }
+
+.density-condensed h2 { font-size: var(--density-font-base); }
+.density-compact h2 { font-size: var(--density-font-lg); }
+.density-default h2 { font-size: var(--density-font-xl); }
+.density-comfortable h2 { font-size: var(--density-font-xl); }
+
+/* Paragraphs and body text */
+.density-condensed p { font-size: var(--density-font-xs); }
+.density-compact p { font-size: var(--density-font-sm); }
+.density-default p { font-size: var(--density-font-base); }
+.density-comfortable p { font-size: var(--density-font-base); }
+
+/* Table cells */
+.density-condensed table td,
+.density-condensed table th {
+  padding: var(--density-padding-cell);
+  font-size: var(--density-font-xs);
+}
+
+.density-compact table td,
+.density-compact table th {
+  padding: var(--density-padding-cell);
+  font-size: var(--density-font-sm);
+}
+
+.density-default table td,
+.density-default table th {
+  padding: var(--density-padding-cell);
+  font-size: var(--density-font-sm);
+}
+
+.density-comfortable table td,
+.density-comfortable table th {
+  padding: var(--density-padding-cell);
+  font-size: var(--density-font-base);
+}
+
+/* Cards */
+.density-condensed [class*="CardContent"] {
+  padding: var(--density-padding-card);
+}
+
+.density-compact [class*="CardContent"] {
+  padding: var(--density-padding-card);
+}
+
+.density-default [class*="CardContent"] {
+  padding: var(--density-padding-card);
+}
+
+.density-comfortable [class*="CardContent"] {
+  padding: var(--density-padding-card);
+}
+
+/* Buttons */
+.density-condensed button {
+  font-size: var(--density-font-xs);
+  padding: var(--density-spacing-1) var(--density-spacing-2);
+}
+
+.density-compact button {
+  font-size: var(--density-font-sm);
+  padding: var(--density-spacing-1) var(--density-spacing-3);
+}
+
+.density-comfortable button {
+  font-size: var(--density-font-base);
+  padding: var(--density-spacing-3) var(--density-spacing-5);
+}
+
+/* Form inputs */
+.density-condensed input,
+.density-condensed select,
+.density-condensed textarea {
+  font-size: var(--density-font-xs);
+  padding: var(--density-spacing-1) var(--density-spacing-2);
+}
+
+.density-compact input,
+.density-compact select,
+.density-compact textarea {
+  font-size: var(--density-font-sm);
+  padding: var(--density-spacing-2) var(--density-spacing-3);
+}
+
+.density-comfortable input,
+.density-comfortable select,
+.density-comfortable textarea {
+  font-size: var(--density-font-base);
+  padding: var(--density-spacing-3) var(--density-spacing-4);
+}
+
+/* Space between elements */
+.density-condensed .space-y-6 > * + * { margin-top: var(--density-spacing-3); }
+.density-compact .space-y-6 > * + * { margin-top: var(--density-spacing-4); }
+.density-comfortable .space-y-6 > * + * { margin-top: var(--density-spacing-6); }
+
+.density-condensed .space-y-4 > * + * { margin-top: var(--density-spacing-1); }
+.density-compact .space-y-4 > * + * { margin-top: var(--density-spacing-2); }
+.density-comfortable .space-y-4 > * + * { margin-top: var(--density-spacing-5); }
+
+/* Gap utilities */
+.density-condensed .gap-4 { gap: var(--density-spacing-1); }
+.density-compact .gap-4 { gap: var(--density-spacing-2); }
+.density-comfortable .gap-4 { gap: var(--density-spacing-5); }
+
+.density-condensed .gap-6 { gap: var(--density-spacing-2); }
+.density-compact .gap-6 { gap: var(--density-spacing-3); }
+.density-comfortable .gap-6 { gap: var(--density-spacing-6); }
+
+/* Padding utilities */
+.density-condensed .p-6 { padding: var(--density-spacing-2); }
+.density-compact .p-6 { padding: var(--density-spacing-3); }
+.density-comfortable .p-6 { padding: var(--density-spacing-6); }
+
+.density-condensed .p-4 { padding: var(--density-spacing-1); }
+.density-compact .p-4 { padding: var(--density-spacing-2); }
+.density-comfortable .p-4 { padding: var(--density-spacing-5); }
+
+/* Badge/pill sizes */
+.density-condensed [class*="Badge"] {
+  font-size: 0.5rem;
+  padding: 0.0625rem 0.25rem;
+}
+
+.density-compact [class*="Badge"] {
+  font-size: var(--density-font-xs);
+  padding: 0.125rem 0.375rem;
+}
+
+.density-comfortable [class*="Badge"] {
+  font-size: var(--density-font-sm);
+  padding: 0.375rem 0.75rem;
 }

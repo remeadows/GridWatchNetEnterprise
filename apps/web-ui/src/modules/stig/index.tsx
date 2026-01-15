@@ -8,6 +8,7 @@ export { STIGBenchmarksPage as BenchmarksPage } from "./pages/BenchmarksPage";
 export { STIGAssetsPage as AssetsPage } from "./pages/AssetsPage";
 export { STIGCompliancePage as CompliancePage } from "./pages/CompliancePage";
 export { STIGLibraryPage as LibraryPage } from "./pages/LibraryPage";
+export { STIGCredentialsPage as CredentialsPage } from "./pages/CredentialsPage";
 
 // Module metadata
 export const stigModuleConfig = {
@@ -20,5 +21,6 @@ export const stigModuleConfig = {
     { path: "/stig/library", label: "Library", icon: "archive" },
     { path: "/stig/benchmarks", label: "Benchmarks", icon: "document-text" },
     { path: "/stig/assets", label: "Assets", icon: "server" },
+    { path: "/stig/credentials", label: "Credentials", icon: "key" },
   ],
 };

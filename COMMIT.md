@@ -19,6 +19,13 @@ Update the following documentation files with changes made during this work sess
 4. **README.md**
    - Update only if setup steps, commands, features, or module capabilities changed
 
+5. **docs/NetNynja_Executive_Summary_ISSO.html** (ISSO Deliverable)
+   - Executive Summary document for Information System Security Officer
+   - Classification: UNCLASSIFIED
+   - Contains: Project overview, deliverables, status, tech stack, security review status
+   - Format: HTML (Word-compatible) - open in Microsoft Word and save as .docx
+   - Update when: Version changes, security posture changes, or major milestone completions
+
 ---
 
 ## Requirements
@@ -39,19 +46,23 @@ Update the following documentation files with changes made during this work sess
 Before committing, run the appropriate local checks for the work performed.
 
 ### TypeScript / Gateway (if touched)
+
 - Lint
 - Typecheck
 - Unit tests
 
 ### Python (if touched)
+
 - Lint / typecheck
 - Unit tests
 
 ### Integration / Platform (if touched)
+
 - `docker compose up -d --build`
 - Integration or smoke tests (if applicable)
 
 If any check is skipped:
+
 - Document the reason in **IssuesTracker.md**
 - Include the reason in the commit body
 
@@ -62,18 +73,23 @@ If any check is skipped:
 CI/CD is the authoritative gate for correctness.
 
 ### When CI/CD validation is REQUIRED
+
 - Any code change (backend, frontend, services)
 - Dependency changes (lockfiles, base images)
 - Configuration or deployment changes
 - Security, auth, networking, or secrets-related changes
 
 ### Pre-Push Gate
+
 Before pushing:
+
 - Confirm CI will trigger on push or PR
 - If CI is not configured for this repo or branch, document that limitation in **PROJECT_STATUS.md**
 
 ### Post-Push Gate
+
 After pushing:
+
 - Verify the CI pipeline for this commit/PR is **green**
 - Record the result in documentation:
   - `CI Status: PASS ✅` or `CI Status: FAIL ❌`

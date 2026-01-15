@@ -294,7 +294,11 @@ export function NPMDeviceDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={openSettingsModal}>
+          <Button
+            variant="outline"
+            onClick={openSettingsModal}
+            className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -316,7 +320,11 @@ export function NPMDeviceDetailPage() {
             </svg>
             Settings
           </Button>
-          <Button variant="outline" onClick={openPollModal}>
+          <Button
+            variant="outline"
+            onClick={openPollModal}
+            className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="none"
@@ -332,7 +340,11 @@ export function NPMDeviceDetailPage() {
             </svg>
             Poll Now
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+          >
             Delete
           </Button>
         </div>
@@ -434,7 +446,8 @@ export function NPMDeviceDetailPage() {
         <StatsCard
           title="Traffic In"
           value={
-            current?.totalInOctets !== null && current?.totalInOctets !== undefined
+            current?.totalInOctets !== null &&
+            current?.totalInOctets !== undefined
               ? formatBytes(current.totalInOctets)
               : "N/A"
           }
@@ -442,7 +455,8 @@ export function NPMDeviceDetailPage() {
         <StatsCard
           title="Traffic Out"
           value={
-            current?.totalOutOctets !== null && current?.totalOutOctets !== undefined
+            current?.totalOutOctets !== null &&
+            current?.totalOutOctets !== undefined
               ? formatBytes(current.totalOutOctets)
               : "N/A"
           }
@@ -562,60 +576,65 @@ export function NPMDeviceDetailPage() {
       </Card>
 
       {/* Service Status (Sophos/vendor-specific) */}
-      {current?.servicesStatus && Object.keys(current.servicesStatus).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Service Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {Object.entries(current.servicesStatus).map(([serviceName, isRunning]) => {
-                // Format service name: "ips_service" -> "IPS Service"
-                const displayName = serviceName
-                  .replace(/_/g, ' ')
-                  .replace(/\b\w/g, c => c.toUpperCase())
-                  .replace(/Ips/g, 'IPS')
-                  .replace(/Vpn/g, 'VPN')
-                  .replace(/Av /g, 'AV ')
-                  .replace(/As /g, 'Anti-Spam ')
-                  .replace(/Dns/g, 'DNS')
-                  .replace(/Ha /g, 'HA ')
-                  .replace(/Http/g, 'HTTP')
-                  .replace(/Ftp/g, 'FTP')
-                  .replace(/Pop3/g, 'POP3')
-                  .replace(/Imap4/g, 'IMAP4')
-                  .replace(/Smtp/g, 'SMTP')
-                  .replace(/Ssh/g, 'SSH')
-                  .replace(/Ntp/g, 'NTP')
-                  .replace(/Ipsec/g, 'IPsec')
-                  .replace(/Ssl/g, 'SSL');
-                return (
-                  <div
-                    key={serviceName}
-                    className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
-                      isRunning
-                        ? 'bg-green-50 dark:bg-green-900/20'
-                        : 'bg-red-50 dark:bg-red-900/20'
-                    }`}
-                  >
-                    <StatusIndicator
-                      status={isRunning ? 'success' : 'error'}
-                      size="sm"
-                    />
-                    <span className={`text-sm font-medium ${
-                      isRunning
-                        ? 'text-green-700 dark:text-green-400'
-                        : 'text-red-700 dark:text-red-400'
-                    }`}>
-                      {displayName}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {current?.servicesStatus &&
+        Object.keys(current.servicesStatus).length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {Object.entries(current.servicesStatus).map(
+                  ([serviceName, isRunning]) => {
+                    // Format service name: "ips_service" -> "IPS Service"
+                    const displayName = serviceName
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                      .replace(/Ips/g, "IPS")
+                      .replace(/Vpn/g, "VPN")
+                      .replace(/Av /g, "AV ")
+                      .replace(/As /g, "Anti-Spam ")
+                      .replace(/Dns/g, "DNS")
+                      .replace(/Ha /g, "HA ")
+                      .replace(/Http/g, "HTTP")
+                      .replace(/Ftp/g, "FTP")
+                      .replace(/Pop3/g, "POP3")
+                      .replace(/Imap4/g, "IMAP4")
+                      .replace(/Smtp/g, "SMTP")
+                      .replace(/Ssh/g, "SSH")
+                      .replace(/Ntp/g, "NTP")
+                      .replace(/Ipsec/g, "IPsec")
+                      .replace(/Ssl/g, "SSL");
+                    return (
+                      <div
+                        key={serviceName}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
+                          isRunning
+                            ? "bg-green-50 dark:bg-green-900/20"
+                            : "bg-red-50 dark:bg-red-900/20"
+                        }`}
+                      >
+                        <StatusIndicator
+                          status={isRunning ? "success" : "error"}
+                          size="sm"
+                        />
+                        <span
+                          className={`text-sm font-medium ${
+                            isRunning
+                              ? "text-green-700 dark:text-green-400"
+                              : "text-red-700 dark:text-red-400"
+                          }`}
+                        >
+                          {displayName}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Metrics Chart */}
       <Card>

@@ -52,6 +52,40 @@ export interface ImportHistoryEntry {
   status: string;
 }
 
+// SSH Credential type
+export interface SSHCredential {
+  id: string;
+  name: string;
+  description?: string;
+  username: string;
+  authType: "password" | "key";
+  defaultPort: number;
+  // Sudo/privilege escalation
+  sudoEnabled: boolean;
+  sudoMethod: "password" | "nopasswd" | "same_as_ssh";
+  sudoUser: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// SSH Credential create/update input
+export interface SSHCredentialInput {
+  name: string;
+  description?: string;
+  username: string;
+  authType: "password" | "key";
+  password?: string;
+  privateKey?: string;
+  keyPassphrase?: string;
+  defaultPort?: number;
+  // Sudo/privilege escalation
+  sudoEnabled?: boolean;
+  sudoMethod?: "password" | "nopasswd" | "same_as_ssh";
+  sudoPassword?: string;
+  sudoUser?: string;
+}
+
 interface STIGState {
   targets: Target[];
   selectedTarget: Target | null;
@@ -61,6 +95,7 @@ interface STIGState {
   complianceSummary: ComplianceSummary | null;
   dashboard: STIGDashboard | null;
   importHistory: ImportHistoryEntry[];
+  sshCredentials: SSHCredential[];
   isLoading: boolean;
   isUploading: boolean;
   isImporting: boolean;
@@ -80,6 +115,14 @@ interface STIGState {
   startAudit: (targetId: string, definitionId: string) => Promise<AuditJob>;
   fetchComplianceSummary: () => Promise<void>;
   fetchDashboard: () => Promise<void>;
+  // SSH Credentials
+  fetchSSHCredentials: () => Promise<void>;
+  createSSHCredential: (data: SSHCredentialInput) => Promise<SSHCredential>;
+  updateSSHCredential: (
+    id: string,
+    data: Partial<SSHCredentialInput>,
+  ) => Promise<SSHCredential>;
+  deleteSSHCredential: (id: string) => Promise<void>;
 }
 
 export const useSTIGStore = create<STIGState>((set) => ({
@@ -91,6 +134,7 @@ export const useSTIGStore = create<STIGState>((set) => ({
   complianceSummary: null,
   dashboard: null,
   importHistory: [],
+  sshCredentials: [],
   isLoading: false,
   isUploading: false,
   isImporting: false,
@@ -274,7 +318,7 @@ export const useSTIGStore = create<STIGState>((set) => ({
   updateTarget: async (id: string, data: Partial<Target>) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.put<{ data: Target }>(
+      const response = await api.patch<{ data: Target }>(
         `/api/v1/stig/assets/${id}`,
         data,
       );
@@ -363,6 +407,84 @@ export const useSTIGStore = create<STIGState>((set) => ({
       const message =
         err instanceof Error ? err.message : "Failed to fetch dashboard";
       set({ error: message, isLoading: false });
+    }
+  },
+
+  // SSH Credentials
+  fetchSSHCredentials: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.get<{ data: SSHCredential[] }>(
+        "/api/v1/stig/ssh-credentials",
+      );
+      set({ sshCredentials: response.data.data, isLoading: false });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch SSH credentials";
+      set({ error: message, isLoading: false });
+    }
+  },
+
+  createSSHCredential: async (data: SSHCredentialInput) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post<{ data: SSHCredential }>(
+        "/api/v1/stig/ssh-credentials",
+        data,
+      );
+      const credential = response.data.data;
+      set((state) => ({
+        sshCredentials: [...state.sshCredentials, credential],
+        isLoading: false,
+      }));
+      return credential;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create SSH credential";
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  updateSSHCredential: async (
+    id: string,
+    data: Partial<SSHCredentialInput>,
+  ) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.patch<{ data: SSHCredential }>(
+        `/api/v1/stig/ssh-credentials/${id}`,
+        data,
+      );
+      const credential = response.data.data;
+      set((state) => ({
+        sshCredentials: state.sshCredentials.map((c) =>
+          c.id === id ? credential : c,
+        ),
+        isLoading: false,
+      }));
+      return credential;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update SSH credential";
+      set({ error: message, isLoading: false });
+      throw err;
+    }
+  },
+
+  deleteSSHCredential: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.delete(`/api/v1/stig/ssh-credentials/${id}`);
+      set((state) => ({
+        sshCredentials: state.sshCredentials.filter((c) => c.id !== id),
+        isLoading: false,
+      }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete SSH credential";
+      set({ error: message, isLoading: false });
+      throw err;
     }
   },
 }));

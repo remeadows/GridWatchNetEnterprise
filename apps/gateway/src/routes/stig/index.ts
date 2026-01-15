@@ -9,6 +9,7 @@ import { pool } from "../../db";
 import { logger } from "../../logger";
 import { XMLParser } from "fast-xml-parser";
 import * as unzipper from "unzipper";
+import sshCredentialsRoutes from "./ssh-credentials";
 
 // Zod schemas
 const targetSchema = z.object({
@@ -18,8 +19,21 @@ const targetSchema = z.object({
   osVersion: z.string().max(100).optional(),
   connectionType: z.enum(["ssh", "netmiko", "winrm", "api"]),
   credentialId: z.string().max(255).optional(),
+  sshCredentialId: z.string().uuid().optional().nullable(),
   port: z.number().int().min(1).max(65535).optional(),
   isActive: z.boolean().default(true),
+});
+
+const updateTargetSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  ipAddress: z.string().ip().optional(),
+  platform: z.string().max(100).optional(),
+  osVersion: z.string().max(100).optional(),
+  connectionType: z.enum(["ssh", "netmiko", "winrm", "api"]).optional(),
+  credentialId: z.string().max(255).optional(),
+  sshCredentialId: z.string().uuid().optional().nullable(),
+  port: z.number().int().min(1).max(65535).optional(),
+  isActive: z.boolean().optional(),
 });
 
 const querySchema = z.object({
@@ -28,9 +42,216 @@ const querySchema = z.object({
   search: z.string().optional(),
 });
 
+// Helper function to process a single STIG from a zip directory
+async function processSingleSTIG(
+  directory: unzipper.CentralDirectory,
+  filename: string,
+  dbPool: typeof pool,
+  log: typeof logger,
+): Promise<{
+  stigId: string;
+  title: string;
+  rulesCount: number;
+  definitionId: string;
+}> {
+  let xccdfContent: string | null = null;
+
+  // Find the XCCDF XML file in the ZIP
+  for (const file of directory.files) {
+    if (
+      file.path.endsWith(".xml") &&
+      (file.path.includes("xccdf") ||
+        file.path.includes("XCCDF") ||
+        file.path.includes("Manual-xccdf") ||
+        file.path.includes("manual-xccdf"))
+    ) {
+      const buffer = await file.buffer();
+      xccdfContent = buffer.toString("utf-8");
+      break;
+    }
+  }
+
+  // If no XCCDF found, try any XML file
+  if (!xccdfContent) {
+    for (const file of directory.files) {
+      if (file.path.endsWith(".xml") && !file.path.includes("__MACOSX")) {
+        const buffer = await file.buffer();
+        xccdfContent = buffer.toString("utf-8");
+        break;
+      }
+    }
+  }
+
+  if (!xccdfContent) {
+    throw new Error("No XCCDF XML file found in the ZIP");
+  }
+
+  // Parse the XCCDF XML
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    isArray: (name) => ["Rule", "Group", "Profile"].includes(name),
+  });
+  const xccdf = parser.parse(xccdfContent);
+
+  // Extract benchmark information
+  const benchmark =
+    xccdf.Benchmark ||
+    xccdf["cdf:Benchmark"] ||
+    xccdf["xccdf:Benchmark"] ||
+    Object.values(xccdf)[0];
+
+  if (!benchmark) {
+    throw new Error("Invalid XCCDF format: no Benchmark element found");
+  }
+
+  // Extract STIG info
+  const stigId = benchmark["@_id"] || filename.replace(".zip", "");
+  const title =
+    benchmark.title?.["#text"] ||
+    benchmark.title ||
+    filename.replace(".zip", "").replace(/_/g, " ");
+  const description =
+    benchmark.description?.["#text"] || benchmark.description || "";
+  const version =
+    benchmark.version?.["#text"] ||
+    benchmark.version ||
+    benchmark["@_version"] ||
+    "1.0";
+
+  // Extract platform from the title or metadata
+  let platform = "unknown";
+  const titleLower = (title || "").toLowerCase();
+  if (titleLower.includes("windows")) platform = "windows";
+  else if (titleLower.includes("red hat") || titleLower.includes("rhel"))
+    platform = "rhel";
+  else if (titleLower.includes("ubuntu")) platform = "ubuntu";
+  else if (titleLower.includes("cisco")) platform = "cisco_ios";
+  else if (titleLower.includes("linux")) platform = "linux";
+  else if (titleLower.includes("oracle")) platform = "oracle";
+  else if (titleLower.includes("docker")) platform = "docker";
+  else if (titleLower.includes("kubernetes") || titleLower.includes("k8s"))
+    platform = "kubernetes";
+  else if (titleLower.includes("juniper")) platform = "juniper_junos";
+  else if (titleLower.includes("palo alto")) platform = "paloalto";
+  else if (titleLower.includes("fortinet") || titleLower.includes("fortigate"))
+    platform = "fortinet";
+
+  // Extract rules
+  const rules: Array<{
+    ruleId: string;
+    title: string;
+    severity: string;
+    description: string;
+    fixText: string;
+    checkText: string;
+  }> = [];
+
+  // Find rules in Groups or directly in Benchmark
+  const groups = benchmark.Group || [];
+  for (const group of groups) {
+    const groupRules = group.Rule || [];
+    for (const rule of groupRules) {
+      const ruleId = rule["@_id"] || `rule-${rules.length}`;
+      let severity = rule["@_severity"] || "medium";
+
+      // Map STIG severity values
+      if (severity === "high" || severity === "CAT I") severity = "high";
+      else if (severity === "medium" || severity === "CAT II")
+        severity = "medium";
+      else if (severity === "low" || severity === "CAT III") severity = "low";
+
+      rules.push({
+        ruleId,
+        title: rule.title?.["#text"] || rule.title || "",
+        severity,
+        description: rule.description?.["#text"] || rule.description || "",
+        fixText: rule.fixtext?.["#text"] || rule.fixtext || "",
+        checkText:
+          rule.check?.["check-content"]?.["#text"] ||
+          rule.check?.["check-content"] ||
+          "",
+      });
+    }
+  }
+
+  // Check if STIG already exists
+  const existingResult = await dbPool.query(
+    "SELECT id FROM stig.definitions WHERE stig_id = $1",
+    [stigId],
+  );
+
+  let definitionId: string;
+
+  if (existingResult.rows.length > 0) {
+    // Update existing definition
+    definitionId = existingResult.rows[0].id;
+    await dbPool.query(
+      `UPDATE stig.definitions
+       SET title = $1, version = $2, platform = $3, description = $4, updated_at = NOW()
+       WHERE id = $5`,
+      [title, version, platform, description, definitionId],
+    );
+
+    // Delete existing rules and re-insert
+    await dbPool.query(
+      "DELETE FROM stig.definition_rules WHERE definition_id = $1",
+      [definitionId],
+    );
+  } else {
+    // Insert new definition (xccdf_content omitted - rules are stored in definition_rules table)
+    const insertResult = await dbPool.query(
+      `INSERT INTO stig.definitions (stig_id, title, version, platform, description)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [stigId, title, version, platform, description],
+    );
+    definitionId = insertResult.rows[0].id;
+  }
+
+  // Insert rules
+  for (const rule of rules) {
+    await dbPool.query(
+      `INSERT INTO stig.definition_rules
+       (definition_id, rule_id, title, severity, description, fix_text, check_text)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (definition_id, rule_id) DO UPDATE SET
+         title = EXCLUDED.title,
+         severity = EXCLUDED.severity,
+         description = EXCLUDED.description,
+         fix_text = EXCLUDED.fix_text,
+         check_text = EXCLUDED.check_text`,
+      [
+        definitionId,
+        rule.ruleId,
+        rule.title,
+        rule.severity,
+        rule.description,
+        rule.fixText,
+        rule.checkText,
+      ],
+    );
+  }
+
+  log.info(
+    { stigId, title, rulesCount: rules.length },
+    "STIG processed successfully",
+  );
+
+  return {
+    stigId,
+    title,
+    rulesCount: rules.length,
+    definitionId,
+  };
+}
+
 const stigRoutes: FastifyPluginAsync = async (fastify) => {
   // Require authentication for all STIG routes
   fastify.addHook("preHandler", fastify.requireAuth);
+
+  // Register SSH credentials routes
+  fastify.register(sshCredentialsRoutes, { prefix: "/ssh-credentials" });
 
   // List STIG definitions (benchmarks)
   fastify.get(
@@ -183,10 +404,12 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
 
       const countQuery = `SELECT COUNT(*) FROM stig.targets ${searchCondition}`;
       const dataQuery = `
-      SELECT id, name, ip_address, platform, os_version, connection_type, port, is_active, last_audit, created_at, updated_at
-      FROM stig.targets
-      ${searchCondition}
-      ORDER BY name
+      SELECT t.id, t.name, t.ip_address, t.platform, t.os_version, t.connection_type, t.port, t.is_active, t.last_audit, t.ssh_credential_id, t.created_at, t.updated_at,
+             sc.name as ssh_credential_name
+      FROM stig.targets t
+      LEFT JOIN stig.ssh_credentials sc ON t.ssh_credential_id = sc.id
+      ${searchCondition.replace("name", "t.name").replace("ip_address", "t.ip_address")}
+      ORDER BY t.name
       LIMIT $1 OFFSET $2
     `;
 
@@ -211,6 +434,8 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
           port: row.port,
           isActive: row.is_active,
           lastAudit: row.last_audit,
+          sshCredentialId: row.ssh_credential_id,
+          sshCredentialName: row.ssh_credential_name,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         })),
@@ -247,6 +472,7 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
               enum: ["ssh", "netmiko", "winrm", "api"],
             },
             credentialId: { type: "string" },
+            sshCredentialId: { type: "string", format: "uuid" },
             port: { type: "number" },
             isActive: { type: "boolean" },
           },
@@ -258,9 +484,9 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
       const body = targetSchema.parse(request.body);
 
       const result = await pool.query(
-        `INSERT INTO stig.targets (name, ip_address, platform, os_version, connection_type, credential_id, port, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, name, ip_address, platform, os_version, connection_type, port, is_active, created_at, updated_at`,
+        `INSERT INTO stig.targets (name, ip_address, platform, os_version, connection_type, credential_id, ssh_credential_id, port, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, name, ip_address, platform, os_version, connection_type, ssh_credential_id, port, is_active, created_at, updated_at`,
         [
           body.name,
           body.ipAddress,
@@ -268,6 +494,7 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
           body.osVersion,
           body.connectionType,
           body.credentialId,
+          body.sshCredentialId,
           body.port,
           body.isActive,
         ],
@@ -284,8 +511,142 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
           platform: row.platform,
           osVersion: row.os_version,
           connectionType: row.connection_type,
+          sshCredentialId: row.ssh_credential_id,
           port: row.port,
           isActive: row.is_active,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        },
+      };
+    },
+  );
+
+  // Update target
+  fastify.patch(
+    "/assets/:id",
+    {
+      schema: {
+        tags: ["STIG - Assets"],
+        summary: "Update an audit target",
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+          },
+          required: ["id"],
+        },
+        body: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            ipAddress: { type: "string" },
+            platform: { type: "string" },
+            osVersion: { type: "string" },
+            connectionType: {
+              type: "string",
+              enum: ["ssh", "netmiko", "winrm", "api"],
+            },
+            credentialId: { type: "string" },
+            sshCredentialId: { type: "string", format: "uuid" },
+            port: { type: "number" },
+            isActive: { type: "boolean" },
+          },
+        },
+      },
+      preHandler: [fastify.requireRole("admin", "operator")],
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = updateTargetSchema.parse(request.body);
+
+      // Check if target exists
+      const existingResult = await pool.query(
+        "SELECT id FROM stig.targets WHERE id = $1",
+        [id],
+      );
+
+      if (existingResult.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "Target not found" },
+        };
+      }
+
+      // Build update query dynamically
+      const updates: string[] = [];
+      const params: unknown[] = [];
+      let paramIndex = 1;
+
+      if (body.name !== undefined) {
+        updates.push(`name = $${paramIndex++}`);
+        params.push(body.name);
+      }
+      if (body.ipAddress !== undefined) {
+        updates.push(`ip_address = $${paramIndex++}`);
+        params.push(body.ipAddress);
+      }
+      if (body.platform !== undefined) {
+        updates.push(`platform = $${paramIndex++}`);
+        params.push(body.platform);
+      }
+      if (body.osVersion !== undefined) {
+        updates.push(`os_version = $${paramIndex++}`);
+        params.push(body.osVersion);
+      }
+      if (body.connectionType !== undefined) {
+        updates.push(`connection_type = $${paramIndex++}`);
+        params.push(body.connectionType);
+      }
+      if (body.credentialId !== undefined) {
+        updates.push(`credential_id = $${paramIndex++}`);
+        params.push(body.credentialId);
+      }
+      if (body.sshCredentialId !== undefined) {
+        updates.push(`ssh_credential_id = $${paramIndex++}`);
+        params.push(body.sshCredentialId);
+      }
+      if (body.port !== undefined) {
+        updates.push(`port = $${paramIndex++}`);
+        params.push(body.port);
+      }
+      if (body.isActive !== undefined) {
+        updates.push(`is_active = $${paramIndex++}`);
+        params.push(body.isActive);
+      }
+
+      if (updates.length === 0) {
+        reply.status(400);
+        return {
+          success: false,
+          error: { code: "BAD_REQUEST", message: "No fields to update" },
+        };
+      }
+
+      params.push(id);
+      const result = await pool.query(
+        `UPDATE stig.targets
+         SET ${updates.join(", ")}
+         WHERE id = $${paramIndex}
+         RETURNING id, name, ip_address, platform, os_version, connection_type, ssh_credential_id, port, is_active, last_audit, created_at, updated_at`,
+        params,
+      );
+
+      const row = result.rows[0];
+      return {
+        success: true,
+        data: {
+          id: row.id,
+          name: row.name,
+          ipAddress: row.ip_address,
+          platform: row.platform,
+          osVersion: row.os_version,
+          connectionType: row.connection_type,
+          sshCredentialId: row.ssh_credential_id,
+          port: row.port,
+          isActive: row.is_active,
+          lastAudit: row.last_audit,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         },
@@ -468,8 +829,8 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request: FastifyRequest, reply) => {
       const data = await request.file();
-      const maxZipFiles = 500;
-      const maxUncompressedBytes = 100 * 1024 * 1024; // 100 MB
+      const maxZipFiles = 10000; // Allow full STIG Library (~600+ files)
+      const maxUncompressedBytes = 2 * 1024 * 1024 * 1024; // 2 GB uncompressed
 
       if (!data) {
         reply.status(400);
@@ -510,7 +871,9 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
 
         const totalUncompressedBytes = directory.files.reduce((sum, file) => {
           const uncompressed =
-            typeof file.uncompressedSize === "number" ? file.uncompressedSize : 0;
+            typeof file.uncompressedSize === "number"
+              ? file.uncompressedSize
+              : 0;
           return sum + uncompressed;
         }, 0);
         if (totalUncompressedBytes > maxUncompressedBytes) {
@@ -524,6 +887,78 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
           };
         }
 
+        // Check if this is a STIG Library (contains nested .zip files)
+        const nestedZips = directory.files.filter(
+          (f) => f.path.endsWith(".zip") && !f.path.includes("__MACOSX"),
+        );
+
+        if (nestedZips.length > 0) {
+          // This is a STIG Library - process all nested zips
+          logger.info(
+            { nestedZipCount: nestedZips.length, filename: data.filename },
+            "Processing STIG Library with nested zips",
+          );
+
+          const results: Array<{
+            stigId: string;
+            title: string;
+            rulesCount: number;
+            status: "success" | "error";
+            error?: string;
+          }> = [];
+
+          for (const nestedZipFile of nestedZips) {
+            try {
+              const nestedBuffer = await nestedZipFile.buffer();
+              const nestedDir = await unzipper.Open.buffer(nestedBuffer);
+              const stigResult = await processSingleSTIG(
+                nestedDir,
+                nestedZipFile.path,
+                pool,
+                logger,
+              );
+              results.push({
+                stigId: stigResult.stigId,
+                title: stigResult.title,
+                rulesCount: stigResult.rulesCount,
+                status: "success",
+              });
+            } catch (err) {
+              const errorMessage =
+                err instanceof Error ? err.message : "Unknown error";
+              logger.warn(
+                { nestedZip: nestedZipFile.path, error: errorMessage },
+                "Failed to process nested STIG zip",
+              );
+              results.push({
+                stigId: nestedZipFile.path,
+                title: nestedZipFile.path,
+                rulesCount: 0,
+                status: "error",
+                error: errorMessage,
+              });
+            }
+          }
+
+          const successCount = results.filter(
+            (r) => r.status === "success",
+          ).length;
+          const errorCount = results.filter((r) => r.status === "error").length;
+
+          return {
+            success: true,
+            data: {
+              type: "library",
+              totalProcessed: results.length,
+              successCount,
+              errorCount,
+              stigs: results,
+            },
+            message: `Successfully imported ${successCount} STIGs from library (${errorCount} errors)`,
+          };
+        }
+
+        // Single STIG processing
         let xccdfContent: string | null = null;
         let xccdfFilename: string | null = null;
 
@@ -683,10 +1118,9 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
           definitionId = existingResult.rows[0].id;
           await pool.query(
             `UPDATE stig.definitions
-             SET title = $1, version = $2, platform = $3, description = $4,
-                 xccdf_content = $5, updated_at = NOW()
-             WHERE id = $6`,
-            [title, version, platform, description, xccdfContent, definitionId],
+             SET title = $1, version = $2, platform = $3, description = $4, updated_at = NOW()
+             WHERE id = $5`,
+            [title, version, platform, description, definitionId],
           );
 
           // Delete existing rules and re-insert
@@ -695,12 +1129,12 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
             [definitionId],
           );
         } else {
-          // Insert new definition
+          // Insert new definition (xccdf_content omitted - rules are stored in definition_rules table)
           const insertResult = await pool.query(
-            `INSERT INTO stig.definitions (stig_id, title, version, platform, description, xccdf_content)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO stig.definitions (stig_id, title, version, platform, description)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING id`,
-            [stigId, title, version, platform, description, xccdfContent],
+            [stigId, title, version, platform, description],
           );
           definitionId = insertResult.rows[0].id;
         }

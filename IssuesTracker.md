@@ -2,9 +2,9 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.2.3
-**Last Updated**: 2026-01-14
-**Stats**: 0 open | 1 deferred | 130 resolved (archived)
+**Version**: 0.2.4
+**Last Updated**: 2026-01-15
+**Stats**: 0 open | 1 deferred | 137 resolved (archived)
 **Codex Review**: 2026-01-14 11:30 (E2E: READY, Security: Low)
 
 ---
@@ -69,6 +69,13 @@ All issues from Codex Review 2026-01-14 have been resolved.
 
 | ID      | P   | Title                                   | Resolved   | Resolution                                            |
 | ------- | --- | --------------------------------------- | ---------- | ----------------------------------------------------- |
+| UI-016  | 🟢  | ISSO Executive Summary document         | 2026-01-15 | Created HTML/Word doc with project overview for ISSO  |
+| UI-015  | 🟡  | Subtitle text illegible on dark bg      | 2026-01-15 | Brighter colors + text-shadow for gray-400/500        |
+| UI-014  | 🟢  | Add condensed display density           | 2026-01-15 | Added "Condensed" option with 9-15px fonts            |
+| UI-013  | 🟡  | Display density system                  | 2026-01-15 | CSS variables for 4 density levels + toggle + prefs   |
+| STIG-05 | 🟠  | SSH credentials need sudo support       | 2026-01-15 | Added sudo fields to SSH credentials (method/user/pw) |
+| STIG-04 | 🟠  | SSH credentials management UI           | 2026-01-15 | Created CredentialsPage with CRUD for SSH creds       |
+| APP-015 | 🟠  | Settings Preferences nav link           | 2026-01-15 | Added Preferences to Settings sidebar navigation      |
 | SEC-008 | 🟡  | NATS auth/TLS disabled                  | 2026-01-14 | Created nats.prod.conf, cert gen script, updated docs |
 | SEC-009 | 🟢  | trustProxy always true                  | 2026-01-14 | Made configurable via TRUST_PROXY env var             |
 | SEC-006 | 🟠  | .env tracked with secrets               | 2026-01-14 | Already in .gitignore, .env.example exists            |

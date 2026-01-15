@@ -20,6 +20,8 @@ export interface TopNavProps {
   };
   onLogout?: () => void;
   logo?: React.ReactNode;
+  /** Optional slot for additional controls (e.g., density toggle) */
+  extraControls?: React.ReactNode;
 }
 
 export function TopNav({
@@ -29,6 +31,7 @@ export function TopNav({
   user,
   onLogout,
   logo,
+  extraControls,
 }: TopNavProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
 
@@ -65,7 +68,8 @@ export function TopNav({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Theme toggle removed - dark mode only */}
+        {/* Extra controls slot (e.g., density toggle) */}
+        {extraControls}
 
         {user && (
           <div className="relative">

@@ -6,7 +6,97 @@ import {
   type ModuleType,
 } from "@netnynja/shared-ui";
 import { useAuthStore } from "../../stores/auth";
-import { useThemeStore } from "../../stores/theme";
+import { useThemeStore, type DisplayDensity } from "../../stores/theme";
+
+// Density toggle button component
+function DensityToggle({
+  density,
+  onCycle,
+}: {
+  density: DisplayDensity;
+  onCycle: () => void;
+}) {
+  const densityLabels: Record<DisplayDensity, string> = {
+    condensed: "Condensed",
+    compact: "Compact",
+    default: "Default",
+    comfortable: "Comfortable",
+  };
+
+  const densityIcons: Record<DisplayDensity, React.ReactNode> = {
+    condensed: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 5h16M4 8h16M4 11h16M4 14h16M4 17h16M4 20h16"
+        />
+      </svg>
+    ),
+    compact: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+        />
+      </svg>
+    ),
+    default: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    ),
+    comfortable: (
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 5h16M4 12h16M4 19h16"
+        />
+      </svg>
+    ),
+  };
+
+  return (
+    <button
+      onClick={onCycle}
+      className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-silver-400 hover:bg-dark-800 hover:text-primary-400 transition-colors"
+      title={`Display Density: ${densityLabels[density]} (click to cycle)`}
+    >
+      {densityIcons[density]}
+      <span className="hidden md:inline text-xs">{densityLabels[density]}</span>
+    </button>
+  );
+}
 
 const moduleNav: Record<ModuleType, NavItem[]> = {
   ipam: [
@@ -88,6 +178,26 @@ const moduleNav: Record<ModuleType, NavItem[]> = {
             strokeLinejoin="round"
             strokeWidth={2}
             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      ),
+    },
+    {
+      id: "preferences",
+      label: "Preferences",
+      href: "/settings/preferences",
+      icon: (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
           />
         </svg>
       ),
@@ -316,6 +426,26 @@ const moduleNav: Record<ModuleType, NavItem[]> = {
         </svg>
       ),
     },
+    {
+      id: "ssh-credentials",
+      label: "SSH Credentials",
+      href: "/stig/credentials",
+      icon: (
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+          />
+        </svg>
+      ),
+    },
   ],
   syslog: [
     {
@@ -514,8 +644,14 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { activeModule, sidebarCollapsed, setActiveModule, toggleSidebar } =
-    useThemeStore();
+  const {
+    activeModule,
+    sidebarCollapsed,
+    displayDensity,
+    setActiveModule,
+    toggleSidebar,
+    cycleDensity,
+  } = useThemeStore();
 
   const handleModuleChange = (module: ModuleType) => {
     setActiveModule(module);
@@ -528,7 +664,9 @@ export function MainLayout() {
   };
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-dark-900">
+    <div
+      className={`relative flex h-screen overflow-hidden bg-dark-900 density-${displayDensity}`}
+    >
       {/* Full-page ninja background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -585,6 +723,9 @@ export function MainLayout() {
               : undefined
           }
           onLogout={handleLogout}
+          extraControls={
+            <DensityToggle density={displayDensity} onCycle={cycleDensity} />
+          }
         />
 
         <main className="flex-1 overflow-y-auto p-6">

@@ -13,7 +13,13 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { Target } from "@netnynja/shared-types";
 import { useSTIGStore } from "../../../stores/stig";
 
-const columns: ColumnDef<Target>[] = [
+// Extended Target type to include credential info from API
+interface TargetWithCredential extends Target {
+  sshCredentialId?: string | null;
+  sshCredentialName?: string | null;
+}
+
+const columns: ColumnDef<TargetWithCredential>[] = [
   {
     accessorKey: "name",
     header: "Name",
@@ -45,12 +51,27 @@ const columns: ColumnDef<Target>[] = [
     cell: ({ row }) => row.original.connectionType.toUpperCase(),
   },
   {
+    accessorKey: "sshCredentialName",
+    header: "Credential",
+    cell: ({ row }) => (
+      <span
+        className={
+          row.original.sshCredentialName
+            ? "text-green-600 dark:text-green-400"
+            : "text-gray-400"
+        }
+      >
+        {row.original.sshCredentialName || "None"}
+      </span>
+    ),
+  },
+  {
     accessorKey: "isActive",
-    header: "Status",
+    header: "Enabled",
     cell: ({ row }) => (
       <StatusIndicator
         status={row.original.isActive ? "success" : "neutral"}
-        label={row.original.isActive ? "Active" : "Inactive"}
+        label={row.original.isActive ? "Enabled" : "Disabled"}
       />
     ),
   },
@@ -99,21 +120,29 @@ const connectionOptions = [
 export function STIGAssetsPage() {
   const {
     targets,
+    benchmarks,
+    sshCredentials,
     isLoading,
     fetchTargets,
+    fetchBenchmarks,
+    fetchSSHCredentials,
     createTarget,
     updateTarget,
     deleteTarget,
   } = useSTIGStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<Target | null>(null);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [selectedAsset, setSelectedAsset] =
+    useState<TargetWithCredential | null>(null);
+  const [selectedBenchmarkId, setSelectedBenchmarkId] = useState("");
   const [newTarget, setNewTarget] = useState({
     name: "",
     ipAddress: "",
     platform: "linux",
     connectionType: "ssh",
     port: "",
+    sshCredentialId: "",
   });
   const [editTarget, setEditTarget] = useState({
     name: "",
@@ -121,12 +150,30 @@ export function STIGAssetsPage() {
     platform: "linux",
     connectionType: "ssh",
     port: "",
+    sshCredentialId: "",
     isActive: true,
   });
 
   useEffect(() => {
     fetchTargets();
-  }, [fetchTargets]);
+    fetchSSHCredentials();
+    fetchBenchmarks();
+  }, [fetchTargets, fetchSSHCredentials, fetchBenchmarks]);
+
+  // Build credential options for select
+  const credentialOptions = [
+    { value: "", label: "None" },
+    ...sshCredentials.map((c) => ({
+      value: c.id,
+      label: `${c.name} (${c.username})`,
+    })),
+  ];
+
+  // Build benchmark options for select
+  const benchmarkOptions = benchmarks.map((b) => ({
+    value: b.id,
+    label: `${b.title} (${b.platform})`,
+  }));
 
   const handleAddTarget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +184,7 @@ export function STIGAssetsPage() {
         platform: newTarget.platform as Target["platform"],
         connectionType: newTarget.connectionType as Target["connectionType"],
         port: newTarget.port ? parseInt(newTarget.port) : undefined,
+        sshCredentialId: newTarget.sshCredentialId || undefined,
         isActive: true,
       });
       setShowAddModal(false);
@@ -146,13 +194,14 @@ export function STIGAssetsPage() {
         platform: "linux",
         connectionType: "ssh",
         port: "",
+        sshCredentialId: "",
       });
     } catch {
       // Error handled in store
     }
   };
 
-  const openEditModal = (asset: Target) => {
+  const openEditModal = (asset: TargetWithCredential) => {
     setSelectedAsset(asset);
     setEditTarget({
       name: asset.name,
@@ -160,9 +209,20 @@ export function STIGAssetsPage() {
       platform: asset.platform,
       connectionType: asset.connectionType,
       port: asset.port?.toString() || "",
+      sshCredentialId: asset.sshCredentialId || "",
       isActive: asset.isActive,
     });
     setShowEditModal(true);
+  };
+
+  const openAuditModal = (asset: TargetWithCredential) => {
+    setSelectedAsset(asset);
+    // Pre-select benchmark that matches platform if available
+    const matchingBenchmark = benchmarks.find(
+      (b) => b.platform.toLowerCase() === asset.platform.toLowerCase(),
+    );
+    setSelectedBenchmarkId(matchingBenchmark?.id || "");
+    setShowAuditModal(true);
   };
 
   const handleEditTarget = async (e: React.FormEvent) => {
@@ -175,6 +235,7 @@ export function STIGAssetsPage() {
         platform: editTarget.platform as Target["platform"],
         connectionType: editTarget.connectionType as Target["connectionType"],
         port: editTarget.port ? parseInt(editTarget.port) : undefined,
+        sshCredentialId: editTarget.sshCredentialId || null,
         isActive: editTarget.isActive,
       });
       setShowEditModal(false);
@@ -182,6 +243,17 @@ export function STIGAssetsPage() {
     } catch {
       // Error handled in store
     }
+  };
+
+  const handleStartAudit = async () => {
+    if (!selectedAsset || !selectedBenchmarkId) return;
+    // For now, show a message - actual audit execution would be via Python service
+    alert(
+      `Audit requested for ${selectedAsset.name} using benchmark ${selectedBenchmarkId}.\n\nNote: Actual audit execution requires the STIG audit service.`,
+    );
+    setShowAuditModal(false);
+    setSelectedAsset(null);
+    setSelectedBenchmarkId("");
   };
 
   return (
@@ -195,7 +267,10 @@ export function STIGAssetsPage() {
             Systems targeted for STIG compliance auditing
           </p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+        >
           <svg
             className="mr-2 h-4 w-4"
             fill="none"
@@ -217,27 +292,31 @@ export function STIGAssetsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Card className="p-4">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {targets.filter((t) => t.isActive).length || 12}
+            {targets.filter((t) => t.isActive).length}
           </p>
           <p className="text-sm text-gray-500">Active Assets</p>
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {targets.filter((t) => t.platform === "linux").length || 5}
+            {targets.filter((t) => t.platform === "linux").length}
           </p>
           <p className="text-sm text-gray-500">Linux Systems</p>
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {targets.filter((t) => t.platform === "windows").length || 4}
+            {targets.filter((t) => t.platform === "windows").length}
           </p>
           <p className="text-sm text-gray-500">Windows Systems</p>
         </Card>
         <Card className="p-4">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {targets.filter((t) => t.platform.includes("cisco")).length || 3}
+            {
+              (targets as TargetWithCredential[]).filter(
+                (t) => t.sshCredentialId,
+              ).length
+            }
           </p>
-          <p className="text-sm text-gray-500">Network Devices</p>
+          <p className="text-sm text-gray-500">With Credentials</p>
         </Card>
       </div>
 
@@ -253,29 +332,39 @@ export function STIGAssetsPage() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openEditModal(row.original);
+                        openEditModal(row.original as TargetWithCredential);
                       }}
+                      className="border-gray-300 bg-white hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:hover:bg-gray-600"
                     >
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAuditModal(row.original as TargetWithCredential);
+                      }}
+                      className="border-green-500 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
+                    >
                       Audit
                     </Button>
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="destructive"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (window.confirm("Delete this asset?")) {
                           deleteTarget(row.original.id);
                         }
                       }}
+                      className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
                     >
                       <svg
-                        className="h-4 w-4 text-error-500"
+                        className="h-4 w-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -304,7 +393,7 @@ export function STIGAssetsPage() {
       {/* Add Asset Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardContent className="pt-6">
               <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                 Add Asset
@@ -347,6 +436,17 @@ export function STIGAssetsPage() {
                   }
                   options={connectionOptions}
                 />
+                <Select
+                  label="SSH Credential"
+                  value={newTarget.sshCredentialId}
+                  onChange={(e) =>
+                    setNewTarget({
+                      ...newTarget,
+                      sshCredentialId: e.target.value,
+                    })
+                  }
+                  options={credentialOptions}
+                />
                 <Input
                   label="Port (optional)"
                   type="number"
@@ -377,7 +477,7 @@ export function STIGAssetsPage() {
       {/* Edit Asset Modal */}
       {showEditModal && selectedAsset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardContent className="pt-6">
               <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                 Edit Asset
@@ -420,6 +520,17 @@ export function STIGAssetsPage() {
                   }
                   options={connectionOptions}
                 />
+                <Select
+                  label="SSH Credential"
+                  value={editTarget.sshCredentialId}
+                  onChange={(e) =>
+                    setEditTarget({
+                      ...editTarget,
+                      sshCredentialId: e.target.value,
+                    })
+                  }
+                  options={credentialOptions}
+                />
                 <Input
                   label="Port (optional)"
                   type="number"
@@ -446,7 +557,7 @@ export function STIGAssetsPage() {
                     htmlFor="editIsActive"
                     className="text-sm text-gray-700 dark:text-gray-300"
                   >
-                    Active
+                    Enabled (include in audits)
                   </label>
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
@@ -462,6 +573,86 @@ export function STIGAssetsPage() {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Audit Modal - Select Benchmark */}
+      {showAuditModal && selectedAsset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Run STIG Audit
+              </h2>
+              <div className="space-y-4">
+                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Asset
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedAsset.name}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {selectedAsset.ipAddress} - {selectedAsset.platform}
+                  </p>
+                  {selectedAsset.sshCredentialName ? (
+                    <p className="mt-1 text-sm text-green-600 dark:text-green-400">
+                      Using credential: {selectedAsset.sshCredentialName}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                      No SSH credential assigned
+                    </p>
+                  )}
+                </div>
+
+                {benchmarkOptions.length > 0 ? (
+                  <Select
+                    label="Select STIG Benchmark"
+                    value={selectedBenchmarkId}
+                    onChange={(e) => setSelectedBenchmarkId(e.target.value)}
+                    options={benchmarkOptions}
+                  />
+                ) : (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      No STIG benchmarks available. Please upload a STIG
+                      benchmark in the Library first.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAuditModal(false);
+                      setSelectedAsset(null);
+                      setSelectedBenchmarkId("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleStartAudit}
+                    disabled={
+                      !selectedBenchmarkId || !selectedAsset.sshCredentialId
+                    }
+                    className="bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 dark:bg-green-600 dark:hover:bg-green-700"
+                  >
+                    Start Audit
+                  </Button>
+                </div>
+                {!selectedAsset.sshCredentialId && (
+                  <p className="text-center text-sm text-red-500">
+                    Please assign an SSH credential to this asset before running
+                    an audit.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

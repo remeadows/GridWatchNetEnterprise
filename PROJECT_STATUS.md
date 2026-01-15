@@ -1,12 +1,12 @@
 # NetNynja Enterprise - Project Status
 
-**Version**: 0.2.3
+**Version**: 0.2.4
 **Last Updated**: 2026-01-15
 **Current Phase**: Phase 9 - CI/CD & Release (Complete)
 **Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 100%
-**Issues**: 0 Open | 130 Resolved | 1 Deferred
+**Issues**: 0 Open | 137 Resolved | 1 Deferred
 **Security Posture**: Low (All Codex Review 2026-01-14 findings resolved)
-**Release Status**: v0.2.3 Released ✅ (CI: PASS)
+**Release Status**: v0.2.4 Released ✅ (CI: PENDING)
 
 ---
 
@@ -98,6 +98,29 @@ Key Changes:
 
 Security Posture: LOW (0 open findings)
 
+### [0.2.4] - 2026-01-15
+
+**Release v0.2.4 - UX Enhancements & ISSO Documentation**
+
+CI/CD Status: PENDING
+
+Key Changes:
+
+- Display Density System: 4 levels (Condensed/Compact/Default/Comfortable) with CSS variables
+- Settings Preferences page with density dropdown and live preview
+- Quick-toggle density button in top navigation bar
+- SSH Credentials management with sudo/privilege escalation support
+- STIG CredentialsPage for CRUD operations on SSH credentials
+- Improved text readability against dark backgrounds (brighter colors + text-shadow)
+- ISSO Executive Summary document (docs/NetNynja_Executive_Summary_ISSO.html)
+- Updated COMMIT.md with ISSO deliverable reference
+
+New Features:
+
+- Display density affects fonts (9px-28px), spacing, padding, gaps, badges
+- SSH credentials support: password auth, SSH key auth, sudo methods (password/nopasswd/same_as_ssh)
+- Database migration for SSH credentials sudo fields (008_add_ssh_credentials_sudo.sql)
+
 ### [Unreleased]
 
 (No unreleased changes)
@@ -106,9 +129,10 @@ Security Posture: LOW (0 open findings)
 
 ## Related Documentation
 
-| Document                                             | Description                   |
-| ---------------------------------------------------- | ----------------------------- |
-| [docs/PHASES_DETAIL.md](docs/PHASES_DETAIL.md)       | Detailed phase implementation |
-| [docs/SESSION_HISTORY.md](docs/SESSION_HISTORY.md)   | Development session logs      |
-| [docs/DOCKER_STRUCTURE.md](docs/DOCKER_STRUCTURE.md) | Container architecture        |
-| [IssuesTracker.md](IssuesTracker.md)                 | Issue tracking                |
+| Document                                                                               | Description                              |
+| -------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [docs/PHASES_DETAIL.md](docs/PHASES_DETAIL.md)                                         | Detailed phase implementation            |
+| [docs/SESSION_HISTORY.md](docs/SESSION_HISTORY.md)                                     | Development session logs                 |
+| [docs/DOCKER_STRUCTURE.md](docs/DOCKER_STRUCTURE.md)                                   | Container architecture                   |
+| [docs/NetNynja_Executive_Summary_ISSO.html](docs/NetNynja_Executive_Summary_ISSO.html) | ISSO Executive Summary (Word-compatible) |
+| [IssuesTracker.md](IssuesTracker.md)                                                   | Issue tracking                           |

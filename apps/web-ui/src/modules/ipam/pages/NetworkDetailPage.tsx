@@ -81,6 +81,16 @@ const getColumns = (enableSelection: boolean): ColumnDef<IPAddress>[] => {
         ),
     },
     {
+      accessorKey: "deviceType",
+      header: "Vendor/Device",
+      cell: ({ row }) =>
+        row.original.deviceType ? (
+          <span className="text-sm">{row.original.deviceType}</span>
+        ) : (
+          "-"
+        ),
+    },
+    {
       accessorKey: "responseTimeMs",
       header: "Latency",
       cell: ({ row }) =>
@@ -174,6 +184,7 @@ export function IPAMNetworkDetailPage() {
     updateScan,
     exportScan,
     deleteNetwork,
+    updateNetwork,
     addAddressesToNpm,
   } = useIPAMStore();
 
@@ -184,6 +195,18 @@ export function IPAMNetworkDetailPage() {
     new Set(["ping"]),
   );
   const [isScanning, setIsScanning] = useState(false);
+
+  // Edit network state
+  const [showEditNetworkModal, setShowEditNetworkModal] = useState(false);
+  const [editingNetwork, setEditingNetwork] = useState<{
+    name: string;
+    description: string;
+    gateway: string;
+    site: string;
+    location: string;
+    vlanId: string;
+    dnsServers: string;
+  } | null>(null);
 
   // Edit scan state
   const [showEditScanModal, setShowEditScanModal] = useState(false);
@@ -338,6 +361,48 @@ export function IPAMNetworkDetailPage() {
     }
   }, [editingScan, updateScan]);
 
+  // Network edit handlers
+  const handleEditNetwork = useCallback(() => {
+    if (!selectedNetwork) return;
+    setEditingNetwork({
+      name: selectedNetwork.name || "",
+      description: selectedNetwork.description || "",
+      gateway: selectedNetwork.gateway || "",
+      site: selectedNetwork.site || "",
+      location: selectedNetwork.location || "",
+      vlanId: selectedNetwork.vlanId?.toString() || "",
+      dnsServers: selectedNetwork.dnsServers?.join(", ") || "",
+    });
+    setShowEditNetworkModal(true);
+  }, [selectedNetwork]);
+
+  const handleSaveNetworkEdit = useCallback(async () => {
+    if (!editingNetwork || !id) return;
+    try {
+      // Parse DNS servers from comma-separated string
+      const dnsServers = editingNetwork.dnsServers
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      await updateNetwork(id, {
+        name: editingNetwork.name || undefined,
+        description: editingNetwork.description || undefined,
+        gateway: editingNetwork.gateway || undefined,
+        site: editingNetwork.site || undefined,
+        location: editingNetwork.location || undefined,
+        vlanId: editingNetwork.vlanId
+          ? parseInt(editingNetwork.vlanId, 10)
+          : undefined,
+        dnsServers: dnsServers.length > 0 ? dnsServers : undefined,
+      });
+      setShowEditNetworkModal(false);
+      setEditingNetwork(null);
+    } catch {
+      // Error handled by store
+    }
+  }, [editingNetwork, id, updateNetwork]);
+
   if (!selectedNetwork && !isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -485,8 +550,24 @@ export function IPAMNetworkDetailPage() {
 
       {/* Network Details */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Network Details</CardTitle>
+          <Button variant="ghost" size="sm" onClick={handleEditNetwork}>
+            <svg
+              className="mr-1 h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Edit
+          </Button>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -843,6 +924,16 @@ export function IPAMNetworkDetailPage() {
                 </label>
               ))}
             </div>
+            {selectedScanTypes.has("nmap") && (
+              <div className="mt-3 rounded-md bg-amber-50 p-3 dark:bg-amber-900/20">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <strong>Note:</strong> MAC address and vendor detection
+                  require the scanner to be on the same network segment as the
+                  scanned hosts. When running in Docker, MAC addresses may not
+                  be detected for hosts on the physical LAN.
+                </p>
+              </div>
+            )}
             {selectedScanTypes.size === 0 && (
               <p className="mt-2 text-xs text-red-500">
                 Please select at least one scan type
@@ -1091,6 +1182,161 @@ export function IPAMNetworkDetailPage() {
                 Cancel
               </Button>
               <Button onClick={handleSaveScanEdit} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Network Modal */}
+      {showEditNetworkModal && editingNetwork && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Edit Network
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editingNetwork.name}
+                  onChange={(e) =>
+                    setEditingNetwork({
+                      ...editingNetwork,
+                      name: e.target.value,
+                    })
+                  }
+                  placeholder="Network name"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Gateway
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNetwork.gateway}
+                    onChange={(e) =>
+                      setEditingNetwork({
+                        ...editingNetwork,
+                        gateway: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., 192.168.1.1"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    VLAN ID
+                  </label>
+                  <input
+                    type="number"
+                    value={editingNetwork.vlanId}
+                    onChange={(e) =>
+                      setEditingNetwork({
+                        ...editingNetwork,
+                        vlanId: e.target.value,
+                      })
+                    }
+                    placeholder="1-4094"
+                    min="1"
+                    max="4094"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Site
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNetwork.site}
+                    onChange={(e) =>
+                      setEditingNetwork({
+                        ...editingNetwork,
+                        site: e.target.value,
+                      })
+                    }
+                    placeholder="Site name"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNetwork.location}
+                    onChange={(e) =>
+                      setEditingNetwork({
+                        ...editingNetwork,
+                        location: e.target.value,
+                      })
+                    }
+                    placeholder="Physical location"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  DNS Servers
+                </label>
+                <input
+                  type="text"
+                  value={editingNetwork.dnsServers}
+                  onChange={(e) =>
+                    setEditingNetwork({
+                      ...editingNetwork,
+                      dnsServers: e.target.value,
+                    })
+                  }
+                  placeholder="e.g., 8.8.8.8, 8.8.4.4"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Comma-separated list of DNS server IPs
+                </p>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <textarea
+                  value={editingNetwork.description}
+                  onChange={(e) =>
+                    setEditingNetwork({
+                      ...editingNetwork,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="Network description..."
+                  rows={3}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditNetworkModal(false);
+                  setEditingNetwork(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveNetworkEdit} disabled={isLoading}>
                 {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </div>

@@ -29,6 +29,7 @@ import { STIGBenchmarksPage } from "./modules/stig/pages/BenchmarksPage";
 import { STIGAssetsPage } from "./modules/stig/pages/AssetsPage";
 import { STIGCompliancePage } from "./modules/stig/pages/CompliancePage";
 import { STIGLibraryPage } from "./modules/stig/pages/LibraryPage";
+import { STIGCredentialsPage } from "./modules/stig/pages/CredentialsPage";
 
 // Syslog module
 import { SyslogEventsPage } from "./modules/syslog/pages/EventsPage";
@@ -37,6 +38,7 @@ import { SyslogFiltersPage } from "./modules/syslog/pages/FiltersPage";
 
 // Settings module
 import { UsersPage } from "./modules/settings/pages/UsersPage";
+import { PreferencesPage } from "./modules/settings/pages/PreferencesPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -102,6 +104,7 @@ function App() {
             <Route path="library" element={<STIGLibraryPage />} />
             <Route path="benchmarks" element={<STIGBenchmarksPage />} />
             <Route path="assets" element={<STIGAssetsPage />} />
+            <Route path="credentials" element={<STIGCredentialsPage />} />
             <Route path="compliance" element={<STIGCompliancePage />} />
           </Route>
 
@@ -117,6 +120,7 @@ function App() {
           <Route path="/settings">
             <Route index element={<Navigate to="/settings/users" replace />} />
             <Route path="users" element={<UsersPage />} />
+            <Route path="preferences" element={<PreferencesPage />} />
           </Route>
         </Route>
 

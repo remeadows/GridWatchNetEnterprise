@@ -15,7 +15,8 @@ export interface Target extends BaseEntity {
   platform: Platform;
   osVersion?: string;
   connectionType: ConnectionType;
-  credentialId?: string; // Vault reference
+  credentialId?: string; // Vault reference (legacy)
+  sshCredentialId?: string | null; // SSH credential reference
   port?: number;
   isActive: boolean;
   lastAudit?: Date;

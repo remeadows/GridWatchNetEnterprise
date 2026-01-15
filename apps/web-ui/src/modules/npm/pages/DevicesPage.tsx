@@ -15,6 +15,7 @@ import type { Device } from "@netnynja/shared-types";
 import { useNPMStore, type PollDeviceResponse } from "../../../stores/npm";
 import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
 import { useDeviceGroupsStore } from "../../../stores/device-groups";
+import { useSTIGStore } from "../../../stores/stig";
 
 const statusMap = {
   up: "success",
@@ -26,6 +27,7 @@ const statusMap = {
 const getColumns = (
   showGroupColumn: boolean,
   onPollClick: (device: Device, e: React.MouseEvent) => void,
+  onAddToSTIGClick: (device: Device, e: React.MouseEvent) => void,
 ): ColumnDef<Device>[] => {
   const baseColumns: ColumnDef<Device>[] = [
     {
@@ -137,26 +139,48 @@ const getColumns = (
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <button
-          onClick={(e) => onPollClick(row.original, e)}
-          className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
-          title="Poll Now"
-        >
-          <svg
-            className="h-3.5 w-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => onPollClick(row.original, e)}
+            className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors"
+            title="Poll Now"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Poll
-        </button>
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Poll
+          </button>
+          <button
+            onClick={(e) => onAddToSTIGClick(row.original, e)}
+            className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
+            title="Add to STIG Manager"
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+            STIG
+          </button>
+        </div>
       ),
     },
   );
@@ -184,7 +208,17 @@ export function NPMDevicesPage() {
     assignDevicesToGroup,
     removeDevicesFromGroup,
   } = useDeviceGroupsStore();
+  const { createTarget: createSTIGTarget } = useSTIGStore();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddToSTIGModal, setShowAddToSTIGModal] = useState(false);
+  const [stigTargetDevice, setSTIGTargetDevice] = useState<Device | null>(null);
+  const [stigAssetData, setSTIGAssetData] = useState({
+    platform: "linux",
+    connectionType: "ssh",
+    port: "22",
+  });
+  const [isAddingToSTIG, setIsAddingToSTIG] = useState(false);
+  const [stigAddSuccess, setSTIGAddSuccess] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showPollModal, setShowPollModal] = useState(false);
@@ -387,6 +421,65 @@ export function NPMDevicesPage() {
     setShowPollModal(true);
   };
 
+  const openAddToSTIGModal = (device: Device, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setSTIGTargetDevice(device);
+    // Infer platform from device type/vendor
+    let platform = "linux";
+    const typeOrVendor = (
+      device.deviceType ||
+      device.vendor ||
+      ""
+    ).toLowerCase();
+    if (typeOrVendor.includes("windows")) platform = "windows";
+    else if (typeOrVendor.includes("cisco")) platform = "cisco_ios";
+    else if (typeOrVendor.includes("juniper")) platform = "juniper_junos";
+    else if (typeOrVendor.includes("palo")) platform = "paloalto";
+    else if (
+      typeOrVendor.includes("fortinet") ||
+      typeOrVendor.includes("fortigate")
+    )
+      platform = "fortinet";
+    else if (typeOrVendor.includes("arista")) platform = "arista_eos";
+    else if (typeOrVendor.includes("vmware")) platform = "vmware_esxi";
+
+    setSTIGAssetData({
+      platform,
+      connectionType: "ssh",
+      port: "22",
+    });
+    setSTIGAddSuccess(false);
+    setShowAddToSTIGModal(true);
+  };
+
+  const handleAddToSTIG = async () => {
+    if (!stigTargetDevice) return;
+    setIsAddingToSTIG(true);
+    try {
+      await createSTIGTarget({
+        name: stigTargetDevice.name,
+        ipAddress: stigTargetDevice.ipAddress,
+        platform: stigAssetData.platform as "linux" | "windows" | "cisco_ios",
+        connectionType: stigAssetData.connectionType as "ssh" | "winrm" | "api",
+        port: parseInt(stigAssetData.port),
+        isActive: true,
+      });
+      setSTIGAddSuccess(true);
+    } catch {
+      // Error handled in store
+    } finally {
+      setIsAddingToSTIG(false);
+    }
+  };
+
+  const closeAddToSTIGModal = () => {
+    setShowAddToSTIGModal(false);
+    setSTIGTargetDevice(null);
+    setSTIGAddSuccess(false);
+  };
+
   const handlePollDevice = async () => {
     if (!pollTargetDevice) return;
     const methods: ("icmp" | "snmp")[] = [];
@@ -471,6 +564,7 @@ export function NPMDevicesPage() {
   const columns = getColumns(
     !selectedGroupFilter || selectedGroupFilter === "ungrouped",
     openPollModal,
+    openAddToSTIGModal,
   );
 
   return (
@@ -1307,6 +1401,145 @@ export function NPMDevicesPage() {
                     disabled={!pollMethods.icmp && !pollMethods.snmp}
                   >
                     Poll Again
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Add to STIG Modal */}
+      {showAddToSTIGModal && stigTargetDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Add to STIG Manager
+              </h2>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Device:{" "}
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {stigTargetDevice.name}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  IP:{" "}
+                  <code className="rounded bg-gray-100 px-2 py-0.5 text-sm dark:bg-gray-800">
+                    {stigTargetDevice.ipAddress}
+                  </code>
+                </p>
+              </div>
+
+              {stigAddSuccess ? (
+                <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    <span className="font-medium">
+                      Successfully added to STIG Manager!
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                    You can now run compliance audits against this asset in STIG
+                    Manager.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Select
+                    label="Platform"
+                    value={stigAssetData.platform}
+                    onChange={(e) =>
+                      setSTIGAssetData({
+                        ...stigAssetData,
+                        platform: e.target.value,
+                      })
+                    }
+                    options={[
+                      { value: "linux", label: "Linux" },
+                      { value: "windows", label: "Windows" },
+                      { value: "macos", label: "macOS" },
+                      { value: "cisco_ios", label: "Cisco IOS" },
+                      { value: "cisco_nxos", label: "Cisco NX-OS" },
+                      { value: "juniper_junos", label: "Juniper Junos" },
+                      { value: "paloalto", label: "Palo Alto" },
+                      { value: "fortinet", label: "Fortinet" },
+                      { value: "arista_eos", label: "Arista EOS" },
+                      { value: "vmware_esxi", label: "VMware ESXi" },
+                    ]}
+                  />
+                  <Select
+                    label="Connection Type"
+                    value={stigAssetData.connectionType}
+                    onChange={(e) =>
+                      setSTIGAssetData({
+                        ...stigAssetData,
+                        connectionType: e.target.value,
+                      })
+                    }
+                    options={[
+                      { value: "ssh", label: "SSH" },
+                      { value: "winrm", label: "WinRM" },
+                      { value: "api", label: "API" },
+                      { value: "netmiko", label: "Netmiko" },
+                    ]}
+                  />
+                  <Input
+                    label="Port"
+                    type="number"
+                    value={stigAssetData.port}
+                    onChange={(e) =>
+                      setSTIGAssetData({
+                        ...stigAssetData,
+                        port: e.target.value,
+                      })
+                    }
+                    placeholder="22"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeAddToSTIGModal}
+                >
+                  {stigAddSuccess ? "Close" : "Cancel"}
+                </Button>
+                {!stigAddSuccess && (
+                  <Button
+                    onClick={handleAddToSTIG}
+                    loading={isAddingToSTIG}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                    Add to STIG
                   </Button>
                 )}
               </div>

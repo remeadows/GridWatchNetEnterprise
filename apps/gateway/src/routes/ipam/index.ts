@@ -828,18 +828,41 @@ const ipamRoutes: FastifyPluginAsync = async (fastify) => {
       const query = querySchema.parse(request.query);
       const offset = (query.page - 1) * query.limit;
 
-      const countResult = await pool.query(
-        "SELECT COUNT(*) FROM ipam.addresses WHERE network_id = $1",
+      // Get network CIDR to filter out network/broadcast addresses
+      const networkResult = await pool.query(
+        "SELECT network FROM ipam.networks WHERE id = $1",
         [id],
+      );
+
+      if (networkResult.rows.length === 0) {
+        reply.status(404);
+        return {
+          success: false,
+          error: { code: "NOT_FOUND", message: "Network not found" },
+        };
+      }
+
+      const networkCidr = networkResult.rows[0].network;
+
+      // Exclude network address (first IP) and broadcast address (last IP)
+      // Using PostgreSQL INET functions: network() gets network address, broadcast() gets broadcast
+      const countResult = await pool.query(
+        `SELECT COUNT(*) FROM ipam.addresses
+         WHERE network_id = $1
+         AND address != network($2::inet)
+         AND address != broadcast($2::inet)`,
+        [id, networkCidr],
       );
 
       const dataResult = await pool.query(
         `SELECT id, address, hostname, fqdn, mac_address, status, device_type, description, response_time_ms, open_ports, last_seen, discovered_at, created_at, updated_at
        FROM ipam.addresses
        WHERE network_id = $1
+       AND address != network($4::inet)
+       AND address != broadcast($4::inet)
        ORDER BY address
        LIMIT $2 OFFSET $3`,
-        [id, query.limit, offset],
+        [id, query.limit, offset, networkCidr],
       );
 
       return {

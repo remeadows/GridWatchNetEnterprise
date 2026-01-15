@@ -62,10 +62,10 @@ async function start(): Promise<void> {
       maxAge: config.CORS_MAX_AGE,
     });
 
-    // Register multipart for file uploads
+    // Register multipart for file uploads (500MB for full STIG Library uploads)
     await fastify.register(multipart, {
       limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB max file size
+        fileSize: 500 * 1024 * 1024, // 500MB max file size for STIG Library
       },
     });
 
