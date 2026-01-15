@@ -153,3 +153,14 @@ tests/*/reports/*.json
 
 # macOS extended attributes
 ._*
+
+# ===========================================
+# Security & Scanning Output
+# ===========================================
+# SARIF scan outputs
+*.sarif
+
+# Temporary scripts from work sessions
+generate_isso_report.py
+push-remaining.sh
+setup-ghcr.sh
