@@ -24,10 +24,12 @@ class VendorType(str, Enum):
     GENERIC = "generic"
     ARISTA = "arista"
     ARUBA = "aruba"
+    HPE_ARUBA_CX = "hpe_aruba_cx"
     JUNIPER = "juniper"
     MELLANOX = "mellanox"
     PFSENSE = "pfsense"
     SOPHOS = "sophos"
+    REDHAT = "redhat"
 
 
 @dataclass

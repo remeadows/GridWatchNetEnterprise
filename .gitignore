@@ -141,9 +141,9 @@ tmpclaude-*-cwd
 # Duplicate asset directories (use apps/web-ui/public/assets/)
 AppPhoto/
 
-# Test report accumulation
-tests/*/reports/*.html
-tests/*/reports/*.json
+# Test report accumulation (E2E tests)
+tests/*/reports/
+tests/e2e/.venv/
 
 # Editor backup files
 *.bak
@@ -164,3 +164,11 @@ tests/*/reports/*.json
 generate_isso_report.py
 push-remaining.sh
 setup-ghcr.sh
+
+# ===========================================
+# STIG Data (User-provided)
+# ===========================================
+# STIG folder contains user-uploaded configuration files and DISA STIG data
+# Exclude from version control - this is deployment-specific data
+STIG/
+stig_library_index.json

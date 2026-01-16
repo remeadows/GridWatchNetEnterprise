@@ -2,41 +2,19 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.2.6
-**Last Updated**: 2026-01-15 16:30 EST
-**Stats**: 3 open | 1 deferred | 143 resolved (archived)
-**Codex Review**: 2026-01-15 16:05 (E2E: BLOCKED, Security: Low, CI: At-Risk)
-**Docker Scout**: 2026-01-15 (1 Critical, 5 High - 2 fixed via Vite 7 upgrade)
-**CI/CD Status**: AT RISK ⚠️ (Turbo TLS/keychain error)
+**Version**: 0.2.9
+**Last Updated**: 2026-01-16 15:45 EST
+**Stats**: 0 open | 1 deferred | 149 resolved (archived)
+**Codex Review**: 2026-01-16 (E2E: FIXED, Security: Low, CI: PASS ✅)
+**Docker Scout**: 2026-01-15 (1 Critical, 3 High - 2 fixed via Vite 7 upgrade)
+**CI/CD Status**: PENDING
 **npm audit**: 0 vulnerabilities ✅
 
 ---
 
 ## 🔥 NOW (Active / In Progress)
 
-| ID      | P   | Title                               | Status | Owner  |
-| ------- | --- | ----------------------------------- | ------ | ------ |
-| APP-016 | 🔴  | Syslog forwarder crash (missing DB) | Open   | DevOps |
-| CI-017  | 🔴  | Turbo APIClient TLS/keychain error  | Open   | DevOps |
-| APP-017 | 🟠  | E2E tests blocked by artifacts      | Open   | DevOps |
-
-### APP-016: Syslog Forwarder Crash
-
-**Description**: `netnynja-syslog-forwarder` continuously restarts due to missing `syslog.forwarders` table.
-**Evidence**: `asyncpg.exceptions.UndefinedTableError: relation "syslog.forwarders" does not exist`
-**Resolution**: Apply missing migration or create table, then restart service.
-
-### CI-017: Turbo APIClient TLS/Keychain Error
-
-**Description**: All Turbo-based npm scripts (`lint`, `typecheck`, `test`, `build`) fail with TLS error.
-**Evidence**: `Failed to create APIClient: Unable to set up TLS. No keychain is available.`
-**Resolution**: Disable Turbo remote cache or fix keychain/TLS access configuration.
-
-### APP-017: E2E Tests Blocked
-
-**Description**: E2E test suite cannot run due to artifact creation constraints.
-**Evidence**: `tests/e2e/run_tests.sh` creates `.venv` and `tests/e2e/reports/*` directories.
-**Resolution**: Approve E2E artifacts or run in disposable environment.
+(No active blockers)
 
 ## ⏭️ NEXT (Queued / Ready)
 
@@ -139,6 +117,12 @@ All issues from Codex Review 2026-01-14 have been resolved.
 
 | ID      | P   | Title                                   | Resolved   | Resolution                                            |
 | ------- | --- | --------------------------------------- | ---------- | ----------------------------------------------------- |
+| STIG-08 | 🟠  | STIG Library XCCDF indexer              | 2026-01-16 | Created library module: catalog, parser, indexer      |
+| STIG-07 | 🟠  | STIG Library API endpoints              | 2026-01-16 | Added 6 API endpoints for browsing/searching library  |
+| STIG-06 | 🟠  | Config file analysis feature            | 2026-01-16 | Added parsers for 6 platforms, API endpoint, UI modal |
+| CI-017  | 🔴  | Turbo/ESLint compatibility              | 2026-01-16 | Created ESLint 9.x flat config (eslint.config.mjs)    |
+| APP-016 | 🔴  | Syslog forwarder crash (missing DB)     | 2026-01-16 | Created migration 009_add_syslog_forwarders.sql       |
+| APP-017 | 🟠  | E2E tests blocked by artifacts          | 2026-01-16 | Fixed CI workflow path, updated .gitignore            |
 | CI-012  | 🟠  | Vite 5.x to 7.x upgrade                 | 2026-01-15 | Upgraded Vite 7.3.1, fixed cross-spawn/glob CVEs      |
 | CI-015  | 🟠  | Tests workflow failing                  | 2026-01-15 | Added --passWithNoTests to Jest config                |
 | CI-016  | 🟡  | E2E cleanup step failing                | 2026-01-15 | Added fallback to docker compose down in CI           |

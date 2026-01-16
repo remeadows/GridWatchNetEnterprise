@@ -1,13 +1,13 @@
 # NetNynja Enterprise - Project Status
 
-**Version**: 0.2.6
-**Last Updated**: 2026-01-15 16:30 EST
+**Version**: 0.2.9
+**Last Updated**: 2026-01-16 15:45 EST
 **Current Phase**: Phase 9 - CI/CD & Release (Complete)
 **Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 100%
-**Issues**: 0 Open | 143 Resolved | 0 Deferred
-**Security Posture**: Medium (Docker Scout: 1 Critical, 5 High | npm audit: 0 vulnerabilities ✅)
+**Issues**: 0 Open | 149 Resolved | 1 Deferred
+**Security Posture**: Medium (Docker Scout: 1 Critical, 3 High | npm audit: 0 vulnerabilities ✅)
 **Container Security**: All 14 images cryptographically signed with Cosign ✅
-**Release Status**: v0.2.6 Released ✅ (CI: PASS ✅)
+**Release Status**: v0.2.9 Ready (CI: PENDING)
 
 ---
 
@@ -196,6 +196,81 @@ Documentation:
 - Updated CONTEXT.md architecture table with Vite 7.3.1
 - Updated IssuesTracker.md with SEC-011 remediation status
 - CI-012 (Vite upgrade) marked as resolved
+
+### [0.2.7] - 2026-01-16 (CI/CD Fixes & ESLint 9 Migration)
+
+**CI/CD Pipeline & Tooling Fixes**
+
+CI/CD Status: PASS ✅
+
+Fixes:
+
+- Created ESLint 9.x flat config (eslint.config.mjs) for ESLint 9.39.2 compatibility
+- Added syslog.forwarders migration (009_add_syslog_forwarders.sql) for databases initialized pre-v0.2.5
+- Fixed E2E test workflow path (tests/e2e instead of Testing)
+- Updated .gitignore to exclude E2E test artifacts
+
+Technical Changes:
+
+- ESLint flat config with TypeScript, React, and Jest support
+- Disabled no-undef rule for TypeScript (handled by compiler)
+- Added globals package for ESLint environment definitions
+
+### [0.2.8] - 2026-01-16 (Device Types & Config Analysis)
+
+**STIG Manager Configuration File Analysis**
+
+CI/CD Status: PASS ✅
+
+New Features:
+
+- Added 8 device types: REDHAT, HPE_ARUBA_CX, JUNIPER_JUNOS, PALOALTO, FORTINET, F5_BIGIP, VMWARE_ESXI, VMWARE_VCENTER
+- Configuration file analysis without live connection (CONFIG connection type)
+- Config parsers for 6 platforms: Arista EOS, HPE Aruba CX, Juniper JunOS, Mellanox, pfSense, RedHat
+- API endpoint: POST /api/v1/stig/targets/{id}/analyze-config
+- API endpoint: POST /api/v1/stig/analyze-config (standalone)
+- UI: Config button and analysis modal on Assets page
+
+Files Created:
+
+- apps/stig/src/stig/collectors/config_analyzer.py
+- apps/stig/src/stig/services/config_checker.py
+
+### [0.2.9] - 2026-01-16 (STIG Library XCCDF Indexer)
+
+**STIG Library Module for October 2025 DISA STIGs**
+
+CI/CD Status: PENDING
+
+New Features:
+
+- STIG Library module with catalog, parser, and indexer components
+- XCCDF XML parser extracts metadata from STIG ZIP files
+- Platform-to-STIG mapping for 40+ keywords (Arista, Cisco, HPE, Juniper, etc.)
+- Library indexer with JSON cache for fast startup (14,361 rules indexed)
+- API endpoints for library browsing, searching, and platform lookup
+
+API Endpoints:
+
+- GET /api/v1/stig/library - Browse catalog with pagination/filtering
+- GET /api/v1/stig/library/summary - Library statistics
+- GET /api/v1/stig/library/platforms/{platform} - STIGs for platform
+- GET /api/v1/stig/library/{benchmark_id} - STIG details
+- GET /api/v1/stig/library/{benchmark_id}/rules - STIG rules with pagination
+- POST /api/v1/stig/library/rescan - Rebuild index (admin)
+
+Files Created:
+
+- apps/stig/src/stig/library/**init**.py
+- apps/stig/src/stig/library/catalog.py
+- apps/stig/src/stig/library/parser.py
+- apps/stig/src/stig/library/indexer.py
+
+Library Stats (October 2025):
+
+- 189 STIGs indexed from 191 ZIP files
+- 14,361 total STIG rules
+- 14 platforms covered with mapped STIGs
 
 ### [Unreleased]
 

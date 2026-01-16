@@ -264,11 +264,11 @@ jobs:
 
       - name: Run E2E tests
         run: |
-          if [ -d "Testing" ]; then
-            cd Testing
+          if [ -d "tests/e2e" ]; then
+            cd tests/e2e
             if [ -f "requirements.txt" ]; then
               python -m pip install -r requirements.txt
-              python -m pytest -v || true
+              python -m pytest -v --tb=short || true
             fi
           fi
         continue-on-error: true

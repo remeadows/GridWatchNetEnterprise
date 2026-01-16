@@ -24,11 +24,13 @@ export interface Target extends BaseEntity {
 
 export type Platform =
   | "linux"
+  | "redhat"
   | "macos"
   | "windows"
   | "cisco_ios"
   | "cisco_nxos"
   | "arista_eos"
+  | "hpe_aruba_cx"
   | "hp_procurve"
   | "mellanox"
   | "juniper_srx"
@@ -40,7 +42,7 @@ export type Platform =
   | "vmware_esxi"
   | "vmware_vcenter";
 
-export type ConnectionType = "ssh" | "netmiko" | "winrm" | "api";
+export type ConnectionType = "ssh" | "netmiko" | "winrm" | "api" | "config";
 
 // ============================================
 // STIG Definition Types
@@ -155,11 +157,13 @@ export const CreateTargetSchema = z.object({
   ipAddress: z.string().ip(),
   platform: z.enum([
     "linux",
+    "redhat",
     "macos",
     "windows",
     "cisco_ios",
     "cisco_nxos",
     "arista_eos",
+    "hpe_aruba_cx",
     "hp_procurve",
     "mellanox",
     "juniper_srx",
@@ -172,7 +176,7 @@ export const CreateTargetSchema = z.object({
     "vmware_vcenter",
   ]),
   osVersion: z.string().max(100).optional(),
-  connectionType: z.enum(["ssh", "netmiko", "winrm", "api"]),
+  connectionType: z.enum(["ssh", "netmiko", "winrm", "api", "config"]),
   credentialId: z.string().optional(),
   port: z.number().int().min(1).max(65535).optional(),
 });
@@ -248,4 +252,38 @@ export interface CKLData {
     findingDetails?: string;
     comments?: string;
   }[];
+}
+
+// ============================================
+// Configuration Analysis Types
+// ============================================
+
+export interface ConfigAnalysisResult {
+  ruleId: string;
+  title: string;
+  severity: STIGSeverity;
+  status: CheckStatus;
+  findingDetails?: string;
+}
+
+export interface ConfigAnalysisResponse {
+  jobId?: string;
+  targetId?: string;
+  definitionId?: string;
+  platform: Platform;
+  filename: string;
+  totalChecks: number;
+  passed: number;
+  failed: number;
+  notReviewed: number;
+  errors: number;
+  complianceScore: number;
+  results: ConfigAnalysisResult[];
+  summary?: ComplianceSummary;
+}
+
+export interface ConfigAnalysisRequest {
+  configFile: File;
+  platform?: Platform;
+  definitionId?: string;
 }

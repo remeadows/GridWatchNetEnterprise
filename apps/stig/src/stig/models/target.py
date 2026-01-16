@@ -12,15 +12,23 @@ class Platform(str, Enum):
     """Supported platforms for STIG audits."""
 
     LINUX = "linux"
+    REDHAT = "redhat"
     MACOS = "macos"
     WINDOWS = "windows"
     CISCO_IOS = "cisco_ios"
     CISCO_NXOS = "cisco_nxos"
     ARISTA_EOS = "arista_eos"
+    HPE_ARUBA_CX = "hpe_aruba_cx"
     HP_PROCURVE = "hp_procurve"
     MELLANOX = "mellanox"
     JUNIPER_SRX = "juniper_srx"
+    JUNIPER_JUNOS = "juniper_junos"
     PFSENSE = "pfsense"
+    PALOALTO = "paloalto"
+    FORTINET = "fortinet"
+    F5_BIGIP = "f5_bigip"
+    VMWARE_ESXI = "vmware_esxi"
+    VMWARE_VCENTER = "vmware_vcenter"
 
 
 class ConnectionType(str, Enum):
@@ -30,6 +38,7 @@ class ConnectionType(str, Enum):
     NETMIKO = "netmiko"
     WINRM = "winrm"
     API = "api"
+    CONFIG = "config"  # Configuration file analysis (no live connection)
 
 
 class TargetBase(BaseModel):
