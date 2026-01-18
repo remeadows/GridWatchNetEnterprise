@@ -270,237 +270,274 @@ const stigRoutes: FastifyPluginAsync = async (fastify) => {
   // =============================================================================
 
   // POST /reports/generate - Generate a report
-  fastify.post(
-    "/reports/generate",
-    async (request, reply) => {
-      try {
-        const result = await proxyToSTIGService(
-          "/api/v1/stig/reports/generate",
-          "POST",
-          request.body,
-          request.headers.authorization,
-        );
-        reply.status(result.status);
-        return result.data;
-      } catch (err) {
-        logger.error({ err }, "Failed to proxy report generation to STIG service");
-        reply.status(502);
-        return {
-          success: false,
-          error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
-        };
-      }
-    },
-  );
+  fastify.post("/reports/generate", async (request, reply) => {
+    try {
+      const result = await proxyToSTIGService(
+        "/api/v1/stig/reports/generate",
+        "POST",
+        request.body as string,
+        request.headers.authorization,
+      );
+      reply.status(result.status);
+      return result.data;
+    } catch (err) {
+      logger.error(
+        { err },
+        "Failed to proxy report generation to STIG service",
+      );
+      reply.status(502);
+      return {
+        success: false,
+        error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+      };
+    }
+  });
 
   // GET /reports/download/:jobId - Download a report
   fastify.get<{
     Params: { jobId: string };
     Querystring: { format?: string };
-  }>(
-    "/reports/download/:jobId",
-    async (request, reply) => {
-      const { jobId } = request.params;
-      const format = request.query.format || "pdf";
+  }>("/reports/download/:jobId", async (request, reply) => {
+    const { jobId } = request.params;
+    const format = request.query.format || "pdf";
 
-      try {
-        const { config } = await import("../../config");
-        const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/download/${jobId}?format=${format}`;
-        logger.info({ url, jobId, format }, "Proxying report download request");
+    try {
+      const { config } = await import("../../config");
+      const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/download/${jobId}?format=${format}`;
+      logger.info({ url, jobId, format }, "Proxying report download request");
 
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: request.headers.authorization || "",
-          },
-        });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: request.headers.authorization || "",
+        },
+      });
 
-        logger.info({ status: response.status, ok: response.ok }, "STIG service response received");
+      logger.info(
+        { status: response.status, ok: response.ok },
+        "STIG service response received",
+      );
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.warn({ status: response.status, errorText }, "STIG service returned error");
-          let errorMessage = "Failed to download report";
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.detail || errorData.message || errorMessage;
-          } catch {
-            // Not JSON, use raw text
-            if (errorText) errorMessage = errorText;
-          }
-          reply.status(response.status);
-          return {
-            success: false,
-            error: {
-              code: "REPORT_DOWNLOAD_FAILED",
-              message: errorMessage,
-            },
-          };
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.warn(
+          { status: response.status, errorText },
+          "STIG service returned error",
+        );
+        let errorMessage = "Failed to download report";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Not JSON, use raw text
+          if (errorText) errorMessage = errorText;
         }
-
-        // Get content type and filename from response headers
-        const contentType = response.headers.get("content-type") || "application/octet-stream";
-        const contentDisposition = response.headers.get("content-disposition") || "";
-        logger.info({ contentType, contentDisposition }, "Report response headers");
-
-        // Extract filename from content-disposition header
-        const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
-        const filename = filenameMatch ? filenameMatch[1] : `report_${jobId}.${format}`;
-
-        // Stream the file response
-        const buffer = await response.arrayBuffer();
-        logger.info({ bufferSize: buffer.byteLength, filename }, "Sending report file");
-
-        reply
-          .header("Content-Type", contentType)
-          .header("Content-Disposition", `attachment; filename="${filename}"`)
-          .send(Buffer.from(buffer));
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const errorStack = err instanceof Error ? err.stack : undefined;
-        logger.error({ err, errorMessage, errorStack }, "Failed to proxy report download to STIG service");
-        reply.status(502);
+        reply.status(response.status);
         return {
           success: false,
-          error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+          error: {
+            code: "REPORT_DOWNLOAD_FAILED",
+            message: errorMessage,
+          },
         };
       }
-    },
-  );
+
+      // Get content type and filename from response headers
+      const contentType =
+        response.headers.get("content-type") || "application/octet-stream";
+      const contentDisposition =
+        response.headers.get("content-disposition") || "";
+      logger.info(
+        { contentType, contentDisposition },
+        "Report response headers",
+      );
+
+      // Extract filename from content-disposition header
+      const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch
+        ? filenameMatch[1]
+        : `report_${jobId}.${format}`;
+
+      // Stream the file response
+      const buffer = await response.arrayBuffer();
+      logger.info(
+        { bufferSize: buffer.byteLength, filename },
+        "Sending report file",
+      );
+
+      reply
+        .header("Content-Type", contentType)
+        .header("Content-Disposition", `attachment; filename="${filename}"`)
+        .send(Buffer.from(buffer));
+      return reply;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+      logger.error(
+        { err, errorMessage, errorStack },
+        "Failed to proxy report download to STIG service",
+      );
+      reply.status(502);
+      return {
+        success: false,
+        error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+      };
+    }
+  });
 
   // GET /reports/combined-pdf - Download combined PDF from multiple jobs
   fastify.get<{
     Querystring: { job_ids: string };
-  }>(
-    "/reports/combined-pdf",
-    async (request, reply) => {
-      const jobIds = request.query.job_ids;
+  }>("/reports/combined-pdf", async (request, reply) => {
+    const jobIds = request.query.job_ids;
 
-      if (!jobIds) {
-        reply.status(400);
-        return {
-          success: false,
-          error: { code: "INVALID_REQUEST", message: "job_ids parameter is required" },
-        };
-      }
+    if (!jobIds) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "INVALID_REQUEST",
+          message: "job_ids parameter is required",
+        },
+      };
+    }
 
-      try {
-        const { config } = await import("../../config");
-        const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/combined-pdf?job_ids=${encodeURIComponent(jobIds)}`;
-        logger.info({ url, jobIds }, "Proxying combined PDF download request");
+    try {
+      const { config } = await import("../../config");
+      const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/combined-pdf?job_ids=${encodeURIComponent(jobIds)}`;
+      logger.info({ url, jobIds }, "Proxying combined PDF download request");
 
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: request.headers.authorization || "",
-          },
-        });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: request.headers.authorization || "",
+        },
+      });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.warn({ status: response.status, errorText }, "STIG service returned error");
-          let errorMessage = "Failed to download combined PDF";
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.detail || errorData.message || errorMessage;
-          } catch {
-            if (errorText) errorMessage = errorText;
-          }
-          reply.status(response.status);
-          return {
-            success: false,
-            error: { code: "REPORT_DOWNLOAD_FAILED", message: errorMessage },
-          };
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.warn(
+          { status: response.status, errorText },
+          "STIG service returned error",
+        );
+        let errorMessage = "Failed to download combined PDF";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
         }
-
-        const contentType = response.headers.get("content-type") || "application/pdf";
-        const contentDisposition = response.headers.get("content-disposition") || "";
-        const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
-        const filename = filenameMatch ? filenameMatch[1] : "Combined_STIG_Report.pdf";
-
-        const buffer = await response.arrayBuffer();
-        reply
-          .header("Content-Type", contentType)
-          .header("Content-Disposition", `attachment; filename="${filename}"`)
-          .send(Buffer.from(buffer));
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error({ err, errorMessage }, "Failed to proxy combined PDF download");
-        reply.status(502);
+        reply.status(response.status);
         return {
           success: false,
-          error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+          error: { code: "REPORT_DOWNLOAD_FAILED", message: errorMessage },
         };
       }
-    },
-  );
+
+      const contentType =
+        response.headers.get("content-type") || "application/pdf";
+      const contentDisposition =
+        response.headers.get("content-disposition") || "";
+      const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch
+        ? filenameMatch[1]
+        : "Combined_STIG_Report.pdf";
+
+      const buffer = await response.arrayBuffer();
+      reply
+        .header("Content-Type", contentType)
+        .header("Content-Disposition", `attachment; filename="${filename}"`)
+        .send(Buffer.from(buffer));
+      return reply;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error(
+        { err, errorMessage },
+        "Failed to proxy combined PDF download",
+      );
+      reply.status(502);
+      return {
+        success: false,
+        error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+      };
+    }
+  });
 
   // GET /reports/combined-ckl - Download combined CKL ZIP from multiple jobs
   fastify.get<{
     Querystring: { job_ids: string };
-  }>(
-    "/reports/combined-ckl",
-    async (request, reply) => {
-      const jobIds = request.query.job_ids;
+  }>("/reports/combined-ckl", async (request, reply) => {
+    const jobIds = request.query.job_ids;
 
-      if (!jobIds) {
-        reply.status(400);
-        return {
-          success: false,
-          error: { code: "INVALID_REQUEST", message: "job_ids parameter is required" },
-        };
-      }
+    if (!jobIds) {
+      reply.status(400);
+      return {
+        success: false,
+        error: {
+          code: "INVALID_REQUEST",
+          message: "job_ids parameter is required",
+        },
+      };
+    }
 
-      try {
-        const { config } = await import("../../config");
-        const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/combined-ckl?job_ids=${encodeURIComponent(jobIds)}`;
-        logger.info({ url, jobIds }, "Proxying combined CKL download request");
+    try {
+      const { config } = await import("../../config");
+      const url = `${config.STIG_SERVICE_URL}/api/v1/stig/reports/combined-ckl?job_ids=${encodeURIComponent(jobIds)}`;
+      logger.info({ url, jobIds }, "Proxying combined CKL download request");
 
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: request.headers.authorization || "",
-          },
-        });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: request.headers.authorization || "",
+        },
+      });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.warn({ status: response.status, errorText }, "STIG service returned error");
-          let errorMessage = "Failed to download combined CKL";
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.detail || errorData.message || errorMessage;
-          } catch {
-            if (errorText) errorMessage = errorText;
-          }
-          reply.status(response.status);
-          return {
-            success: false,
-            error: { code: "REPORT_DOWNLOAD_FAILED", message: errorMessage },
-          };
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.warn(
+          { status: response.status, errorText },
+          "STIG service returned error",
+        );
+        let errorMessage = "Failed to download combined CKL";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
         }
-
-        const contentType = response.headers.get("content-type") || "application/zip";
-        const contentDisposition = response.headers.get("content-disposition") || "";
-        const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
-        const filename = filenameMatch ? filenameMatch[1] : "STIG_Checklists.zip";
-
-        const buffer = await response.arrayBuffer();
-        reply
-          .header("Content-Type", contentType)
-          .header("Content-Disposition", `attachment; filename="${filename}"`)
-          .send(Buffer.from(buffer));
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error({ err, errorMessage }, "Failed to proxy combined CKL download");
-        reply.status(502);
+        reply.status(response.status);
         return {
           success: false,
-          error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+          error: { code: "REPORT_DOWNLOAD_FAILED", message: errorMessage },
         };
       }
-    },
-  );
+
+      const contentType =
+        response.headers.get("content-type") || "application/zip";
+      const contentDisposition =
+        response.headers.get("content-disposition") || "";
+      const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      const filename = filenameMatch ? filenameMatch[1] : "STIG_Checklists.zip";
+
+      const buffer = await response.arrayBuffer();
+      reply
+        .header("Content-Type", contentType)
+        .header("Content-Disposition", `attachment; filename="${filename}"`)
+        .send(Buffer.from(buffer));
+      return reply;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      logger.error(
+        { err, errorMessage },
+        "Failed to proxy combined CKL download",
+      );
+      reply.status(502);
+      return {
+        success: false,
+        error: { code: "BAD_GATEWAY", message: "STIG service unavailable" },
+      };
+    }
+  });
 
   // List STIG definitions (benchmarks)
   fastify.get(
@@ -2090,10 +2127,14 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
             ...base,
             lastAuditDate: row.last_audit_date,
             lastAuditStatus: row.last_audit_status,
-            complianceScore: row.compliance_score ? parseFloat(row.compliance_score) : null,
+            complianceScore: row.compliance_score
+              ? parseFloat(row.compliance_score)
+              : null,
             passed: row.passed ? parseInt(row.passed, 10) : null,
             failed: row.failed ? parseInt(row.failed, 10) : null,
-            notReviewed: row.not_reviewed ? parseInt(row.not_reviewed, 10) : null,
+            notReviewed: row.not_reviewed
+              ? parseInt(row.not_reviewed, 10)
+              : null,
           };
         }
         return base;
@@ -2135,7 +2176,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
           },
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const { targetId } = request.params;
@@ -2176,7 +2220,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
         reply.status(409);
         return {
           success: false,
-          error: { code: "CONFLICT", message: "STIG already assigned to target" },
+          error: {
+            code: "CONFLICT",
+            message: "STIG already assigned to target",
+          },
         };
       }
 
@@ -2189,7 +2236,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
       );
 
       const row = result.rows[0];
-      logger.info({ targetId, definitionId: body.definitionId }, "STIG assigned to target");
+      logger.info(
+        { targetId, definitionId: body.definitionId },
+        "STIG assigned to target",
+      );
 
       reply.status(201);
       return {
@@ -2239,7 +2289,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
           },
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const { targetId } = request.params;
@@ -2295,7 +2348,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
 
-      logger.info({ targetId, assigned, skipped, errorCount: errors.length }, "Bulk STIG assignment completed");
+      logger.info(
+        { targetId, assigned, skipped, errorCount: errors.length },
+        "Bulk STIG assignment completed",
+      );
 
       return {
         success: true,
@@ -2337,7 +2393,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
           },
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const { targetId, assignmentId } = request.params;
@@ -2431,7 +2490,10 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
           required: ["targetId", "assignmentId"],
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const { targetId, assignmentId } = request.params;
@@ -2478,13 +2540,20 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
             definitionIds: {
               type: "array",
               items: { type: "string", format: "uuid" },
-              description: "Optional: specific definitions to audit (omit for all enabled)",
+              description:
+                "Optional: specific definitions to audit (omit for all enabled)",
             },
-            name: { type: "string", description: "Optional name for the audit group" },
+            name: {
+              type: "string",
+              description: "Optional name for the audit group",
+            },
           },
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const { targetId } = request.params;
@@ -2529,18 +2598,26 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
         definitionsParams = [targetId];
       }
 
-      const definitionsResult = await pool.query(definitionsQuery, definitionsParams);
+      const definitionsResult = await pool.query(
+        definitionsQuery,
+        definitionsParams,
+      );
 
       if (definitionsResult.rows.length === 0) {
         reply.status(400);
         return {
           success: false,
-          error: { code: "NO_DEFINITIONS", message: "No enabled STIG definitions to audit" },
+          error: {
+            code: "NO_DEFINITIONS",
+            message: "No enabled STIG definitions to audit",
+          },
         };
       }
 
       // Create audit group
-      const groupName = body.name || `Audit All - ${targetName} - ${new Date().toISOString().slice(0, 16)}`;
+      const groupName =
+        body.name ||
+        `Audit All - ${targetName} - ${new Date().toISOString().slice(0, 16)}`;
       const groupResult = await pool.query(
         `INSERT INTO stig.audit_groups (name, target_id, status, total_jobs, created_by)
          VALUES ($1, $2, 'pending', $3, $4)
@@ -2551,7 +2628,11 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Create individual audit jobs (proxy to STIG service)
       const token = getTokenFromRequest(request);
-      const jobs: Array<{ jobId: string; definitionId: string; stigTitle: string }> = [];
+      const jobs: Array<{
+        jobId: string;
+        definitionId: string;
+        stigTitle: string;
+      }> = [];
       const jobErrors: string[] = [];
 
       for (const row of definitionsResult.rows) {
@@ -2601,7 +2682,12 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       logger.info(
-        { targetId, groupId, jobsCreated: jobs.length, errors: jobErrors.length },
+        {
+          targetId,
+          groupId,
+          jobsCreated: jobs.length,
+          errors: jobErrors.length,
+        },
         "Audit All initiated",
       );
 
@@ -2682,9 +2768,10 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         [groupId],
       );
 
-      const progressPercent = group.total_jobs > 0
-        ? Math.round((group.completed_jobs / group.total_jobs) * 100)
-        : 0;
+      const progressPercent =
+        group.total_jobs > 0
+          ? Math.round((group.completed_jobs / group.total_jobs) * 100)
+          : 0;
 
       return {
         success: true,
@@ -2801,9 +2888,8 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         totalNotReviewed += notReviewed;
         totalErrors += errors;
 
-        const complianceScore = checks > 0
-          ? Math.round((passed / checks) * 100 * 10) / 10
-          : 0;
+        const complianceScore =
+          checks > 0 ? Math.round((passed / checks) * 100 * 10) / 10 : 0;
 
         return {
           jobId: row.job_id,
@@ -2820,9 +2906,10 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         };
       });
 
-      const overallComplianceScore = totalChecks > 0
-        ? Math.round((totalPassed / totalChecks) * 100 * 10) / 10
-        : 0;
+      const overallComplianceScore =
+        totalChecks > 0
+          ? Math.round((totalPassed / totalChecks) * 100 * 10) / 10
+          : 0;
 
       return {
         success: true,
@@ -2904,9 +2991,10 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
           status: row.status,
           totalJobs: row.total_jobs,
           completedJobs: row.completed_jobs,
-          progressPercent: row.total_jobs > 0
-            ? Math.round((row.completed_jobs / row.total_jobs) * 100)
-            : 0,
+          progressPercent:
+            row.total_jobs > 0
+              ? Math.round((row.completed_jobs / row.total_jobs) * 100)
+              : 0,
           createdAt: row.created_at,
           completedAt: row.completed_at,
         })),
@@ -2914,7 +3002,9 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
           page: query.page,
           limit: query.limit,
           total: parseInt(countResult.rows[0].count, 10),
-          pages: Math.ceil(parseInt(countResult.rows[0].count, 10) / query.limit),
+          pages: Math.ceil(
+            parseInt(countResult.rows[0].count, 10) / query.limit,
+          ),
         },
       };
     },
@@ -2962,8 +3052,11 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         // Stream the file response
-        const contentType = response.headers.get("content-type") || "application/pdf";
-        const contentDisposition = response.headers.get("content-disposition") || `attachment; filename="combined_report.pdf"`;
+        const contentType =
+          response.headers.get("content-type") || "application/pdf";
+        const contentDisposition =
+          response.headers.get("content-disposition") ||
+          `attachment; filename="combined_report.pdf"`;
 
         reply.header("Content-Type", contentType);
         reply.header("Content-Disposition", contentDisposition);
@@ -3021,8 +3114,11 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         // Stream the file response
-        const contentType = response.headers.get("content-type") || "application/zip";
-        const contentDisposition = response.headers.get("content-disposition") || `attachment; filename="checklists.zip"`;
+        const contentType =
+          response.headers.get("content-type") || "application/zip";
+        const contentDisposition =
+          response.headers.get("content-disposition") ||
+          `attachment; filename="checklists.zip"`;
 
         reply.header("Content-Type", contentType);
         reply.header("Content-Disposition", contentDisposition);
@@ -3032,7 +3128,10 @@ const auditGroupRoutes: FastifyPluginAsync = async (fastify) => {
         reply.status(500);
         return {
           success: false,
-          error: { code: "PROXY_ERROR", message: "Failed to download checklists" },
+          error: {
+            code: "PROXY_ERROR",
+            message: "Failed to download checklists",
+          },
         };
       }
     },
@@ -3107,13 +3206,19 @@ const targetRoutes: FastifyPluginAsync = async (fastify) => {
           required: ["targetId"],
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const { targetId } = request.params as { targetId: string };
@@ -3125,7 +3230,10 @@ const targetRoutes: FastifyPluginAsync = async (fastify) => {
           reply.status(400);
           return {
             success: false,
-            error: { code: "NO_FILE", message: "No configuration file uploaded" },
+            error: {
+              code: "NO_FILE",
+              message: "No configuration file uploaded",
+            },
           };
         }
 
@@ -3144,7 +3252,10 @@ const targetRoutes: FastifyPluginAsync = async (fastify) => {
           reply.status(400);
           return {
             success: false,
-            error: { code: "MISSING_FIELD", message: "definition_id is required" },
+            error: {
+              code: "MISSING_FIELD",
+              message: "definition_id is required",
+            },
           };
         }
 
@@ -3169,14 +3280,17 @@ const targetRoutes: FastifyPluginAsync = async (fastify) => {
             Authorization: `Bearer ${token}`,
             ...form.getHeaders(),
           },
-          body: formBuffer,
+          body: new Uint8Array(formBuffer),
         });
 
         const responseData = await response.json();
         reply.status(response.status);
         return responseData;
       } catch (err) {
-        logger.error({ err }, "Failed to proxy config analysis to STIG service");
+        logger.error(
+          { err },
+          "Failed to proxy config analysis to STIG service",
+        );
         reply.status(502);
         return {
           success: false,
@@ -3213,7 +3327,10 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const query = request.query as Record<string, string | number>;
@@ -3260,13 +3377,19 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
           },
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const body = auditJobSchema.parse(request.body);
@@ -3320,7 +3443,10 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const { jobId } = request.params as { jobId: string };
@@ -3360,13 +3486,19 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
           required: ["jobId"],
         },
       },
-      preHandler: [fastify.requireAuth, fastify.requireRole("admin", "operator")],
+      preHandler: [
+        fastify.requireAuth,
+        fastify.requireRole("admin", "operator"),
+      ],
     },
     async (request, reply) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const { jobId } = request.params as { jobId: string };
@@ -3421,7 +3553,10 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const { jobId } = request.params as { jobId: string };
@@ -3474,7 +3609,10 @@ const auditRoutes: FastifyPluginAsync = async (fastify) => {
       const token = getTokenFromRequest(request);
       if (!token) {
         reply.status(401);
-        return { success: false, error: { code: "UNAUTHORIZED", message: "Missing token" } };
+        return {
+          success: false,
+          error: { code: "UNAUTHORIZED", message: "Missing token" },
+        };
       }
 
       const { jobId } = request.params as { jobId: string };
