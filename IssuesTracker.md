@@ -3,8 +3,8 @@
 > Active issues and technical debt tracking
 
 **Version**: 0.2.12
-**Last Updated**: 2026-01-18 16:05 UTC
-**Stats**: 0 open | 1 deferred | 165 resolved (archived)
+**Last Updated**: 2026-01-18 16:15 UTC
+**Stats**: 2 open | 1 deferred | 165 resolved (archived)
 **Codex Review**: 2026-01-16 (E2E: FIXED, Security: Low, CI: PASS ✅)
 **Docker Scout**: 2026-01-15 (1 Critical, 3 High - 2 fixed via Vite 7 upgrade)
 **CI/CD Status**: ✅ ALL WORKFLOWS PASSING (3 phases, 3 commits, full audit trail)
@@ -14,7 +14,76 @@
 
 ## 🔥 NOW (Active / In Progress)
 
-(none - CI-001, CI-002, CI-003 all resolved)
+### APP-018: Syslog Events API - 500 Internal Server Error
+
+**Status**: 🔴 Open - Runtime Error
+**Priority**: 🔴 Critical - Feature Broken
+**Detected**: 2026-01-18 16:10 UTC (Browser monitoring session)
+**Engineer**: TBD
+
+**Issue**: Syslog events listing endpoint returning 500 Internal Server Error
+
+**Failed Endpoint**:
+
+- `GET /api/v1/syslog/events?page=1&limit=100` - Status 500
+- Stats endpoint working: `GET /api/v1/syslog/events/stats?hours=24` - Status 200
+
+**Observed Behavior**:
+
+- Multiple failures during 20-second monitoring period (4 failed requests)
+- Error appears to be backend/database related
+- Stats aggregation works, but event listing fails
+
+**Impact**:
+
+- Syslog events page unable to display event list
+- Users cannot view individual syslog events
+- Event statistics still functional
+
+**Testing Note**: User will have active device performing syslog to application tomorrow (2026-01-19)
+
+**Next Steps**:
+
+1. Check backend syslog service logs for error details
+2. Verify `syslog.events` table exists and has correct schema
+3. Review endpoint error handling and query logic
+4. Test with live syslog data from device tomorrow
+
+---
+
+### UI-017: React Router v7 Migration Warnings
+
+**Status**: 🟡 Open - Future Compatibility
+**Priority**: 🟢 Low - Non-Blocking Warning
+**Detected**: 2026-01-18 16:10 UTC (Browser monitoring session)
+**Engineer**: TBD
+
+**Issue**: React Router displaying future version compatibility warnings
+
+**Warnings**:
+
+1. Missing `v7_startTransition` future flag
+2. Missing `v7_relativeSplatPath` future flag
+
+**Observed Behavior**:
+
+- 6 warnings logged during navigation (2 warnings per route change)
+- No functional impact - purely informational
+- Source: `react-router-dom.js:4434:12`
+
+**Impact**:
+
+- None currently - application works correctly
+- Console warnings during development/debugging
+- Preparation for React Router v7 upgrade
+
+**Resolution Plan**:
+
+- Add future flags to router configuration when convenient
+- Can be addressed during next major refactor
+- Non-urgent, deferred to future maintenance cycle
+
+**Reference**: https://reactrouter.com/v6/upgrading/future
 
 ---
 
