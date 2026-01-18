@@ -170,5 +170,6 @@ setup-ghcr.sh
 # ===========================================
 # STIG folder contains user-uploaded configuration files and DISA STIG data
 # Exclude from version control - this is deployment-specific data
-STIG/
+# NOTE: Use root anchor (/) to avoid matching source code directories like apps/web-ui/src/modules/stig/
+/STIG/
 stig_library_index.json
