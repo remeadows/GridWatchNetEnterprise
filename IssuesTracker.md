@@ -3,8 +3,8 @@
 > Active issues and technical debt tracking
 
 **Version**: 0.2.12
-**Last Updated**: 2026-01-18 16:15 UTC
-**Stats**: 2 open | 1 deferred | 165 resolved (archived)
+**Last Updated**: 2026-01-20 17:15 UTC
+**Stats**: 3 open | 1 deferred | 165 resolved (archived)
 **Codex Review**: 2026-01-16 (E2E: FIXED, Security: Low, CI: PASS ✅)
 **Docker Scout**: 2026-01-15 (1 Critical, 3 High - 2 fixed via Vite 7 upgrade)
 **CI/CD Status**: ✅ ALL WORKFLOWS PASSING (3 phases, 3 commits, full audit trail)
@@ -84,6 +84,42 @@
 - Non-urgent, deferred to future maintenance cycle
 
 **Reference**: https://reactrouter.com/v6/upgrading/future
+
+---
+
+### STIG-020: Verify Config Analysis Logic for pfSense, Mellanox, Red Hat
+
+**Status**: 🟡 Open - Validation Required
+**Priority**: 🟠 High - Feature Verification
+**Detected**: 2026-01-20 17:10 UTC (User report)
+**Engineer**: TBD
+
+**Issue**: STIG Manager config analysis logic needs verification for pfSense, Mellanox, and Red Hat platforms
+
+**Platforms to Verify**:
+
+1. **pfSense** - Config file parser and STIG rule matching
+2. **Mellanox** - Config file parser and STIG rule matching
+3. **Red Hat** - Config file parser and STIG rule matching
+
+**Verification Steps**:
+
+1. Review config parsers in `apps/stig/src/stig/collectors/config_analyzer.py`
+2. Verify platform detection logic in `apps/stig/src/stig/services/config_checker.py`
+3. Test with sample config files for each platform
+4. Confirm STIG rule evaluation produces expected results
+5. Verify platform-to-STIG mapping in library indexer
+
+**Files to Review**:
+
+- `apps/stig/src/stig/collectors/config_analyzer.py`
+- `apps/stig/src/stig/services/config_checker.py`
+- `apps/stig/src/stig/library/catalog.py` (platform mappings)
+
+**Impact**:
+
+- Config analysis may produce incorrect results for these platforms
+- Users may receive false positives/negatives in compliance reports
 
 ---
 
