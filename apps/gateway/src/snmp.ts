@@ -23,11 +23,15 @@ const AUTH_PROTOCOLS: Record<string, number> = {
 };
 
 // Privacy protocol mapping
+// Note: net-snmp uses aes256b (Blumenthal) or aes256r (Reeder) for AES-256
+// Most vendors (Cisco, Arista, Juniper) use Reeder (aes256r)
 const PRIV_PROTOCOLS: Record<string, number> = {
   AES: snmp.PrivProtocols.aes,
   "AES-128": snmp.PrivProtocols.aes,
-  "AES-192": snmp.PrivProtocols.aes192,
-  "AES-256": snmp.PrivProtocols.aes256,
+  "AES-192": snmp.PrivProtocols.aes, // Fallback to AES-128, no native 192 support
+  "AES-256": snmp.PrivProtocols.aes256r, // Reeder variant (most common)
+  "AES-256-B": snmp.PrivProtocols.aes256b, // Blumenthal variant
+  "AES-256-R": snmp.PrivProtocols.aes256r, // Reeder variant (explicit)
 };
 
 // Security level mapping
@@ -66,7 +70,7 @@ export async function testSNMPv3Credential(
   targetIp: string,
   port: number,
   credential: SNMPv3Credential,
-  timeoutMs: number = 5000,
+  timeoutMs: number = 10000, // Increased for SNMPv3 authPriv with SHA-256/AES-256
 ): Promise<SNMPTestResult> {
   const startTime = Date.now();
 
@@ -101,13 +105,29 @@ export async function testSNMPv3Credential(
         }
       }
 
-      // Session options
+      // Session options - increased retries for SNMPv3 engine ID discovery
       const sessionOptions: snmp.SessionOptions = {
         port,
-        retries: 1,
+        retries: 2, // Increased from 1 to allow for engine ID discovery
         timeout: timeoutMs,
         version: snmp.Version3,
       };
+
+      // Log SNMPv3 configuration for debugging
+      logger.debug(
+        {
+          targetIp,
+          port,
+          username: credential.username,
+          securityLevel: credential.securityLevel,
+          authProtocol: credential.authProtocol,
+          privProtocol: credential.privProtocol,
+          authProtocolMapped: userOptions.authProtocol,
+          privProtocolMapped: userOptions.privProtocol,
+          timeoutMs,
+        },
+        "SNMPv3 session config",
+      );
 
       // Create SNMPv3 session
       const session = snmp.createV3Session(
@@ -131,7 +151,18 @@ export async function testSNMPv3Credential(
 
         if (error) {
           logger.warn(
-            { error: error.message, targetIp, port },
+            {
+              error: error.message,
+              errorName: error.name,
+              errorStack: error.stack,
+              targetIp,
+              port,
+              responseTimeMs,
+              username: credential.username,
+              securityLevel: credential.securityLevel,
+              authProtocol: credential.authProtocol,
+              privProtocol: credential.privProtocol,
+            },
             "SNMPv3 test failed",
           );
           resolve({

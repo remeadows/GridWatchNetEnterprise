@@ -203,130 +203,152 @@ const syslogRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const query = eventsQuerySchema.parse(request.query);
-      const offset = (query.page - 1) * query.limit;
+      try {
+        const query = eventsQuerySchema.parse(request.query);
+        const offset = (query.page - 1) * query.limit;
 
-      const conditions: string[] = [];
-      const params: unknown[] = [query.limit, offset];
-      let paramIndex = 3;
+        // Build WHERE clause params starting from $1
+        const conditions: string[] = [];
+        const whereParams: unknown[] = [];
+        let paramIndex = 1;
 
-      // Time range filter
-      if (query.startTime) {
-        conditions.push(`received_at >= $${paramIndex}`);
-        params.push(query.startTime);
-        paramIndex++;
-      }
-      if (query.endTime) {
-        conditions.push(`received_at <= $${paramIndex}`);
-        params.push(query.endTime);
-        paramIndex++;
-      }
-
-      // Severity filter
-      if (query.severity) {
-        const sevIndex = severityNames.indexOf(
-          query.severity.toLowerCase() as (typeof severityNames)[number],
-        );
-        if (sevIndex !== -1) {
-          conditions.push(`severity = $${paramIndex}`);
-          params.push(sevIndex);
+        // Time range filter
+        if (query.startTime) {
+          conditions.push(`received_at >= $${paramIndex}`);
+          whereParams.push(query.startTime);
           paramIndex++;
         }
-      }
-
-      // Facility filter
-      if (query.facility) {
-        const facIndex = facilityNames.indexOf(
-          query.facility.toLowerCase() as (typeof facilityNames)[number],
-        );
-        if (facIndex !== -1) {
-          conditions.push(`facility = $${paramIndex}`);
-          params.push(facIndex);
+        if (query.endTime) {
+          conditions.push(`received_at <= $${paramIndex}`);
+          whereParams.push(query.endTime);
           paramIndex++;
         }
-      }
 
-      // Other filters
-      if (query.hostname) {
-        conditions.push(`hostname ILIKE $${paramIndex}`);
-        params.push(`%${query.hostname}%`);
-        paramIndex++;
-      }
-      if (query.sourceIp) {
-        conditions.push(`source_ip = $${paramIndex}::inet`);
-        params.push(query.sourceIp);
-        paramIndex++;
-      }
-      if (query.deviceType) {
-        conditions.push(`device_type = $${paramIndex}`);
-        params.push(query.deviceType);
-        paramIndex++;
-      }
-      if (query.eventType) {
-        conditions.push(`event_type = $${paramIndex}`);
-        params.push(query.eventType);
-        paramIndex++;
-      }
-      if (query.search) {
-        conditions.push(`message ILIKE $${paramIndex}`);
-        params.push(`%${query.search}%`);
-        paramIndex++;
-      }
+        // Severity filter
+        if (query.severity) {
+          const sevIndex = severityNames.indexOf(
+            query.severity.toLowerCase() as (typeof severityNames)[number],
+          );
+          if (sevIndex !== -1) {
+            conditions.push(`severity = $${paramIndex}`);
+            whereParams.push(sevIndex);
+            paramIndex++;
+          }
+        }
 
-      const whereClause =
-        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        // Facility filter
+        if (query.facility) {
+          const facIndex = facilityNames.indexOf(
+            query.facility.toLowerCase() as (typeof facilityNames)[number],
+          );
+          if (facIndex !== -1) {
+            conditions.push(`facility = $${paramIndex}`);
+            whereParams.push(facIndex);
+            paramIndex++;
+          }
+        }
 
-      const countQuery = `SELECT COUNT(*) FROM syslog.events ${whereClause}`;
-      const dataQuery = `
-        SELECT e.id, e.source_id, e.source_ip, e.received_at, e.facility, e.severity,
-               e.version, e.timestamp, e.hostname, e.app_name, e.proc_id, e.msg_id,
-               e.structured_data, e.message, e.device_type, e.event_type, e.tags,
-               s.name as source_name
-        FROM syslog.events e
-        LEFT JOIN syslog.sources s ON e.source_id = s.id
-        ${whereClause}
-        ORDER BY e.received_at DESC
-        LIMIT $1 OFFSET $2
-      `;
+        // Other filters
+        if (query.hostname) {
+          conditions.push(`hostname ILIKE $${paramIndex}`);
+          whereParams.push(`%${query.hostname}%`);
+          paramIndex++;
+        }
+        if (query.sourceIp) {
+          conditions.push(`source_ip = $${paramIndex}::inet`);
+          whereParams.push(query.sourceIp);
+          paramIndex++;
+        }
+        if (query.deviceType) {
+          conditions.push(`device_type = $${paramIndex}`);
+          whereParams.push(query.deviceType);
+          paramIndex++;
+        }
+        if (query.eventType) {
+          conditions.push(`event_type = $${paramIndex}`);
+          whereParams.push(query.eventType);
+          paramIndex++;
+        }
+        if (query.search) {
+          conditions.push(`message ILIKE $${paramIndex}`);
+          whereParams.push(`%${query.search}%`);
+          paramIndex++;
+        }
 
-      const [countResult, dataResult] = await Promise.all([
-        pool.query(countQuery, params.slice(2)),
-        pool.query(dataQuery, params),
-      ]);
+        const whereClause =
+          conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-      return {
-        success: true,
-        data: dataResult.rows.map((row) => ({
-          id: row.id,
-          sourceId: row.source_id,
-          sourceName: row.source_name,
-          sourceIp: row.source_ip,
-          receivedAt: row.received_at,
-          facility: facilityNames[row.facility] || row.facility,
-          facilityCode: row.facility,
-          severity: severityNames[row.severity] || row.severity,
-          severityCode: row.severity,
-          version: row.version,
-          timestamp: row.timestamp,
-          hostname: row.hostname,
-          appName: row.app_name,
-          procId: row.proc_id,
-          msgId: row.msg_id,
-          structuredData: row.structured_data,
-          message: row.message,
-          deviceType: row.device_type,
-          eventType: row.event_type,
-          tags: row.tags,
-        })),
-        pagination: {
-          page: query.page,
-          limit: query.limit,
-          total: parseInt(countResult.rows[0].count, 10),
-          pages: Math.ceil(
-            parseInt(countResult.rows[0].count, 10) / query.limit,
-          ),
-        },
-      };
+        // Count query uses WHERE params starting from $1
+        const countQuery = `SELECT COUNT(*) FROM syslog.events ${whereClause}`;
+
+        // Data query: WHERE clause params, then LIMIT and OFFSET
+        const limitParamIndex = paramIndex;
+        const offsetParamIndex = paramIndex + 1;
+        const dataQuery = `
+          SELECT e.id, e.source_id, e.source_ip, e.received_at, e.facility, e.severity,
+                 e.version, e.timestamp, e.hostname, e.app_name, e.proc_id, e.msg_id,
+                 e.structured_data, e.message, e.device_type, e.event_type, e.tags,
+                 s.name as source_name
+          FROM syslog.events e
+          LEFT JOIN syslog.sources s ON e.source_id = s.id
+          ${whereClause}
+          ORDER BY e.received_at DESC
+          LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
+        `;
+
+        // Data query params: WHERE params + LIMIT + OFFSET
+        const dataParams = [...whereParams, query.limit, offset];
+
+        const [countResult, dataResult] = await Promise.all([
+          pool.query(countQuery, whereParams),
+          pool.query(dataQuery, dataParams),
+        ]);
+
+        const total = countResult.rows[0]?.count
+          ? parseInt(countResult.rows[0].count, 10)
+          : 0;
+
+        return {
+          success: true,
+          data: dataResult.rows.map((row) => ({
+            id: row.id,
+            sourceId: row.source_id,
+            sourceName: row.source_name,
+            sourceIp: row.source_ip,
+            receivedAt: row.received_at,
+            facility: facilityNames[row.facility] || row.facility,
+            facilityCode: row.facility,
+            severity: severityNames[row.severity] || row.severity,
+            severityCode: row.severity,
+            version: row.version,
+            timestamp: row.timestamp,
+            hostname: row.hostname,
+            appName: row.app_name,
+            procId: row.proc_id,
+            msgId: row.msg_id,
+            structuredData: row.structured_data,
+            message: row.message,
+            deviceType: row.device_type,
+            eventType: row.event_type,
+            tags: row.tags,
+          })),
+          pagination: {
+            page: query.page,
+            limit: query.limit,
+            total,
+            pages: Math.ceil(total / query.limit),
+          },
+        };
+      } catch (error) {
+        request.log.error({ error }, "Failed to fetch syslog events");
+        return reply.status(500).send({
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "Failed to fetch syslog events",
+          },
+        });
+      }
     },
   );
 

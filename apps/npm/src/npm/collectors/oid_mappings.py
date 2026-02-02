@@ -5,11 +5,23 @@ OIDs are organized by vendor and metric category.
 
 Supported vendors:
 - Arista Networks (switches)
-- HPE Aruba (wireless controllers, switches)
+- HPE Aruba (wireless controllers)
+- HPE Aruba CX (wired switches - 6xxx, 8xxx series)
 - Juniper Networks (routers, switches)
 - Mellanox/NVIDIA (high-performance switches)
-- pfSense (firewalls)
+- pfSense (FreeBSD-based firewalls)
 - Sophos (XG/SFOS firewalls)
+- Linux/Red Hat Enterprise Linux (servers)
+- Windows (servers)
+
+Standard MIBs supported:
+- SNMPv2-MIB (RFC 3418) - System Information
+- IF-MIB (RFC 2863) - Interface Statistics
+- HOST-RESOURCES-MIB (RFC 2790) - CPU, Memory, Disk
+- ENTITY-MIB (RFC 4133) - Physical Entity Info
+- ENTITY-SENSOR-MIB (RFC 3433) - Sensors
+- UCD-SNMP-MIB - Linux/BSD system stats
+- TCP-MIB - TCP statistics
 
 MIB files are stored in: infrastructure/mibs/
 """
@@ -30,6 +42,8 @@ class VendorType(str, Enum):
     PFSENSE = "pfsense"
     SOPHOS = "sophos"
     REDHAT = "redhat"
+    LINUX = "linux"
+    WINDOWS = "windows"
 
 
 @dataclass
@@ -275,6 +289,197 @@ PFSENSE_OIDS = {
 
 
 # =============================================================================
+# HPE Aruba CX Switches (Enterprise OID: 1.3.6.1.4.1.47196)
+# Different from Aruba Wireless (14823) - these are wired switches
+# Documentation: https://arubanetworking.hpe.com/techdocs/AOS-CX/
+# =============================================================================
+
+HPE_ARUBA_CX_OIDS = {
+    "system": {
+        # ArubaOS-CX System MIB
+        "arubaWiredSystemSerialNumber": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.1.1.0", "arubaWiredSystemSerialNumber", "System serial number", "string"),
+        "arubaWiredSystemProductName": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.1.2.0", "arubaWiredSystemProductName", "Product name", "string"),
+    },
+    "cpu_memory": {
+        # Note: CPU/memory utilization not available via standard OIDs on some CX models
+        # Use HOST-RESOURCES-MIB when available (6300, 6400, 8xxx series)
+        # hrProcessorLoad: 1.3.6.1.2.1.25.3.3.1.2
+        # hrStorageUsed: 1.3.6.1.2.1.25.2.3.1.6
+    },
+    "poe": {
+        # ARUBAWIRED-POE-MIB
+        "arubaWiredPoePethPsePortPowerDrawn": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.8.1.1.1.5", "arubaWiredPoePethPsePortPowerDrawn", "PoE power drawn (mW)", "integer", "milliwatts"),
+        "arubaWiredPoePethPsePortPowerClass": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.8.1.1.1.6", "arubaWiredPoePethPsePortPowerClass", "PoE power class", "integer"),
+    },
+    "vsx": {
+        # ARUBAWIRED-VSX-MIB (Virtual Switching Extension)
+        "arubaWiredVsxDeviceRole": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.14.1.1.0", "arubaWiredVsxDeviceRole", "VSX device role", "integer"),
+        "arubaWiredVsxIslOperState": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.14.1.2.0", "arubaWiredVsxIslOperState", "VSX ISL oper state", "integer"),
+        "arubaWiredVsxKeepAliveOperState": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.14.1.3.0", "arubaWiredVsxKeepAliveOperState", "VSX keepalive state", "integer"),
+    },
+    "environment": {
+        # ARUBAWIRED-CHASSIS-MIB
+        "arubaWiredTempSensorTemperature": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.11.3.1.1.6", "arubaWiredTempSensorTemperature", "Temperature sensor (mC)", "integer", "millicelsius", 0.001),
+        "arubaWiredFanTrayFanSpeed": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.11.2.1.1.5", "arubaWiredFanTrayFanSpeed", "Fan speed (RPM)", "integer", "rpm"),
+        "arubaWiredPSUState": OIDDefinition("1.3.6.1.4.1.47196.4.1.1.3.11.4.1.1.4", "arubaWiredPSUState", "PSU state", "integer"),
+    },
+}
+
+
+# =============================================================================
+# Linux/Red Hat Enterprise Linux (UCD-SNMP-MIB / NET-SNMP)
+# Enterprise OID: 1.3.6.1.4.1.2021 (UCD) / 1.3.6.1.4.1.8072 (Net-SNMP)
+# =============================================================================
+
+LINUX_OIDS = {
+    "cpu": {
+        # UCD-SNMP-MIB::systemStats
+        "ssCpuUser": OIDDefinition("1.3.6.1.4.1.2021.11.9.0", "ssCpuUser", "CPU user %", "integer", "percent"),
+        "ssCpuSystem": OIDDefinition("1.3.6.1.4.1.2021.11.10.0", "ssCpuSystem", "CPU system %", "integer", "percent"),
+        "ssCpuIdle": OIDDefinition("1.3.6.1.4.1.2021.11.11.0", "ssCpuIdle", "CPU idle %", "integer", "percent"),
+        # Raw counters (better for rate calculation)
+        "ssCpuRawUser": OIDDefinition("1.3.6.1.4.1.2021.11.50.0", "ssCpuRawUser", "CPU user ticks", "counter32"),
+        "ssCpuRawNice": OIDDefinition("1.3.6.1.4.1.2021.11.51.0", "ssCpuRawNice", "CPU nice ticks", "counter32"),
+        "ssCpuRawSystem": OIDDefinition("1.3.6.1.4.1.2021.11.52.0", "ssCpuRawSystem", "CPU system ticks", "counter32"),
+        "ssCpuRawIdle": OIDDefinition("1.3.6.1.4.1.2021.11.53.0", "ssCpuRawIdle", "CPU idle ticks", "counter32"),
+        "ssCpuRawWait": OIDDefinition("1.3.6.1.4.1.2021.11.54.0", "ssCpuRawWait", "CPU I/O wait ticks", "counter32"),
+        "ssCpuRawKernel": OIDDefinition("1.3.6.1.4.1.2021.11.55.0", "ssCpuRawKernel", "CPU kernel ticks", "counter32"),
+        "ssCpuRawInterrupt": OIDDefinition("1.3.6.1.4.1.2021.11.56.0", "ssCpuRawInterrupt", "CPU interrupt ticks", "counter32"),
+        "ssCpuRawSoftIRQ": OIDDefinition("1.3.6.1.4.1.2021.11.61.0", "ssCpuRawSoftIRQ", "CPU soft IRQ ticks", "counter32"),
+        "ssCpuRawSteal": OIDDefinition("1.3.6.1.4.1.2021.11.64.0", "ssCpuRawSteal", "CPU steal ticks", "counter32"),
+        "ssCpuRawGuest": OIDDefinition("1.3.6.1.4.1.2021.11.65.0", "ssCpuRawGuest", "CPU guest ticks", "counter32"),
+        "ssCpuRawGuestNice": OIDDefinition("1.3.6.1.4.1.2021.11.66.0", "ssCpuRawGuestNice", "CPU guest nice ticks", "counter32"),
+    },
+    "memory": {
+        # UCD-SNMP-MIB::memory
+        "memTotalSwap": OIDDefinition("1.3.6.1.4.1.2021.4.3.0", "memTotalSwap", "Total swap", "integer", "kilobytes"),
+        "memAvailSwap": OIDDefinition("1.3.6.1.4.1.2021.4.4.0", "memAvailSwap", "Available swap", "integer", "kilobytes"),
+        "memTotalReal": OIDDefinition("1.3.6.1.4.1.2021.4.5.0", "memTotalReal", "Total real memory", "integer", "kilobytes"),
+        "memAvailReal": OIDDefinition("1.3.6.1.4.1.2021.4.6.0", "memAvailReal", "Available real memory", "integer", "kilobytes"),
+        "memTotalFree": OIDDefinition("1.3.6.1.4.1.2021.4.11.0", "memTotalFree", "Total free memory", "integer", "kilobytes"),
+        "memMinimumSwap": OIDDefinition("1.3.6.1.4.1.2021.4.12.0", "memMinimumSwap", "Minimum swap", "integer", "kilobytes"),
+        "memShared": OIDDefinition("1.3.6.1.4.1.2021.4.13.0", "memShared", "Shared memory", "integer", "kilobytes"),
+        "memBuffer": OIDDefinition("1.3.6.1.4.1.2021.4.14.0", "memBuffer", "Buffer memory", "integer", "kilobytes"),
+        "memCached": OIDDefinition("1.3.6.1.4.1.2021.4.15.0", "memCached", "Cached memory", "integer", "kilobytes"),
+    },
+    "load": {
+        # UCD-SNMP-MIB::laTable
+        "laLoad1": OIDDefinition("1.3.6.1.4.1.2021.10.1.3.1", "laLoad1", "1-minute load average", "string"),
+        "laLoad5": OIDDefinition("1.3.6.1.4.1.2021.10.1.3.2", "laLoad5", "5-minute load average", "string"),
+        "laLoad15": OIDDefinition("1.3.6.1.4.1.2021.10.1.3.3", "laLoad15", "15-minute load average", "string"),
+        # Integer versions (scaled by 100)
+        "laLoadInt1": OIDDefinition("1.3.6.1.4.1.2021.10.1.5.1", "laLoadInt1", "1-min load (x100)", "integer"),
+        "laLoadInt5": OIDDefinition("1.3.6.1.4.1.2021.10.1.5.2", "laLoadInt5", "5-min load (x100)", "integer"),
+        "laLoadInt15": OIDDefinition("1.3.6.1.4.1.2021.10.1.5.3", "laLoadInt15", "15-min load (x100)", "integer"),
+    },
+    "disk_io": {
+        # UCD-DISKIO-MIB::diskIOTable
+        "diskIODevice": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.2", "diskIODevice", "Disk device name", "string"),
+        "diskIONRead": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.3", "diskIONRead", "Bytes read", "counter32", "bytes"),
+        "diskIONWritten": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.4", "diskIONWritten", "Bytes written", "counter32", "bytes"),
+        "diskIOReads": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.5", "diskIOReads", "Read operations", "counter32"),
+        "diskIOWrites": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.6", "diskIOWrites", "Write operations", "counter32"),
+        # 64-bit counters
+        "diskIONReadX": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.12", "diskIONReadX", "Bytes read (64-bit)", "counter64", "bytes"),
+        "diskIONWrittenX": OIDDefinition("1.3.6.1.4.1.2021.13.15.1.1.13", "diskIONWrittenX", "Bytes written (64-bit)", "counter64", "bytes"),
+    },
+    "disk_space": {
+        # UCD-SNMP-MIB::dskTable
+        "dskPath": OIDDefinition("1.3.6.1.4.1.2021.9.1.2", "dskPath", "Disk path", "string"),
+        "dskDevice": OIDDefinition("1.3.6.1.4.1.2021.9.1.3", "dskDevice", "Disk device", "string"),
+        "dskTotal": OIDDefinition("1.3.6.1.4.1.2021.9.1.6", "dskTotal", "Total disk (KB)", "integer", "kilobytes"),
+        "dskAvail": OIDDefinition("1.3.6.1.4.1.2021.9.1.7", "dskAvail", "Available disk (KB)", "integer", "kilobytes"),
+        "dskUsed": OIDDefinition("1.3.6.1.4.1.2021.9.1.8", "dskUsed", "Used disk (KB)", "integer", "kilobytes"),
+        "dskPercent": OIDDefinition("1.3.6.1.4.1.2021.9.1.9", "dskPercent", "Disk usage %", "integer", "percent"),
+        "dskPercentNode": OIDDefinition("1.3.6.1.4.1.2021.9.1.10", "dskPercentNode", "Inode usage %", "integer", "percent"),
+    },
+    "system_io": {
+        # UCD-SNMP-MIB::systemStats I/O
+        "ssIORawSent": OIDDefinition("1.3.6.1.4.1.2021.11.57.0", "ssIORawSent", "I/O blocks sent", "counter32"),
+        "ssIORawReceived": OIDDefinition("1.3.6.1.4.1.2021.11.58.0", "ssIORawReceived", "I/O blocks received", "counter32"),
+        "ssRawInterrupts": OIDDefinition("1.3.6.1.4.1.2021.11.59.0", "ssRawInterrupts", "Interrupts", "counter32"),
+        "ssRawContexts": OIDDefinition("1.3.6.1.4.1.2021.11.60.0", "ssRawContexts", "Context switches", "counter32"),
+        "ssRawSwapIn": OIDDefinition("1.3.6.1.4.1.2021.11.62.0", "ssRawSwapIn", "Swap pages in", "counter32"),
+        "ssRawSwapOut": OIDDefinition("1.3.6.1.4.1.2021.11.63.0", "ssRawSwapOut", "Swap pages out", "counter32"),
+    },
+    "tcp": {
+        # TCP-MIB (standard but important for Linux servers)
+        "tcpCurrEstab": OIDDefinition("1.3.6.1.2.1.6.9.0", "tcpCurrEstab", "Current TCP connections", "gauge32"),
+        "tcpActiveOpens": OIDDefinition("1.3.6.1.2.1.6.5.0", "tcpActiveOpens", "TCP active opens", "counter32"),
+        "tcpPassiveOpens": OIDDefinition("1.3.6.1.2.1.6.6.0", "tcpPassiveOpens", "TCP passive opens", "counter32"),
+        "tcpAttemptFails": OIDDefinition("1.3.6.1.2.1.6.7.0", "tcpAttemptFails", "TCP failed attempts", "counter32"),
+        "tcpEstabResets": OIDDefinition("1.3.6.1.2.1.6.8.0", "tcpEstabResets", "TCP established resets", "counter32"),
+    },
+}
+
+# Red Hat is an alias for Linux OIDs
+REDHAT_OIDS = LINUX_OIDS
+
+
+# =============================================================================
+# Windows (HOST-RESOURCES-MIB / Microsoft Enterprise MIB)
+# Enterprise OID: 1.3.6.1.4.1.311 (Microsoft)
+# =============================================================================
+
+WINDOWS_OIDS = {
+    "system": {
+        # Microsoft LanMgr Services MIB
+        "svSvcName": OIDDefinition("1.3.6.1.4.1.77.1.2.3.1.1", "svSvcName", "Service name", "string"),
+        "svSvcInstalledState": OIDDefinition("1.3.6.1.4.1.77.1.2.3.1.2", "svSvcInstalledState", "Service installed state", "integer"),
+        "svSvcOperatingState": OIDDefinition("1.3.6.1.4.1.77.1.2.3.1.3", "svSvcOperatingState", "Service operating state", "integer"),
+    },
+    "cpu": {
+        # HOST-RESOURCES-MIB (standard, well-supported on Windows)
+        "hrProcessorLoad": OIDDefinition("1.3.6.1.2.1.25.3.3.1.2", "hrProcessorLoad", "Processor load %", "integer", "percent"),
+    },
+    "memory": {
+        # HOST-RESOURCES-MIB hrStorageTable
+        # On Windows: Index 1 = Physical Memory, Index 2 = Virtual Memory
+        "hrMemorySize": OIDDefinition("1.3.6.1.2.1.25.2.2.0", "hrMemorySize", "Total memory (KB)", "integer", "kilobytes"),
+        "hrStorageDescr": OIDDefinition("1.3.6.1.2.1.25.2.3.1.3", "hrStorageDescr", "Storage description", "string"),
+        "hrStorageAllocationUnits": OIDDefinition("1.3.6.1.2.1.25.2.3.1.4", "hrStorageAllocationUnits", "Allocation unit size", "integer", "bytes"),
+        "hrStorageSize": OIDDefinition("1.3.6.1.2.1.25.2.3.1.5", "hrStorageSize", "Storage size (units)", "integer"),
+        "hrStorageUsed": OIDDefinition("1.3.6.1.2.1.25.2.3.1.6", "hrStorageUsed", "Storage used (units)", "integer"),
+        # Storage types for identification
+        "hrStorageType": OIDDefinition("1.3.6.1.2.1.25.2.3.1.2", "hrStorageType", "Storage type", "oid"),
+    },
+    "disk": {
+        # hrStorageTable entries for disk (hrStorageFixedDisk = .1.3.6.1.2.1.25.2.1.4)
+        # C: drive typically at index 3 or higher on Windows
+        # Must walk hrStorageDescr to find drive letters
+        "hrStorageFixedDisk": OIDDefinition("1.3.6.1.2.1.25.2.1.4", "hrStorageFixedDisk", "Fixed disk type OID", "oid"),
+    },
+    "processes": {
+        # HOST-RESOURCES-MIB
+        "hrSystemProcesses": OIDDefinition("1.3.6.1.2.1.25.1.6.0", "hrSystemProcesses", "Number of processes", "gauge32"),
+        "hrSystemMaxProcesses": OIDDefinition("1.3.6.1.2.1.25.1.7.0", "hrSystemMaxProcesses", "Max processes", "integer"),
+        "hrSystemNumUsers": OIDDefinition("1.3.6.1.2.1.25.1.5.0", "hrSystemNumUsers", "Number of users", "gauge32"),
+    },
+    "software": {
+        # HOST-RESOURCES-MIB hrSWRunTable
+        "hrSWRunName": OIDDefinition("1.3.6.1.2.1.25.4.2.1.2", "hrSWRunName", "Running software name", "string"),
+        "hrSWRunPath": OIDDefinition("1.3.6.1.2.1.25.4.2.1.4", "hrSWRunPath", "Running software path", "string"),
+        "hrSWRunStatus": OIDDefinition("1.3.6.1.2.1.25.4.2.1.7", "hrSWRunStatus", "Running software status", "integer"),
+        # hrSWRunPerfCPU and hrSWRunPerfMem for per-process metrics
+        "hrSWRunPerfCPU": OIDDefinition("1.3.6.1.2.1.25.5.1.1.1", "hrSWRunPerfCPU", "Process CPU (centi-seconds)", "integer", "centiseconds"),
+        "hrSWRunPerfMem": OIDDefinition("1.3.6.1.2.1.25.5.1.1.2", "hrSWRunPerfMem", "Process memory (KB)", "integer", "kilobytes"),
+    },
+    "network": {
+        # IF-MIB (standard, same as Linux)
+        "ifNumber": OIDDefinition("1.3.6.1.2.1.2.1.0", "ifNumber", "Number of interfaces", "integer"),
+        "ifDescr": OIDDefinition("1.3.6.1.2.1.2.2.1.2", "ifDescr", "Interface description", "string"),
+        "ifOperStatus": OIDDefinition("1.3.6.1.2.1.2.2.1.8", "ifOperStatus", "Oper status", "integer"),
+        "ifHCInOctets": OIDDefinition("1.3.6.1.2.1.31.1.1.1.6", "ifHCInOctets", "Inbound octets (64-bit)", "counter64", "bytes"),
+        "ifHCOutOctets": OIDDefinition("1.3.6.1.2.1.31.1.1.1.10", "ifHCOutOctets", "Outbound octets (64-bit)", "counter64", "bytes"),
+    },
+    "tcp": {
+        # TCP-MIB
+        "tcpCurrEstab": OIDDefinition("1.3.6.1.2.1.6.9.0", "tcpCurrEstab", "Current TCP connections", "gauge32"),
+    },
+}
+
+
+# =============================================================================
 # Sophos XG/SFOS (Enterprise OID: 1.3.6.1.4.1.2604 / 1.3.6.1.4.1.21067)
 # =============================================================================
 
@@ -328,14 +533,18 @@ SOPHOS_OIDS = {
 # =============================================================================
 
 VENDOR_OID_PREFIXES = {
-    "1.3.6.1.4.1.30065": VendorType.ARISTA,    # Arista Networks
-    "1.3.6.1.4.1.14823": VendorType.ARUBA,     # HPE Aruba
-    "1.3.6.1.4.1.2636": VendorType.JUNIPER,    # Juniper Networks
-    "1.3.6.1.4.1.33049": VendorType.MELLANOX,  # Mellanox/NVIDIA
-    "1.3.6.1.4.1.12325": VendorType.PFSENSE,   # FreeBSD/pfSense
-    "1.3.6.1.4.1.8072": VendorType.PFSENSE,    # Net-SNMP (often pfSense)
-    "1.3.6.1.4.1.2604": VendorType.SOPHOS,     # Sophos
-    "1.3.6.1.4.1.21067": VendorType.SOPHOS,    # Sophos (alternate)
+    "1.3.6.1.4.1.30065": VendorType.ARISTA,       # Arista Networks
+    "1.3.6.1.4.1.14823": VendorType.ARUBA,        # HPE Aruba Wireless
+    "1.3.6.1.4.1.47196": VendorType.HPE_ARUBA_CX, # HPE Aruba CX Switches
+    "1.3.6.1.4.1.2636": VendorType.JUNIPER,       # Juniper Networks
+    "1.3.6.1.4.1.33049": VendorType.MELLANOX,     # Mellanox/NVIDIA
+    "1.3.6.1.4.1.12325": VendorType.PFSENSE,      # FreeBSD/pfSense
+    "1.3.6.1.4.1.8072": VendorType.LINUX,         # Net-SNMP (Linux)
+    "1.3.6.1.4.1.2021": VendorType.LINUX,         # UCD-SNMP (Linux)
+    "1.3.6.1.4.1.2604": VendorType.SOPHOS,        # Sophos
+    "1.3.6.1.4.1.21067": VendorType.SOPHOS,       # Sophos (alternate)
+    "1.3.6.1.4.1.311": VendorType.WINDOWS,        # Microsoft Windows
+    "1.3.6.1.4.1.77": VendorType.WINDOWS,         # LanMgr (Windows)
 }
 
 
@@ -366,10 +575,14 @@ def get_vendor_oids(vendor: VendorType) -> dict[str, dict[str, OIDDefinition]]:
     vendor_maps = {
         VendorType.ARISTA: ARISTA_OIDS,
         VendorType.ARUBA: ARUBA_OIDS,
+        VendorType.HPE_ARUBA_CX: HPE_ARUBA_CX_OIDS,
         VendorType.JUNIPER: JUNIPER_OIDS,
         VendorType.MELLANOX: MELLANOX_OIDS,
         VendorType.PFSENSE: PFSENSE_OIDS,
         VendorType.SOPHOS: SOPHOS_OIDS,
+        VendorType.LINUX: LINUX_OIDS,
+        VendorType.REDHAT: REDHAT_OIDS,
+        VendorType.WINDOWS: WINDOWS_OIDS,
     }
     return vendor_maps.get(vendor, {})
 

@@ -2,84 +2,102 @@
 
 > Active issues and technical debt tracking
 
-**Version**: 0.2.12
-**Last Updated**: 2026-01-20 17:15 UTC
-**Stats**: 3 open | 1 deferred | 165 resolved (archived)
+**Version**: 0.2.13
+**Last Updated**: 2026-02-02 16:00 UTC
+**Stats**: 4 open | 1 deferred | 168 resolved (archived)
 **Codex Review**: 2026-01-16 (E2E: FIXED, Security: Low, CI: PASS ✅)
 **Docker Scout**: 2026-01-15 (1 Critical, 3 High - 2 fixed via Vite 7 upgrade)
-**CI/CD Status**: ✅ ALL WORKFLOWS PASSING (3 phases, 3 commits, full audit trail)
+**CI/CD Status**: ✅ ALL WORKFLOWS PASSING
 **npm audit**: 3 HIGH vulnerabilities (tar/argon2 - deferred to SEC-001)
 
 ---
 
 ## 🔥 NOW (Active / In Progress)
 
-### APP-018: Syslog Events API - 500 Internal Server Error
+### NPM-001: SNMPv3 Credential Test Timeout
 
-**Status**: 🔴 Open - Runtime Error
-**Priority**: 🔴 Critical - Feature Broken
-**Detected**: 2026-01-18 16:10 UTC (Browser monitoring session)
+**Status**: 🟡 Open - Investigation
+**Priority**: 🟠 High - Feature Not Working
+**Detected**: 2026-02-02 (Lab testing with Arista 720XP)
 **Engineer**: TBD
 
-**Issue**: Syslog events listing endpoint returning 500 Internal Server Error
+**Issue**: SNMPv3 credential test times out when testing against Arista 720XP
 
-**Failed Endpoint**:
+**Device Config**:
+- Target: 192.168.80.2 (Arista 720XP)
+- User: NPM-USER
+- Auth: SHA-256, Privacy: AES-256, Level: authPriv
 
-- `GET /api/v1/syslog/events?page=1&limit=100` - Status 500
-- Stats endpoint working: `GET /api/v1/syslog/events/stats?hours=24` - Status 200
+**Fixes Applied**:
+- Increased timeout from 5s to 10s in `apps/gateway/src/snmp.ts`
+- Increased retries from 1 to 2 for SNMPv3 engine ID discovery
 
-**Observed Behavior**:
-
-- Multiple failures during 20-second monitoring period (4 failed requests)
-- Error appears to be backend/database related
-- Stats aggregation works, but event listing fails
-
-**Impact**:
-
-- Syslog events page unable to display event list
-- Users cannot view individual syslog events
-- Event statistics still functional
-
-**Testing Note**: User will have active device performing syslog to application tomorrow (2026-01-19)
+**Remaining Investigation**:
+1. Verify gateway container can reach 192.168.80.2 (Docker bridge network routing)
+2. Confirm SNMPv3 engine ID discovery is working
+3. Test with `snmpwalk` from Docker host to verify SNMP accessibility
 
 **Next Steps**:
-
-1. Check backend syslog service logs for error details
-2. Verify `syslog.events` table exists and has correct schema
-3. Review endpoint error handling and query logic
-4. Test with live syslog data from device tomorrow
+- Rebuild gateway container with updated timeout/retry values
+- Test connectivity: `docker exec netnynja-gateway ping 192.168.80.2`
+- If still failing, consider `network_mode: host` for gateway
 
 ---
 
-### APP-019: Auth Refresh Invalid Token Returns 200 (E2E Failure)
+### SYSLOG-001: Syslog Events Not Received from Arista
 
-**Status**: 🔴 Open - Test Failure
-**Priority**: 🔴 Critical - CI/E2E Blocker
-**Detected**: 2026-01-31 06:42 UTC (Codex E2E run)
+**Status**: 🟡 Open - Configuration Issue
+**Priority**: 🟠 High - Feature Not Working
+**Detected**: 2026-02-02 (Lab testing with Arista 720XP)
 **Engineer**: TBD
 
-**Issue**: Refresh token endpoint accepts invalid token and returns 200 instead of 401.
+**Issue**: Syslog collector shows 0 events despite Arista switch being configured
 
-**Failed Test**:
+**Arista Config**:
+```
+logging host 192.168.1.137
+logging host 192.168.250.10
+logging source-interface Vlan80
+```
 
-- `tests/e2e/test_01_authentication.py::TestTokenRefresh::test_refresh_with_invalid_token_returns_401`
+**Root Cause**: Network mismatch - Arista is sending to 192.168.1.137/192.168.250.10 but Docker host may be on different IP
 
-**Observed Behavior**:
+**Resolution Required**:
+1. Identify Docker host IP address on network reachable by Arista
+2. Update Arista logging config: `logging host <docker-host-ip>`
+3. OR ensure Docker host has IP 192.168.1.137 or 192.168.250.10
 
-- `POST /api/v1/auth/refresh` returns **200 OK** for invalid refresh token
-- Expected **401 Unauthorized**
+**Verification**:
+- Port 514/udp is exposed in docker-compose.yml ✅
+- Syslog collector binds to 0.0.0.0:514 ✅
+- Parser supports Arista RFC 3164 format ✅
 
-**Impact**:
+---
 
-- E2E suite fails (auth regression)
-- Potential security/auth validation gap for refresh token verification
+### NPM-004: Arista CPU/Memory OIDs Not Implemented in Poller
 
-**Next Steps**:
+**Status**: 🟡 Open - Code Change Required
+**Priority**: 🟠 High - Feature Incomplete
+**Detected**: 2026-02-02 (Lab testing with Arista 720XP)
+**Engineer**: TBD
 
-1. Inspect auth-service refresh token verification logic
-2. Ensure invalid/expired refresh tokens return 401
-3. Add/adjust unit tests around refresh validation
-4. Rerun quick E2E (`test_01_authentication.py`, `test_02_gateway.py`)
+**Issue**: Arista 720XP shows N/A for CPU, Memory, Disk, Swap metrics despite SNMP working
+
+**Root Cause**:
+- `snmpv3_poller.py` has hardcoded OID mappings that don't use `oid_mappings.py`
+- Arista doesn't support standard `hrProcessorLoad` OID (1.3.6.1.2.1.25.3.3.1.2.1)
+- Arista uses ENTITY-SENSOR-MIB for CPU/temp or requires walking all hrProcessorLoad indices
+
+**Files**:
+- `apps/npm/src/npm/collectors/snmpv3_poller.py` - needs to import from oid_mappings.py
+- `apps/npm/src/npm/collectors/oid_mappings.py` - OID definitions (already updated)
+
+**Fix Required**:
+1. Update `_get_cpu_metrics()` to walk `1.3.6.1.2.1.25.3.3.1.2` (all indices) for Arista
+2. Update `_get_memory_metrics()` to use hrStorageTable for Arista
+3. OR refactor poller to use `oid_mappings.py` vendor-specific OIDs
+
+**Workaround**: None - metrics display N/A until code is updated
 
 ---
 
@@ -116,42 +134,6 @@
 - Non-urgent, deferred to future maintenance cycle
 
 **Reference**: https://reactrouter.com/v6/upgrading/future
-
----
-
-### STIG-020: Verify Config Analysis Logic for pfSense, Mellanox, Red Hat
-
-**Status**: 🟡 Open - Validation Required
-**Priority**: 🟠 High - Feature Verification
-**Detected**: 2026-01-20 17:10 UTC (User report)
-**Engineer**: TBD
-
-**Issue**: STIG Manager config analysis logic needs verification for pfSense, Mellanox, and Red Hat platforms
-
-**Platforms to Verify**:
-
-1. **pfSense** - Config file parser and STIG rule matching
-2. **Mellanox** - Config file parser and STIG rule matching
-3. **Red Hat** - Config file parser and STIG rule matching
-
-**Verification Steps**:
-
-1. Review config parsers in `apps/stig/src/stig/collectors/config_analyzer.py`
-2. Verify platform detection logic in `apps/stig/src/stig/services/config_checker.py`
-3. Test with sample config files for each platform
-4. Confirm STIG rule evaluation produces expected results
-5. Verify platform-to-STIG mapping in library indexer
-
-**Files to Review**:
-
-- `apps/stig/src/stig/collectors/config_analyzer.py`
-- `apps/stig/src/stig/services/config_checker.py`
-- `apps/stig/src/stig/library/catalog.py` (platform mappings)
-
-**Impact**:
-
-- Config analysis may produce incorrect results for these platforms
-- Users may receive false positives/negatives in compliance reports
 
 ---
 
@@ -421,9 +403,12 @@ All issues from Codex Review 2026-01-14 have been resolved.
 
 ## 📜 Recently Resolved (Last 30 Days)
 
-| ID      | P   | Title                                   | Resolved   | Resolution                                                  |
-| ------- | --- | --------------------------------------- | ---------- | ----------------------------------------------------------- |
-| CI-003  | 🔴  | TypeScript compilation errors           | 2026-01-18 | Fixed 5 TS errors in gateway STIG routes (79bcf10)          |
+| ID       | P   | Title                                   | Resolved   | Resolution                                                  |
+| -------- | --- | --------------------------------------- | ---------- | ----------------------------------------------------------- |
+| APP-019  | 🔴  | Auth refresh returns 200 instead of 401 | 2026-02-02 | Changed to reply.status(401).send() pattern in auth-service |
+| APP-018  | 🔴  | Syslog events API 500 error             | 2026-02-02 | Fixed SQL parameter indexing, added try-catch error handler |
+| STIG-020 | 🟠  | Mellanox AAA parsing missing            | 2026-02-02 | Added AAA/TACACS/RADIUS parsing to MellanoxParser           |
+| CI-003   | 🔴  | TypeScript compilation errors           | 2026-01-18 | Fixed 5 TS errors in gateway STIG routes (79bcf10)          |
 | CI-002  | 🔴  | Missing source files (gitignore)        | 2026-01-18 | Root-anchored STIG/ pattern, added 3 files (97bc2e1)        |
 | CI-001  | 🔴  | CI/CD pipeline failures (Rollup ARM64)  | 2026-01-18 | Clean reinstall, audit trail, all workflows pass (8461bbb)  |
 | STIG-19 | 🟠  | Combined PDF for multi-STIG analysis    | 2026-01-18 | New combined-pdf/ckl endpoints with executive summary       |

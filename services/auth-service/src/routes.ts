@@ -325,27 +325,25 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         const isValid = await redis.isRefreshTokenValid(userId, tokenHash);
 
         if (!isValid) {
-          reply.status(401);
-          return {
+          return reply.status(401).send({
             success: false,
             error: {
               code: "TOKEN_REVOKED",
               message: "Refresh token has been revoked",
             },
-          };
+          });
         }
 
         // Get user
         const user = await users.findById(userId);
         if (!user || !user.is_active) {
-          reply.status(401);
-          return {
+          return reply.status(401).send({
             success: false,
             error: {
               code: "USER_NOT_FOUND",
               message: "User not found or inactive",
             },
-          };
+          });
         }
 
         // Revoke old refresh token
@@ -386,14 +384,13 @@ export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
         };
       } catch (error) {
         logger.warn({ error }, "Token refresh failed");
-        reply.status(401);
-        return {
+        return reply.status(401).send({
           success: false,
           error: {
             code: "INVALID_TOKEN",
             message: "Invalid or expired refresh token",
           },
-        };
+        });
       }
     },
   );

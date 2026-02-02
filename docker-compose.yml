@@ -28,7 +28,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    profiles: ["infra", "ipam", "npm", "stig"]
+    profiles: ["infra", "ipam", "npm", "stig", "syslog"]
     container_name: netnynja-postgres
     restart: unless-stopped
     environment:
@@ -50,7 +50,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    profiles: ["infra", "ipam", "npm", "stig"]
+    profiles: ["infra", "ipam", "npm", "stig", "syslog"]
     container_name: netnynja-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?Redis password required}
@@ -68,7 +68,7 @@ services:
 
   nats:
     image: nats:2.10-alpine
-    profiles: ["infra", "ipam", "npm", "stig"]
+    profiles: ["infra", "ipam", "npm", "stig", "syslog"]
     container_name: netnynja-nats
     restart: unless-stopped
     command:

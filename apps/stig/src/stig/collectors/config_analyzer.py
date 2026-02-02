@@ -403,6 +403,22 @@ class MellanoxParser(ConfigParser):
                 if len(parts) >= 2:
                     config.users.append({"name": parts[1], "config": stripped})
 
+            # AAA configuration
+            if stripped.startswith("aaa "):
+                config.aaa_config["enabled"] = True
+                if "authentication" in stripped:
+                    config.aaa_config["authentication"] = stripped
+                elif "authorization" in stripped:
+                    config.aaa_config["authorization"] = stripped
+                elif "accounting" in stripped:
+                    config.aaa_config["accounting"] = stripped
+            if stripped.startswith("tacacs-server ") or stripped.startswith("tacacs server "):
+                config.aaa_config["enabled"] = True
+                config.aaa_config.setdefault("tacacs", []).append(stripped)
+            if stripped.startswith("radius-server ") or stripped.startswith("radius server "):
+                config.aaa_config["enabled"] = True
+                config.aaa_config.setdefault("radius", []).append(stripped)
+
             # SNMP
             if stripped.startswith("snmp-server "):
                 if "community" in stripped:
