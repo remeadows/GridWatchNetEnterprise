@@ -210,6 +210,11 @@ VENDOR_MEMORY_OIDS = {
         "used_percent": "1.3.6.1.4.1.2604.5.1.2.5.2.0",   # sfosMemoryPercentUsage
         "total": "1.3.6.1.4.1.2604.5.1.2.5.1.0",          # sfosMemoryCapacity (MB)
     },
+    # Arista (HOST-RESOURCES-MIB via hrStorageTable walk — NPM-004)
+    "arista": {
+        "total": "1.3.6.1.2.1.25.2.2.0",          # hrMemorySize (KB)
+        "storage_table": "1.3.6.1.2.1.25.2.3.1",  # hrStorageTable (walked by _walk_hr_storage_memory)
+    },
     # Generic (HOST-RESOURCES-MIB)
     "generic": {
         "total": "1.3.6.1.2.1.25.2.2.0",          # hrMemorySize (KB)
@@ -718,18 +723,29 @@ class SNMPv3MetricsCollector:
         credential: SNMPv3Credential,
         vendor: str,
     ) -> float | None:
-        """Get CPU utilization using vendor-specific OIDs."""
-        # Determine vendor type
+        """Get CPU utilization using vendor-specific OIDs.
+
+        For Arista and generic devices that use HOST-RESOURCES-MIB, walks
+        hrProcessorLoad (1.3.6.1.2.1.25.3.3.1.2) across all processor
+        indices and averages the result, since specific index .1 may not
+        exist on all platforms (NPM-004).
+        """
         vendor_key = self._normalize_vendor(vendor)
+
+        # For Arista/generic: walk hrProcessorLoad to average all CPUs
+        if vendor_key in ("arista", "generic"):
+            cpu_value = await self._walk_cpu_average(ip, port, credential)
+            if cpu_value is not None:
+                return cpu_value
+            # If walk fails, fall through to single-OID attempts
 
         # Try vendor-specific OIDs first
         oid_lists = []
-        if vendor_key in VENDOR_CPU_OIDS:
+        if vendor_key in VENDOR_CPU_OIDS and vendor_key not in ("arista", "generic"):
             oid_lists.append(VENDOR_CPU_OIDS[vendor_key])
 
-        # Always try generic as fallback
-        if vendor_key != "generic":
-            oid_lists.append(VENDOR_CPU_OIDS["generic"])
+        # Always try generic single-OID as last resort
+        oid_lists.append(VENDOR_CPU_OIDS["generic"])
 
         for oids in oid_lists:
             for oid in oids:
@@ -744,6 +760,47 @@ class SNMPv3MetricsCollector:
 
         return None
 
+    async def _walk_cpu_average(
+        self,
+        ip: str,
+        port: int,
+        credential: SNMPv3Credential,
+    ) -> float | None:
+        """Walk hrProcessorLoad table and return average CPU across all cores.
+
+        Arista (and many Linux/generic devices) expose per-core CPU load
+        under hrProcessorLoad (1.3.6.1.2.1.25.3.3.1.2). Walking this
+        OID tree returns all indices, which we average for a single
+        utilization percentage.
+        """
+        hr_processor_load_base = "1.3.6.1.2.1.25.3.3.1.2"
+        results = await self.snmp_client.walk(ip, port, credential, hr_processor_load_base, max_rows=64)
+
+        if not results:
+            return None
+
+        cpu_values = []
+        for oid_str, value in results.items():
+            try:
+                v = float(value)
+                if 0 <= v <= 100:
+                    cpu_values.append(v)
+            except (ValueError, TypeError):
+                continue
+
+        if not cpu_values:
+            return None
+
+        avg = sum(cpu_values) / len(cpu_values)
+        logger.info(
+            "cpu_walk_result",
+            ip=ip,
+            cores=len(cpu_values),
+            values=cpu_values,
+            average=round(avg, 1),
+        )
+        return round(avg, 1)
+
     async def _get_memory_metrics(
         self,
         ip: str,
@@ -751,8 +808,19 @@ class SNMPv3MetricsCollector:
         credential: SNMPv3Credential,
         vendor: str,
     ) -> dict[str, Any] | None:
-        """Get memory utilization using vendor-specific OIDs."""
+        """Get memory utilization using vendor-specific OIDs.
+
+        For Arista and generic devices, walks hrStorageTable to find
+        physical memory entries and calculate utilization (NPM-004).
+        """
         vendor_key = self._normalize_vendor(vendor)
+
+        # For Arista/generic: walk hrStorageTable for accurate memory data
+        if vendor_key in ("arista", "generic"):
+            mem_data = await self._walk_hr_storage_memory(ip, port, credential)
+            if mem_data:
+                return mem_data
+            # Fall through to simple approaches
 
         # Try vendor-specific OIDs
         vendor_oids = VENDOR_MEMORY_OIDS.get(vendor_key, {})
@@ -800,6 +868,96 @@ class SNMPv3MetricsCollector:
                     pass
 
         return result if result else None
+
+    async def _walk_hr_storage_memory(
+        self,
+        ip: str,
+        port: int,
+        credential: SNMPv3Credential,
+    ) -> dict[str, Any] | None:
+        """Walk hrStorageTable to find physical memory and calculate utilization.
+
+        hrStorageTable entries have:
+          .2 = hrStorageType (OID indicating RAM, VirtualMemory, etc.)
+          .3 = hrStorageDescr (human-readable description)
+          .4 = hrStorageAllocationUnits (bytes per unit)
+          .5 = hrStorageSize (total units)
+          .6 = hrStorageUsed (used units)
+
+        hrStorageRam OID = 1.3.6.1.2.1.25.2.1.2
+        We look for entries whose type is hrStorageRam or whose description
+        contains "Physical Memory" / "Real Memory" / "RAM".
+        """
+        hr_storage_descr = "1.3.6.1.2.1.25.2.3.1.3"
+        hr_storage_alloc = "1.3.6.1.2.1.25.2.3.1.4"
+        hr_storage_size = "1.3.6.1.2.1.25.2.3.1.5"
+        hr_storage_used = "1.3.6.1.2.1.25.2.3.1.6"
+        hr_storage_type = "1.3.6.1.2.1.25.2.3.1.2"
+
+        # Walk descriptions to find indices
+        descr_results = await self.snmp_client.walk(ip, port, credential, hr_storage_descr, max_rows=50)
+        if not descr_results:
+            return None
+
+        # Find physical memory index
+        ram_index = None
+        ram_keywords = ("physical memory", "real memory", "ram", "mem")
+        for oid_str, descr_value in descr_results.items():
+            descr_lower = str(descr_value).lower()
+            if any(kw in descr_lower for kw in ram_keywords):
+                # Extract index from OID (last component)
+                ram_index = oid_str.split(".")[-1]
+                break
+
+        if ram_index is None:
+            # Try checking hrStorageType for hrStorageRam (1.3.6.1.2.1.25.2.1.2)
+            type_results = await self.snmp_client.walk(ip, port, credential, hr_storage_type, max_rows=50)
+            for oid_str, type_value in type_results.items():
+                if str(type_value) == "1.3.6.1.2.1.25.2.1.2":
+                    ram_index = oid_str.split(".")[-1]
+                    break
+
+        if ram_index is None:
+            return None
+
+        # Get allocation units, size, and used for the RAM entry
+        alloc_val = await self.snmp_client.get(ip, port, credential, f"{hr_storage_alloc}.{ram_index}")
+        size_val = await self.snmp_client.get(ip, port, credential, f"{hr_storage_size}.{ram_index}")
+        used_val = await self.snmp_client.get(ip, port, credential, f"{hr_storage_used}.{ram_index}")
+
+        if alloc_val is None or size_val is None or used_val is None:
+            return None
+
+        try:
+            alloc_bytes = int(alloc_val)
+            total_units = int(size_val)
+            used_units = int(used_val)
+
+            total_bytes = alloc_bytes * total_units
+            used_bytes = alloc_bytes * used_units
+
+            if total_bytes <= 0:
+                return None
+
+            utilization = (used_bytes / total_bytes) * 100
+
+            logger.info(
+                "memory_hr_storage_result",
+                ip=ip,
+                ram_index=ram_index,
+                alloc_bytes=alloc_bytes,
+                total_bytes=total_bytes,
+                used_bytes=used_bytes,
+                utilization=round(utilization, 1),
+            )
+
+            return {
+                "total": total_bytes,
+                "used": used_bytes,
+                "utilization": round(utilization, 1),
+            }
+        except (ValueError, TypeError):
+            return None
 
     async def _get_disk_metrics(
         self,

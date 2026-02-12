@@ -1,15 +1,15 @@
 # NetNynja Enterprise - Project Status
 
-**Version**: 0.2.13
-**Last Updated**: 2026-02-11 23:45 UTC
-**Current Phase**: Phase 9 - CI/CD & Release (Complete) | Security Hardening Sprint Day 5 of 5
-**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 100% (Features) | ▓▓▓▓▓▓▓▓▓░ 97% (Production Readiness)
-**Issues**: 3 Open | 186 Resolved | 0 Deferred
-**Security Posture**: 🟢 ALL LAUNCH BLOCKERS + ALL TIER 1 RESOLVED
+**Version**: 0.2.15
+**Last Updated**: 2026-02-12 17:00 UTC
+**Current Phase**: Phase 9 - CI/CD & Release (Complete) | Security Hardening Sprint Complete
+**Overall Progress**: ▓▓▓▓▓▓▓▓▓▓ 100% (Features) | ▓▓▓▓▓▓▓▓▓░ 98% (Production Readiness)
+**Issues**: 1 Open | 191 Resolved | 0 Deferred
+**Security Posture**: 🟢 ALL LAUNCH BLOCKERS + ALL TIER 1 RESOLVED | Phase 1B: 3/4 images patched (Grafana pending)
 **Container Security**: All 14 images cryptographically signed with Cosign ✅ | cap_drop: ALL on all services ✅
-**Release Status**: v0.2.13 Lab/Dev Ready | Production: Day 5 validation pass remaining
-**Security Remediation**: SEC-012 Phase 1 Complete | SEC-HARDENING-01 Sprint Day 5: 5/5 blockers + 6/6 Tier 1 + APP-020 resolved
-**Dual Security Review**: Codex (20260211-1133) + Gemini (20260211-1146) — ALL findings addressed, Day 5 validation pending
+**Release Status**: v0.2.15 Lab/Dev Ready | Production: Gemini validation + Phase 1B Docker image rebuilds remaining
+**Security Remediation**: SEC-012 Phase 1 Complete + Phase 1B 3/4 patched (postgres/redis/nats OK, Grafana pending) | All sprint items + UI-017 + STIG-023 + NPM-001 resolved
+**Dual Security Review**: Codex (20260211-1133) + Gemini (20260211-1146) — ALL findings addressed, validation pending
 
 ---
 
@@ -80,9 +80,12 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 ### Sprint Gate
 
-- Day 5: Gemini post-remediation validation pass
-- Day 5: Documentation updates (Claude)
-- Day 5: ~~APP-020 (route mismatch)~~ ✅ Resolved + APP-021 (syslog stats endpoint)
+- Day 5: Gemini post-remediation validation pass (pending)
+- Day 5: Documentation updates (Claude) ✅
+- Day 5: ~~APP-020 (route mismatch)~~ ✅ Resolved + ~~APP-021 (syslog stats endpoint)~~ ✅ Resolved
+- Post-sprint: ~~NPM-004 (Arista CPU/Memory OIDs)~~ ✅ Resolved (walks hrProcessorLoad + hrStorageTable)
+- Post-sprint: ~~UI-017 (React Router v7 warnings)~~ ✅ Resolved (added future flags to BrowserRouter)
+- Post-sprint: SEC-012 Phase 1B — **Alpine OpenSSL patches now available** (run check script + pull images)
 
 ---
 
@@ -90,7 +93,7 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 | Risk                              | Likelihood | Impact | Mitigation                                       |
 | --------------------------------- | ---------- | ------ | ------------------------------------------------ |
-| Container vulnerabilities (Scout) | High       | High   | Docker Scout monitoring, remediation plan active |
+| Container vulnerabilities (Scout) | Medium     | High   | **Patches available** — pull latest Alpine images |
 | IPAM data migration issues        | Medium     | High   | Extensive testing, rollback plan                 |
 | Cross-platform Docker differences | Medium     | Medium | Early testing, documented workarounds            |
 | Performance regression            | Low        | High   | Benchmark suite, load testing                    |
@@ -122,6 +125,57 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 ---
 
 ## Changelog
+
+### [0.2.15] - 2026-02-12 (Open Risk Follow-ups + Live Bug Fixes)
+
+**React Router v7 Prep + STIG Audit Fix + SEC-012 Phase 1B Scan + NPM-001 Verified**
+
+CI/CD Status: PENDING
+
+Fixes:
+
+- STIG-023: Fixed audit-all route 422 error — proxy body was missing `{"data": {...}}` wrapper (STIG-021 pattern). STIG audits now actually start via SSH when triggered from UI
+- UI-017: Added `v7_startTransition` and `v7_relativeSplatPath` future flags to BrowserRouter — eliminates all React Router v7 console warnings
+- NPM-001: SNMPv3 connectivity to Arista 720XP confirmed working by user — timeout/retry increases from earlier fix resolved the issue
+- SEC-012: Ran Phase 1B scan — 3/4 Docker images NOW PATCHED! postgres:15-alpine (3.5.5-r0), redis:7-alpine (3.3.6-r0), nats:2.10-alpine (3.5.5-r0). Only grafana/grafana:11.4.0 still vulnerable (3.3.2-r0, needs 3.3.6-r0)
+- Fixed check-alpine-openssl.ps1: Replaced emoji characters causing PowerShell encoding errors, fixed `apk info openssl` -> `apk info libssl3` (Alpine images don't ship openssl CLI binary), replaced Unicode arrows with ASCII
+- SYSLOG-001: Investigation complete — syslog collector healthy (internal test 5/5 messages received), root cause is Arista logging host config (needs `logging host 192.168.1.137`). Collector also restarted after DB timing race crash
+
+Files Modified:
+
+- `apps/gateway/src/routes/stig/index.ts` — Added `{"data": {...}}` wrapper to audit-all proxy body
+- `apps/web-ui/src/main.tsx` — Added React Router v7 future flags
+- `scripts/security/check-alpine-openssl.ps1` — Fixed emoji encoding, updated apk query to use libssl3, replaced Unicode arrows
+- `IssuesTracker.md` — STIG-023 + NPM-001 resolved, SYSLOG-001 updated, SEC-012 scan results (3/4 patched)
+- `PROJECT_STATUS.md` — Version updates, 1 open / 191 resolved
+
+Issues Resolved:
+
+- STIG-023: Audit-All 422 Unprocessable Content
+- NPM-001: SNMPv3 credential test timeout
+- UI-017: React Router v7 migration warnings
+
+### [0.2.14] - 2026-02-12 (Post-Sprint Fixes)
+
+**Operational Visibility + Arista NPM Metrics**
+
+CI/CD Status: PENDING
+
+New Features:
+
+- APP-021: Added `GET /api/v1/syslog/stats` endpoint for syslog ingestion health (event count, last event timestamp, active source count)
+- NPM-004: Arista CPU metrics now use `hrProcessorLoad` walk (averages all cores) instead of single-index GET
+- NPM-004: Arista memory metrics now use `hrStorageTable` walk to find physical memory and calculate utilization from allocation units
+
+Files Modified:
+
+- `apps/gateway/src/routes/syslog/index.ts` — Added `/stats` endpoint
+- `apps/npm/src/npm/collectors/snmpv3_poller.py` — Added `_walk_cpu_average()`, `_walk_hr_storage_memory()`, Arista vendor memory OIDs
+
+Issues Resolved:
+
+- APP-021: Syslog stats endpoint
+- NPM-004: Arista CPU/Memory OIDs not populating
 
 ### [0.2.13] - 2026-02-04 (Security Remediation - SEC-012)
 

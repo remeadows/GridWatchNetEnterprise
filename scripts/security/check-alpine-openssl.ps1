@@ -93,27 +93,27 @@ foreach ($img in $images) {
     
     # Check OpenSSL version
     Write-Host "  Checking OpenSSL version..." -NoNewline
-    $version = docker run --rm $img.Name sh -c "apk info openssl 2>/dev/null | grep 'openssl-'" 2>$null
-    
+    $version = docker run --rm --entrypoint sh $img.Name -c "apk info libssl3 2>/dev/null | head -1" 2>$null
+
     if ($version) {
         Write-Host " $version" -ForegroundColor Yellow
-        
-        # Parse version number
-        if ($version -match 'openssl-(\d+\.\d+\.\d+-r\d+)') {
+
+        # Parse version number (libssl3-3.x.x-rx format)
+        if ($version -match 'libssl3-(\d+\.\d+\.\d+-r\d+)') {
             $detectedVersion = $matches[1]
             
             # Compare versions
             if ($detectedVersion -ge $img.PatchedVersion) {
-                Write-Host "  ✅ PATCHED! ($detectedVersion >= $($img.PatchedVersion))" -ForegroundColor Green
+                Write-Host "  [PATCHED] ($detectedVersion >= $($img.PatchedVersion))" -ForegroundColor Green
                 $img | Add-Member -NotePropertyName "DetectedVersion" -NotePropertyValue $detectedVersion -Force
                 $patchedImages += $img
             } else {
-                Write-Host "  ⚠️  Still vulnerable ($detectedVersion < $($img.PatchedVersion))" -ForegroundColor Yellow
+                Write-Host "  [VULNERABLE] Still vulnerable ($detectedVersion < $($img.PatchedVersion))" -ForegroundColor Yellow
                 $img | Add-Member -NotePropertyName "DetectedVersion" -NotePropertyValue $detectedVersion -Force
                 $stillVulnerable += $img
             }
         } else {
-            Write-Host "  ⚠️  Could not parse version" -ForegroundColor Red
+            Write-Host "  [WARNING] Could not parse version" -ForegroundColor Red
             $stillVulnerable += $img
         }
     } else {
@@ -134,13 +134,13 @@ Write-Host "Patched: $($patchedImages.Count)" -ForegroundColor Green
 Write-Host "Still vulnerable: $($stillVulnerable.Count)" -ForegroundColor Yellow
 
 if ($patchedImages.Count -gt 0) {
-    Write-Host "`n🎉 PATCHED IMAGES FOUND!" -ForegroundColor Green
+    Write-Host "`n>>> PATCHED IMAGES FOUND! <<<" -ForegroundColor Green
     Write-Host "The following images have been patched:" -ForegroundColor Green
     foreach ($img in $patchedImages) {
-        Write-Host "  - $($img.Service) ($($img.Name)): $($img.CurrentVersion) → $($img.DetectedVersion)" -ForegroundColor Green
+        Write-Host "  - $($img.Service) ($($img.Name)): $($img.CurrentVersion) -> $($img.DetectedVersion)" -ForegroundColor Green
     }
     
-    Write-Host "`n⚡ ACTION REQUIRED:" -ForegroundColor Yellow
+    Write-Host "`n>>> ACTION REQUIRED:" -ForegroundColor Yellow
     Write-Host "1. Review docs/security/PHASE_1B_ACTION_PLAN.md" -ForegroundColor White
     Write-Host "2. Execute rapid deployment runbook" -ForegroundColor White
     Write-Host "3. Deploy to staging first" -ForegroundColor White
@@ -153,7 +153,7 @@ if ($patchedImages.Count -gt 0) {
 if ($stillVulnerable.Count -gt 0) {
     Write-Host "`nStill vulnerable:" -ForegroundColor Yellow
     foreach ($img in $stillVulnerable) {
-        Write-Host "  - $($img.Service) ($($img.Name)): $($img.CurrentVersion) → waiting for $($img.PatchedVersion)" -ForegroundColor Yellow
+        Write-Host "  - $($img.Service) ($($img.Name)): $($img.CurrentVersion) -> waiting for $($img.PatchedVersion)" -ForegroundColor Yellow
     }
 }
 
@@ -164,13 +164,13 @@ if ($patchedImages.Count -gt 0) {
     if ($EmailAlerts) {
         Write-Host "`nSending email alert to $EmailTo..." -NoNewline
         
-        $subject = "🔒 Security Patches Available - Alpine OpenSSL CVE-2025-15467"
+        $subject = "[SECURITY] Patches Available - Alpine OpenSSL CVE-2025-15467"
         $body = @"
 Alpine OpenSSL Security Patches Detected
 
 The following Docker images have been updated with OpenSSL security patches for CVE-2025-15467:
 
-$($patchedImages | ForEach-Object { "- $($_.Service) ($($_.Name)): $($_.CurrentVersion) → $($_.DetectedVersion)" } | Out-String)
+$($patchedImages | ForEach-Object { "- $($_.Service) ($($_.Name)): $($_.CurrentVersion) -> $($_.DetectedVersion)" } | Out-String)
 
 Action Required:
 1. Review the rapid deployment runbook in docs/security/PHASE_1B_ACTION_PLAN.md
@@ -197,18 +197,18 @@ Automated scan via check-alpine-openssl.ps1
                 -SmtpServer "smtp.example.com" `
                 -ErrorAction Stop
             
-            Write-Host " Sent ✅" -ForegroundColor Green
+            Write-Host " Sent [OK]" -ForegroundColor Green
         } catch {
             Write-Host " Failed: $_" -ForegroundColor Red
         }
     }
-    
+
     # Slack notification
     if ($SlackWebhook) {
         Write-Host "Sending Slack notification..." -NoNewline
-        
+
         $slackPayload = @{
-            text = "🔒 Security Patches Available"
+            text = "[SECURITY] Patches Available"
             blocks = @(
                 @{
                     type = "header"
@@ -228,7 +228,7 @@ Automated scan via check-alpine-openssl.ps1
                     type = "section"
                     text = @{
                         type = "mrkdwn"
-                        text = $($patchedImages | ForEach-Object { "• *$($_.Service)*: ``$($_.Name)`` ($($_.CurrentVersion) → $($_.DetectedVersion))" } | Join-String -Separator "`n")
+                        text = $($patchedImages | ForEach-Object { "• *$($_.Service)*: ``$($_.Name)`` ($($_.CurrentVersion) -> $($_.DetectedVersion))" } | Join-String -Separator "`n")
                     }
                 },
                 @{
@@ -243,7 +243,7 @@ Automated scan via check-alpine-openssl.ps1
         
         try {
             Invoke-RestMethod -Uri $SlackWebhook -Method Post -Body $slackPayload -ContentType "application/json" | Out-Null
-            Write-Host " Sent ✅" -ForegroundColor Green
+            Write-Host " Sent [OK]" -ForegroundColor Green
         } catch {
             Write-Host " Failed: $_" -ForegroundColor Red
         }

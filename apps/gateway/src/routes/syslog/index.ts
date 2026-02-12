@@ -1504,6 +1504,61 @@ const syslogRoutes: FastifyPluginAsync = async (fastify) => {
       };
     },
   );
+  // ============================================
+  // STATS ENDPOINT (APP-021)
+  // ============================================
+
+  // Lightweight operational health stats
+  fastify.get(
+    "/stats",
+    {
+      schema: {
+        tags: ["Syslog - Stats"],
+        summary: "Get syslog ingestion health stats",
+        description:
+          "Lightweight endpoint for operational visibility: total event count, last event timestamp, and source count.",
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    async (request, reply) => {
+      try {
+        const [eventResult, sourceResult] = await Promise.all([
+          pool.query(
+            `SELECT
+               COUNT(*) as event_count,
+               MAX(received_at) as last_event_at
+             FROM syslog.events`,
+          ),
+          pool.query(
+            `SELECT COUNT(*) as source_count
+             FROM syslog.sources
+             WHERE is_active = true`,
+          ),
+        ]);
+
+        const eventRow = eventResult.rows[0];
+        const sourceRow = sourceResult.rows[0];
+
+        return {
+          success: true,
+          data: {
+            eventCount: parseInt(eventRow.event_count, 10),
+            lastEventAt: eventRow.last_event_at,
+            activeSourceCount: parseInt(sourceRow.source_count, 10),
+          },
+        };
+      } catch (error) {
+        request.log.error({ error }, "Failed to fetch syslog stats");
+        return reply.status(500).send({
+          success: false,
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "Failed to fetch syslog stats",
+          },
+        });
+      }
+    },
+  );
 };
 
 export default syslogRoutes;

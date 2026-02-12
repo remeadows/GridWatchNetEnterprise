@@ -2658,10 +2658,12 @@ const targetDefinitionRoutes: FastifyPluginAsync = async (fastify) => {
             "/api/v1/stig/audits",
             token || "",
             {
-              target_id: targetId,
-              definition_id: row.definition_id,
-              name: `${row.stig_title} - ${targetName}`,
-              audit_group_id: groupId,
+              data: {
+                target_id: targetId,
+                definition_id: row.definition_id,
+                name: `${row.stig_title} - ${targetName}`,
+                audit_group_id: groupId,
+              },
             },
           );
 
