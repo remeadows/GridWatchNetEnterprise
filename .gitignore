@@ -165,6 +165,12 @@ generate_isso_report.py
 push-remaining.sh
 setup-ghcr.sh
 
+# Windows null file artifact
+nul
+
+# Smoke test result accumulation
+tests/smoke/results/*.json
+
 # ===========================================
 # STIG Data (User-provided)
 # ===========================================

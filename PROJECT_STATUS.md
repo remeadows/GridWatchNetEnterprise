@@ -54,7 +54,7 @@ NetNynja Enterprise consolidates three network management applications (IPAM, NP
 
 **Triggered By**: Dual independent security review (Codex + Gemini, 2026-02-11)
 **Sprint Duration**: 2026-02-12 → 2026-02-18 (5 business days)
-**Detail**: See [SPRINT_SEC_HARDENING.md](SPRINT_SEC_HARDENING.md)
+**Detail**: See [archive/sprint-history/SPRINT_SEC_HARDENING.md](archive/sprint-history/SPRINT_SEC_HARDENING.md)
 
 ### Launch Blockers (Tier 0)
 
@@ -287,7 +287,7 @@ Security Findings (Docker Scout):
 
 - 1 Critical: zlib CVE-2026-22184 (no fix available)
 - 8 High: cross-spawn CVE-2024-21538, glob CVE-2025-64756, ecdsa CVE-2024-23342, PAM CVE-2025-6020, GnuPG CVE-2025-68973
-- Remediation plan documented in Docker_Scout_Security_Report.pdf
+- Remediation plan documented in docs/reports/Docker_Scout_Security_Report.pdf
 
 Container Images (v0.2.4):
 
@@ -490,10 +490,10 @@ Files Modified:
 | Document                                                                               | Description                                   |
 | -------------------------------------------------------------------------------------- | --------------------------------------------- |
 | [docs/PHASES_DETAIL.md](docs/PHASES_DETAIL.md)                                         | Detailed phase implementation                 |
-| [docs/SESSION_HISTORY.md](docs/SESSION_HISTORY.md)                                     | Development session logs                      |
+| [archive/session-history/SESSION_HISTORY.md](archive/session-history/SESSION_HISTORY.md) | Development session logs (archived)           |
 | [docs/DOCKER_STRUCTURE.md](docs/DOCKER_STRUCTURE.md)                                   | Container architecture                        |
 | [docs/NetNynja_Executive_Summary_ISSO.html](docs/NetNynja_Executive_Summary_ISSO.html) | ISSO Executive Summary (Word-compatible)      |
 | [docs/CODE_SIGNING_GUIDE.md](docs/CODE_SIGNING_GUIDE.md)                               | Container & code signing with Cosign/GPG      |
-| [Docker_Scout_Security_Report.pdf](Docker_Scout_Security_Report.pdf)                   | Container vulnerability assessment            |
-| [NetNynja_ISSO_Report.pdf](NetNynja_ISSO_Report.pdf)                                   | DoD-style ISSO report with ATO recommendation |
+| [docs/reports/Docker_Scout_Security_Report.pdf](docs/reports/Docker_Scout_Security_Report.pdf) | Container vulnerability assessment            |
+| [docs/reports/NetNynja_ISSO_Report.pdf](docs/reports/NetNynja_ISSO_Report.pdf)                | DoD-style ISSO report with ATO recommendation |
 | [IssuesTracker.md](IssuesTracker.md)                                                   | Issue tracking                                |

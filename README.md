@@ -223,7 +223,6 @@ poetry run mypy .
 | [RELEASE.md](RELEASE.md)                                 | Release and code signing workflow |
 | [docs/CODE_SIGNING_GUIDE.md](docs/CODE_SIGNING_GUIDE.md) | Comprehensive code signing guide  |
 | [docs/DOCKER_STRUCTURE.md](docs/DOCKER_STRUCTURE.md)     | Container architecture            |
-| [docs/SESSION_HISTORY.md](docs/SESSION_HISTORY.md)       | Development session logs          |
 
 ## Contributing
 

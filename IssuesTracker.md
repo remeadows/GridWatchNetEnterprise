@@ -597,7 +597,7 @@ All issues from Codex Review 2026-01-14 have been resolved.
 
 **How to Archive:**
 
-1. Create or append to `IssuesTracker.archive.md`
+1. Create or append to `archive/sprint-history/IssuesTracker.archive.md`
 2. Update archive header with new **End Date** and **Total Issues Archived**
 3. Move all resolved issues from the "Recently Resolved" section below to the archive
 4. Keep only the last 30 days of resolved issues in this file for context
@@ -716,7 +716,7 @@ All issues from Codex Review 2026-01-14 have been resolved.
 
 ## 📁 Archive Reference
 
-For historical resolved issues, see: **[IssuesTracker.archive.md](IssuesTracker.archive.md)**
+For historical resolved issues, see: **[archive/sprint-history/IssuesTracker.archive.md](archive/sprint-history/IssuesTracker.archive.md)**
 
 | Archive Period           | Issues |
 | ------------------------ | ------ |
