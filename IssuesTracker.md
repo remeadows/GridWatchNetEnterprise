@@ -3,7 +3,7 @@
 > Active issues and technical debt tracking
 
 **Version**: 0.2.15
-**Last Updated**: 2026-02-13 16:30 UTC
+**Last Updated**: 2026-02-13 20:30 UTC
 **Stats**: 1 open | 0 deferred | 191 resolved (archived)
 **Codex Review**: 2026-02-11 (Dual review: CODEX_REVIEW20260211-1133 + GEMINI_CLI_REVIEW20260211-1146)
 **Docker Scout**: 2026-02-12 (3/4 Alpine images patched; Grafana 11.4.0 still vulnerable)
@@ -39,7 +39,7 @@
 **Priority**: 🟠 High - Feature Not Working
 **Detected**: 2026-02-02 | **Updated**: 2026-02-12
 
-Arista 720XP needs `logging host 192.168.1.137` configured. Collector is healthy, pipeline verified via loopback. See full investigation in [archive](archive/sprint-history/IssuesTracker.archive.md).
+Arista 720XP needs `logging host 192.168.1.137` configured. Collector is healthy, pipeline verified via loopback. **Root cause (DB crash on startup) addressed**: `shared_python.DatabasePool` now has retry/backoff — syslog service migration pending. See full investigation in [archive](archive/sprint-history/IssuesTracker.archive.md).
 
 ---
 
@@ -51,6 +51,9 @@ Arista 720XP needs `logging host 192.168.1.137` configured. Collector is healthy
 
 ## ⏭️ NEXT (Queued / Ready)
 
+- [ ] Migrate NPM + STIG services to `shared_python` (follow IPAM pilot pattern)
+- [ ] Add unit tests for `services/shared-python/` modules
+- [ ] Update Docker build contexts for shared_python path dependency
 - [ ] Seed E2E users in `shared.users` table
 - [ ] Validate VictoriaMetrics write endpoint (preflight warning)
 - [ ] Verify NATS stream endpoint JSON format for monitoring

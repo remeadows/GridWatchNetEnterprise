@@ -3,7 +3,7 @@
 > Comprehensive context for AI-assisted and human development
 
 **Version**: 0.2.15
-**Last Updated**: 2026-02-13 16:30 UTC
+**Last Updated**: 2026-02-13 20:30 UTC
 **Status**: Active Development - All Phases Complete (1 Open, 191 Resolved)
 
 ## Project Vision
@@ -70,6 +70,7 @@ The monorepo is organized for separation of concerns while enabling code sharing
 
 - **apps/** - Deployable applications (gateway, web-ui, module backends)
 - **packages/** - Shared TypeScript libraries (types, auth, UI components)
+- **services/shared-python/** - Shared Python library (BaseServiceSettings, DatabasePool, create_health_router, create_service_app)
 - **services/** - Shared Python microservices (centralized functionality)
 - **infrastructure/** - Docker, database, observability configurations
 
