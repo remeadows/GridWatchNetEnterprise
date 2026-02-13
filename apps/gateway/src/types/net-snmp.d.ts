@@ -27,6 +27,8 @@ declare module "net-snmp" {
     aes: number;
     aes192: number;
     aes256: number;
+    aes256b: number; // Blumenthal variant
+    aes256r: number; // Reeder variant (most common — Cisco, Arista, Juniper)
   };
 
   export interface UserOptions {
