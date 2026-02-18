@@ -96,13 +96,17 @@ services:
     container_name: gridwatch-vault
     restart: unless-stopped
     # SEC-021: Minimum capabilities — IPC_LOCK required for mlock (secret protection)
+    # SKIP_SETCAP=true disables Vault's internal setcap call (fails on WSL2/Docker Desktop)
     cap_drop:
       - ALL
     cap_add:
       - IPC_LOCK
+      - SETGID
+      - SETUID
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_TOKEN:-gridwatch-dev-token}
       VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+      SKIP_SETCAP: "true"
     ports:
       # Port 8300 mapped externally to avoid Windows Hyper-V reserved range (8139-8238)
       - "8300:8200"
