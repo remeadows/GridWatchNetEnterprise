@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Vulnerability Remediation Checklist
+# GridWatch NetEnterprise - Vulnerability Remediation Checklist
 
 **Report Date:** 2026-02-04  
 **Priority:** CRITICAL - Immediate Action Required
@@ -21,10 +21,10 @@
   docker pull nats:2.10-alpine
   ```
 
-- [ ] Rebuild custom NetNynja services
+- [ ] Rebuild custom GridWatch services
 
   ```bash
-  cd /path/to/NetNynjaEnterprise
+  cd /path/to/GridWatchEnterprise
   docker-compose build --no-cache auth-service gateway
   ```
 
@@ -40,7 +40,7 @@
 - [ ] Verify OpenSSL version in containers
 
   ```bash
-  docker exec netnynja-auth-service apk info openssl
+  docker exec gridwatch-auth-service apk info openssl
   # Should show: openssl-3.5.5-r0 or higher
   ```
 
@@ -66,7 +66,7 @@
 **Verification:**
 
 ```bash
-trivy image --severity CRITICAL netnynja-enterprise-auth-service:latest
+trivy image --severity CRITICAL gridwatch-net-enterprise-auth-service:latest
 # Should show: Total: 0 (CRITICAL: 0) for Alpine packages
 ```
 
@@ -79,8 +79,8 @@ trivy image --severity CRITICAL netnynja-enterprise-auth-service:latest
 - [ ] Backup Grafana data
 
   ```bash
-  docker exec netnynja-grafana tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana
-  docker cp netnynja-grafana:/tmp/grafana-backup.tar.gz ./backups/
+  docker exec gridwatch-grafana tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana
+  docker cp gridwatch-grafana:/tmp/grafana-backup.tar.gz ./backups/
   ```
 
 - [ ] Update docker-compose.yml
@@ -170,7 +170,7 @@ trivy image --severity CRITICAL netnynja-enterprise-auth-service:latest
 - [ ] Test secret retrieval
 
   ```bash
-  vault kv get secret/netnynja/test
+  vault kv get secret/gridwatch/test
   ```
 
 - [ ] Monitor application logs for Vault connection issues
@@ -226,13 +226,13 @@ vault operator unseal (x3)
 - [ ] Build Docker image
 
   ```bash
-  docker build -t netnynja-enterprise-gateway:patched .
+  docker build -t gridwatch-net-enterprise-gateway:patched .
   ```
 
 - [ ] Scan new image
 
   ```bash
-  trivy image --severity HIGH,CRITICAL netnynja-enterprise-gateway:patched
+  trivy image --severity HIGH,CRITICAL gridwatch-net-enterprise-gateway:patched
   ```
 
 - [ ] Deploy to staging and test
@@ -339,13 +339,13 @@ vault operator unseal (x3)
 - [ ] Rebuild image
 
   ```bash
-  docker build -t netnynja-enterprise-ipam-service:patched .
+  docker build -t gridwatch-net-enterprise-ipam-service:patched .
   ```
 
 - [ ] Scan updated image
 
   ```bash
-  trivy image --severity HIGH,CRITICAL netnynja-enterprise-ipam-service:patched
+  trivy image --severity HIGH,CRITICAL gridwatch-net-enterprise-ipam-service:patched
   ```
 
 - [ ] Compare vulnerability count (should drop significantly)
@@ -522,7 +522,7 @@ After completing all phases, verify:
 - [ ] All CRITICAL vulnerabilities resolved
 
   ```bash
-  for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep netnynja); do
+  for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep gridwatch); do
     echo "=== $img ==="
     trivy image --severity CRITICAL --quiet $img | grep "Total:"
   done
@@ -533,7 +533,7 @@ After completing all phases, verify:
 - [ ] HIGH vulnerabilities < 10 per image
 
   ```bash
-  for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep netnynja); do
+  for img in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep gridwatch); do
     echo "=== $img ==="
     trivy image --severity HIGH --quiet $img | grep "Total:"
   done

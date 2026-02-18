@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Test Workflow
+# GridWatch NetEnterprise - Test Workflow
 #
 # This workflow runs tests for:
 # - TypeScript/Node.js packages and applications
@@ -39,7 +39,7 @@ jobs:
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_netnynja
+          POSTGRES_DB: test_gridwatch
         ports:
           - 5432:5432
         options: >-
@@ -81,7 +81,7 @@ jobs:
         run: npm run test --workspaces --if-present
         env:
           NODE_ENV: test
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_gridwatch
           REDIS_URL: redis://localhost:6379/1
           JWT_SECRET: test-jwt-secret-key-for-testing-only
           JWT_ALGORITHM: HS256
@@ -90,7 +90,7 @@ jobs:
         run: npm run test:coverage --workspace=apps/gateway --if-present
         env:
           NODE_ENV: test
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_gridwatch
           REDIS_URL: redis://localhost:6379/1
           JWT_SECRET: test-jwt-secret-key-for-testing-only
         continue-on-error: true
@@ -116,7 +116,7 @@ jobs:
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_netnynja
+          POSTGRES_DB: test_gridwatch
         ports:
           - 5432:5432
         options: >-
@@ -193,7 +193,7 @@ jobs:
             echo "pytest not installed, skipping Python tests"
           fi
         env:
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_gridwatch
           REDIS_URL: redis://localhost:6379/1
 
       - name: Run coverage
@@ -205,7 +205,7 @@ jobs:
               --cov=services --cov-report=xml --cov-report=term-missing -q 2>/dev/null || true
           fi
         env:
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_gridwatch
           REDIS_URL: redis://localhost:6379/1
         continue-on-error: true
 

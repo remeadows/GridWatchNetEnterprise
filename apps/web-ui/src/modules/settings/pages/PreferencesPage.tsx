@@ -4,7 +4,7 @@ import {
   CardTitle,
   CardContent,
   Select,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import { useThemeStore, type DisplayDensity } from "../../../stores/theme";
 
 const densityOptions = [

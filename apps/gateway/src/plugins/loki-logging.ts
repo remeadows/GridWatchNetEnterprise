@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Loki Request/Response Logging Plugin
+ * GridWatch NetEnterprise - Loki Request/Response Logging Plugin
  *
  * Logs all HTTP requests and responses to Loki for centralized log aggregation.
  */

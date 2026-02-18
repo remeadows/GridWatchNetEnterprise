@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - IPAM Module (Phase 5 Validation)
+GridWatch NetEnterprise E2E Tests - IPAM Module (Phase 5 Validation)
 
 Tests the IPAM (IP Address Management) module including:
 - Subnet CRUD operations

@@ -9,8 +9,8 @@ import {
   Badge,
   LineChart,
   PieChart,
-} from "@netnynja/shared-ui";
-import type { Alert, Device } from "@netnynja/shared-types";
+} from "@gridwatch/shared-ui";
+import type { Alert, Device } from "@gridwatch/shared-types";
 import { useIPAMStore } from "../../stores/ipam";
 import { useNPMStore } from "../../stores/npm";
 import { useSTIGStore } from "../../stores/stig";

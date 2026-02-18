@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - API Gateway Database Client
+ * GridWatch NetEnterprise - API Gateway Database Client
  */
 
 import { Pool, PoolClient } from "pg";

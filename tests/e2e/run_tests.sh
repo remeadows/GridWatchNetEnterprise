@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# NetNynja Enterprise - E2E Test Runner
+# GridWatch NetEnterprise - E2E Test Runner
 # 
 # Usage:
 #   ./run_tests.sh              # Run all tests
@@ -42,7 +42,7 @@ VERBOSE=false
 print_banner() {
     echo -e "${CYAN}"
     echo "╔═══════════════════════════════════════════════════════════════════╗"
-    echo "║           NETNYNJA ENTERPRISE - E2E TEST SUITE                    ║"
+    echo "║           GridWatch NetEnterprise - E2E TEST SUITE                    ║"
     echo "║                      $(date '+%Y-%m-%d %H:%M:%S')                          ║"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -223,7 +223,7 @@ generate_summary_report() {
     local summary_file="${REPORTS_DIR}/summary-${TIMESTAMP}.txt"
     
     cat > "$summary_file" << EOF
-NetNynja Enterprise E2E Test Summary
+GridWatch NetEnterprise E2E Test Summary
 =====================================
 Date: $(date)
 Timestamp: ${TIMESTAMP}

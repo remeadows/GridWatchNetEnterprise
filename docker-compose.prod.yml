@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Production Compose Overlay
+# GridWatch Enterprise - Production Compose Overlay
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile ipam --profile npm --profile stig up -d
 #
@@ -223,4 +223,4 @@ services:
 
 volumes:
   vault_data:
-    name: netnynja-vault-data
+    name: gridwatch-vault-data

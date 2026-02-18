@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Release Workflow
+# GridWatch NetEnterprise - Release Workflow
 #
 # This workflow automates the release process:
 # - Creates GitHub releases with auto-generated changelogs
@@ -30,7 +30,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/netnynja
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/gridwatch
 
 jobs:
   # Validate and prepare release
@@ -107,7 +107,7 @@ jobs:
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_netnynja
+          POSTGRES_DB: test_gridwatch
         ports:
           - 5432:5432
         options: >-
@@ -141,7 +141,7 @@ jobs:
         run: npm run test --workspaces --if-present
         env:
           NODE_ENV: test
-          POSTGRES_URL: postgresql://test:test@localhost:5432/test_netnynja
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_gridwatch
           REDIS_URL: redis://localhost:6379/1
           JWT_SECRET: test-jwt-secret-key-for-testing-only
 
@@ -259,7 +259,7 @@ jobs:
         run: |
           VERSION="${{ needs.prepare-release.outputs.version }}"
           cat > release-notes.md << 'EOF'
-          ## NetNynja Enterprise ${{ needs.prepare-release.outputs.version }}
+          ## GridWatch NetEnterprise ${{ needs.prepare-release.outputs.version }}
 
           ### What's New
 
@@ -285,7 +285,7 @@ jobs:
           ```bash
           # Clone the repository
           git clone https://github.com/${{ github.repository }}.git
-          cd netnynja-enterprise
+          cd gridwatch-net-enterprise
 
           # Start all services
           docker compose --profile ipam --profile npm --profile stig up -d
@@ -308,7 +308,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.prepare-release.outputs.version }}
-          name: NetNynja Enterprise ${{ needs.prepare-release.outputs.version }}
+          name: GridWatch NetEnterprise ${{ needs.prepare-release.outputs.version }}
           body_path: release-notes.md
           prerelease: ${{ needs.prepare-release.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
@@ -342,7 +342,7 @@ jobs:
 
           # Create README for bundle
           cat > release-bundle/README.md << EOF
-          # NetNynja Enterprise $VERSION
+          # GridWatch NetEnterprise $VERSION
 
           ## Quick Start
 
@@ -364,18 +364,18 @@ jobs:
           EOF
 
           # Create tarball
-          tar -czf netnynja-enterprise-${VERSION}.tar.gz release-bundle/
+          tar -czf gridwatch-net-enterprise-${VERSION}.tar.gz release-bundle/
 
           # Create checksums
-          sha256sum netnynja-enterprise-${VERSION}.tar.gz > netnynja-enterprise-${VERSION}.tar.gz.sha256
+          sha256sum gridwatch-net-enterprise-${VERSION}.tar.gz > gridwatch-net-enterprise-${VERSION}.tar.gz.sha256
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.prepare-release.outputs.version }}
           files: |
-            netnynja-enterprise-*.tar.gz
-            netnynja-enterprise-*.sha256
+            gridwatch-net-enterprise-*.tar.gz
+            gridwatch-net-enterprise-*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

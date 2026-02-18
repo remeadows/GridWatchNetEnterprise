@@ -2,9 +2,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "netnynja.fullname" . }}
+  name: {{ include "gridwatch.fullname" . }}
   labels:
-    {{- include "netnynja.labels" . | nindent 4 }}
+    {{- include "gridwatch.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -34,11 +34,11 @@ spec:
             backend:
               service:
                 {{- if eq .service "web-ui" }}
-                name: {{ include "netnynja.fullname" $ }}-web-ui
+                name: {{ include "gridwatch.fullname" $ }}-web-ui
                 port:
                   number: {{ $.Values.webUI.service.port }}
                 {{- else if eq .service "gateway" }}
-                name: {{ include "netnynja.fullname" $ }}-gateway
+                name: {{ include "gridwatch.fullname" $ }}-gateway
                 port:
                   number: {{ $.Values.gateway.service.port }}
                 {{- end }}

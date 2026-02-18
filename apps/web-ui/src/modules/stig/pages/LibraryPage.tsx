@@ -9,9 +9,9 @@ import {
   Badge,
   Input,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { STIGDefinition } from "@netnynja/shared-types";
+import type { STIGDefinition } from "@gridwatch/shared-types";
 import {
   useSTIGStore,
   type STIGRule,

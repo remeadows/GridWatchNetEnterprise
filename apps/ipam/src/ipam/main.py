@@ -32,7 +32,7 @@ async def _stop_nats() -> None:
 # --- Application ---
 
 app = create_service_app(
-    title="NetNynja IPAM Service",
+    title="GridWatch IPAM Service",
     description="IP Address Management microservice",
     version="0.2.15",
     settings=settings,

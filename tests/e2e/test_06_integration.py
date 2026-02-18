@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - Cross-Module Integration
+GridWatch NetEnterprise E2E Tests - Cross-Module Integration
 
 Tests integration between all three modules (IPAM, NPM, STIG):
 - Unified audit logging in Loki
@@ -71,7 +71,7 @@ class TestUnifiedAuditLogging:
         # Query recent audit events
         start = datetime.utcnow() - timedelta(hours=1)
         logs = await query_logs(
-            '{job=~"netnynja.*"} |= "audit"',
+            '{job=~"GridWatch.*"} |= "audit"',
             start=start,
             limit=50
         )
@@ -257,7 +257,7 @@ class TestDistributedTracing:
         self,
         http_client: httpx.AsyncClient
     ):
-        """NetNynja services are registered in Jaeger."""
+        """GridWatch services are registered in Jaeger."""
         response = await http_client.get("http://localhost:16686/api/services")
         
         if response.status_code != 200:
@@ -266,13 +266,13 @@ class TestDistributedTracing:
         data = response.json()
         services = data.get("data", [])
         
-        # Check for NetNynja services
-        netnynja_services = [s for s in services if "netnynja" in s.lower()]
+        # Check for GridWatch services
+        GridWatch_services = [s for s in services if "GridWatch" in s.lower()]
         
-        if not netnynja_services:
-            pytest.skip("No NetNynja services traced yet")
+        if not GridWatch_services:
+            pytest.skip("No GridWatch services traced yet")
         
-        assert len(netnynja_services) > 0
+        assert len(GridWatch_services) > 0
     
     @pytest.mark.slow
     async def test_request_creates_trace_span(
@@ -291,7 +291,7 @@ class TestDistributedTracing:
         response = await http_client.get(
             "http://localhost:16686/api/traces",
             params={
-                "service": "netnynja-gateway",
+                "service": "GridWatch-gateway",
                 "limit": 5,
                 "lookback": "1h"
             }
@@ -316,7 +316,7 @@ class TestDistributedTracing:
         response = await http_client.get(
             "http://localhost:16686/api/traces",
             params={
-                "service": "netnynja-gateway",
+                "service": "GridWatch-gateway",
                 "limit": 10,
                 "lookback": "1h"
             }

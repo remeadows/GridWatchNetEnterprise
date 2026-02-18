@@ -5,7 +5,7 @@ import type {
   AuditJob,
   ComplianceSummary,
   STIGDashboard,
-} from "@netnynja/shared-types";
+} from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 // Library rule type

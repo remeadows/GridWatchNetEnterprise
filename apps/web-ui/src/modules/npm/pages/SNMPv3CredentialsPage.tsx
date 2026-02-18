@@ -9,9 +9,9 @@ import {
   Input,
   Select,
   Badge,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SNMPv3Credential } from "@netnynja/shared-types";
+import type { SNMPv3Credential } from "@gridwatch/shared-types";
 import {
   useSNMPv3CredentialsStore,
   type CreateSNMPv3CredentialInput,

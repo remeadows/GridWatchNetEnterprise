@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Unified API Gateway Entry Point
+ * GridWatch NetEnterprise - Unified API Gateway Entry Point
  */
 
 import "dotenv/config";
@@ -121,7 +121,7 @@ async function start(): Promise<void> {
         env: config.NODE_ENV,
         swagger: `http://${config.HOST}:${config.PORT}/docs`,
       },
-      `NetNynja Gateway listening on ${config.HOST}:${config.PORT}`,
+      `GridWatch Gateway listening on ${config.HOST}:${config.PORT}`,
     );
   } catch (error) {
     const err = error as Error;

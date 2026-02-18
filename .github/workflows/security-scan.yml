@@ -1,5 +1,5 @@
 # ===========================================
-# NetNynja Enterprise - Security Scanning Workflow
+# GridWatch NetEnterprise - Security Scanning Workflow
 # ===========================================
 # Automated security scanning for:
 #   - Container images (Trivy)
@@ -62,7 +62,7 @@ jobs:
         with:
           context: ${{ matrix.image.context }}
           file: ${{ matrix.image.dockerfile }}
-          tags: netnynja/${{ matrix.image.name }}:${{ github.sha }}
+          tags: gridwatch/${{ matrix.image.name }}:${{ github.sha }}
           load: true
           # Use separate cache scope to avoid conflicts with multi-platform builds
           cache-from: type=gha,scope=security-${{ matrix.image.name }}
@@ -72,7 +72,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: netnynja/${{ matrix.image.name }}:${{ github.sha }}
+          image-ref: gridwatch/${{ matrix.image.name }}:${{ github.sha }}
           format: "sarif"
           output: "trivy-${{ matrix.image.name }}.sarif"
           severity: "CRITICAL,HIGH"
@@ -90,7 +90,7 @@ jobs:
       - name: Run Trivy (table output for PR comments)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: netnynja/${{ matrix.image.name }}:${{ github.sha }}
+          image-ref: gridwatch/${{ matrix.image.name }}:${{ github.sha }}
           format: "table"
           severity: "CRITICAL,HIGH,MEDIUM"
           ignore-unfixed: true

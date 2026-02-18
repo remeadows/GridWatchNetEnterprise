@@ -8,7 +8,7 @@ import {
   Badge,
   BarChart,
   PieChart,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import { useSTIGStore } from "../../../stores/stig";
 
 export function STIGCompliancePage() {

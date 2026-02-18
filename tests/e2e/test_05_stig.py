@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - STIG Manager Module (Phase 7 Validation)
+GridWatch NetEnterprise E2E Tests - STIG Manager Module (Phase 7 Validation)
 
 Tests the STIG (Security Technical Implementation Guide) module including:
 - Benchmark management

@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Jest Test Setup
+ * GridWatch NetEnterprise - Jest Test Setup
  *
  * This file is run before each test file.
  */
@@ -11,7 +11,7 @@ process.env.JWT_SECRET = "test-jwt-secret-key-for-testing-only";
 process.env.JWT_ALGORITHM = "HS256";
 process.env.JWT_EXPIRES_IN = "1h";
 process.env.POSTGRES_URL =
-  "postgresql://test:test@localhost:5432/test_netnynja";
+  "postgresql://test:test@localhost:5432/test_GridWatch";
 process.env.REDIS_URL = "redis://localhost:6379/1";
 
 // Mock external dependencies that require actual connections

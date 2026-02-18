@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
-        title="NetNynja Syslog Service",
+        title="GridWatch Syslog Service",
         description="Centralized syslog collection and forwarding",
         version="0.1.0",
         lifespan=lifespan,

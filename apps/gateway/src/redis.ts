@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - API Gateway Redis Client
+ * GridWatch NetEnterprise - API Gateway Redis Client
  */
 
 import Redis from "ioredis";

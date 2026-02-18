@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - E2E Test User Setup Script
+ * GridWatch NetEnterprise - E2E Test User Setup Script
  * Creates test users with proper Argon2id password hashes
  *
  * Run with: npx tsx Testing/setup-test-users.ts
@@ -46,9 +46,9 @@ async function main() {
   const pool = new Pool({
     host: process.env.POSTGRES_HOST || "localhost",
     port: parseInt(process.env.POSTGRES_PORT || "5433", 10),
-    user: process.env.POSTGRES_USER || "netnynja",
-    password: process.env.POSTGRES_PASSWORD || "netnynja-dev-2025",
-    database: process.env.POSTGRES_DB || "netnynja",
+    user: process.env.POSTGRES_USER || "GridWatch",
+    password: process.env.POSTGRES_PASSWORD || "GridWatch-dev-2025",
+    database: process.env.POSTGRES_DB || "GridWatch",
   });
 
   console.log("🔐 Setting up E2E test users...\n");

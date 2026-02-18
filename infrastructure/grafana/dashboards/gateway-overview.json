@@ -12,7 +12,7 @@
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
-      "tags": ["netnynja"],
+      "tags": ["gridwatch"],
       "targetBlank": false,
       "title": "Other Dashboards",
       "type": "dashboards"
@@ -58,7 +58,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(increase(netnynja_http_requests_total[24h]))",
+          "expr": "sum(increase(gridwatch_http_requests_total[24h]))",
           "legendFormat": "Requests",
           "refId": "A"
         }
@@ -100,7 +100,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(increase(netnynja_http_requests_total{status_code=~\"5..\"}[1h]))",
+          "expr": "sum(increase(gridwatch_http_requests_total{status_code=~\"5..\"}[1h]))",
           "legendFormat": "Errors",
           "refId": "A"
         }
@@ -140,7 +140,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(netnynja_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.95, sum(rate(gridwatch_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
           "legendFormat": "p95",
           "refId": "A"
         }
@@ -180,7 +180,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(rate(netnynja_http_requests_total[5m]))",
+          "expr": "sum(rate(gridwatch_http_requests_total[5m]))",
           "legendFormat": "RPS",
           "refId": "A"
         }
@@ -218,7 +218,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(netnynja_active_connections)",
+          "expr": "sum(gridwatch_active_connections)",
           "legendFormat": "Connections",
           "refId": "A"
         }
@@ -262,7 +262,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "(1 - (sum(rate(netnynja_http_requests_total{status_code=~\"5..\"}[24h])) / sum(rate(netnynja_http_requests_total[24h])))) * 100",
+          "expr": "(1 - (sum(rate(gridwatch_http_requests_total{status_code=~\"5..\"}[24h])) / sum(rate(gridwatch_http_requests_total[24h])))) * 100",
           "legendFormat": "Uptime",
           "refId": "A"
         }
@@ -319,7 +319,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(rate(netnynja_http_requests_total[5m])) by (route)",
+          "expr": "sum(rate(gridwatch_http_requests_total[5m])) by (route)",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -376,17 +376,17 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(netnynja_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.50, sum(rate(gridwatch_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(netnynja_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.95, sum(rate(gridwatch_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(netnynja_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "expr": "histogram_quantile(0.99, sum(rate(gridwatch_http_request_duration_seconds_bucket[5m])) by (le)) * 1000",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -488,7 +488,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(rate(netnynja_http_requests_total[5m])) by (status_code)",
+          "expr": "sum(rate(gridwatch_http_requests_total[5m])) by (status_code)",
           "legendFormat": "{{status_code}}",
           "refId": "A"
         }
@@ -552,7 +552,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(increase(netnynja_http_requests_total[1h])) by (status_code)",
+          "expr": "sum(increase(gridwatch_http_requests_total[1h])) by (status_code)",
           "legendFormat": "{{status_code}}",
           "refId": "A"
         }
@@ -617,12 +617,12 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(rate(netnynja_auth_attempts_total{status=\"success\"}[5m]))",
+          "expr": "sum(rate(gridwatch_auth_attempts_total{status=\"success\"}[5m]))",
           "legendFormat": "Successful Logins",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(netnynja_auth_attempts_total{status=\"failure\"}[5m]))",
+          "expr": "sum(rate(gridwatch_auth_attempts_total{status=\"failure\"}[5m]))",
           "legendFormat": "Failed Logins",
           "refId": "B"
         }
@@ -682,7 +682,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(rate(netnynja_rate_limit_exceeded_total[5m]))",
+          "expr": "sum(rate(gridwatch_rate_limit_exceeded_total[5m]))",
           "legendFormat": "Rate Limited",
           "refId": "A"
         }
@@ -727,7 +727,7 @@
   "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["gateway", "api", "netnynja"],
+  "tags": ["gateway", "api", "gridwatch"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},

@@ -1,6 +1,6 @@
 # Red Hat Enterprise Linux 9.x Installation
 
-> Platform-specific installation guide for NetNynja Enterprise on RHEL 9.x
+> Platform-specific installation guide for GridWatch NetEnterprise on RHEL 9.x
 
 ## Prerequisites
 
@@ -108,8 +108,8 @@ sudo setsebool -P container_manage_cgroup on
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/netnynja-enterprise.git
-cd netnynja-enterprise
+git clone https://github.com/your-org/gridwatch-net-enterprise.git
+cd gridwatch-net-enterprise
 
 # Copy environment file
 cp .env.example .env

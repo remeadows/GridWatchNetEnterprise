@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Performance Benchmarks
+# GridWatch NetEnterprise - Performance Benchmarks
 
 This directory contains performance benchmarks for the API Gateway using [autocannon](https://github.com/mcollina/autocannon), a high-performance HTTP benchmarking tool.
 

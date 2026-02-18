@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Rate Limit Plugin Unit Tests
+ * GridWatch NetEnterprise - Rate Limit Plugin Unit Tests
  */
 
 describe("Rate Limit Functions", () => {

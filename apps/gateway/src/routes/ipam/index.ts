@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - IPAM API Routes
+ * GridWatch NetEnterprise - IPAM API Routes
  */
 
 import type { FastifyPluginAsync } from "fastify";

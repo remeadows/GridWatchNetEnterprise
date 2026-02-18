@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "netnynja.name" -}}
+{{- define "gridwatch.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -9,7 +9,7 @@ Expand the name of the chart.
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
-{{- define "netnynja.fullname" -}}
+{{- define "gridwatch.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -25,16 +25,16 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "netnynja.chart" -}}
+{{- define "gridwatch.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "netnynja.labels" -}}
-helm.sh/chart: {{ include "netnynja.chart" . }}
-{{ include "netnynja.selectorLabels" . }}
+{{- define "gridwatch.labels" -}}
+helm.sh/chart: {{ include "gridwatch.chart" . }}
+{{ include "gridwatch.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -44,17 +44,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "netnynja.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "netnynja.name" . }}
+{{- define "gridwatch.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "gridwatch.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "netnynja.serviceAccountName" -}}
+{{- define "gridwatch.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "netnynja.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "gridwatch.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -63,7 +63,7 @@ Create the name of the service account to use
 {{/*
 Generate image name with registry
 */}}
-{{- define "netnynja.image" -}}
+{{- define "gridwatch.image" -}}
 {{- $registry := .Values.global.imageRegistry -}}
 {{- $repository := .image.repository -}}
 {{- $tag := .image.tag | default .Chart.AppVersion -}}
@@ -73,9 +73,9 @@ Generate image name with registry
 {{/*
 PostgreSQL host
 */}}
-{{- define "netnynja.postgresHost" -}}
+{{- define "gridwatch.postgresHost" -}}
 {{- if .Values.postgresql.enabled }}
-{{- printf "%s-postgresql" (include "netnynja.fullname" .) }}
+{{- printf "%s-postgresql" (include "gridwatch.fullname" .) }}
 {{- else }}
 {{- .Values.externalPostgres.host }}
 {{- end }}
@@ -84,9 +84,9 @@ PostgreSQL host
 {{/*
 Redis host
 */}}
-{{- define "netnynja.redisHost" -}}
+{{- define "gridwatch.redisHost" -}}
 {{- if .Values.redis.enabled }}
-{{- printf "%s-redis-master" (include "netnynja.fullname" .) }}
+{{- printf "%s-redis-master" (include "gridwatch.fullname" .) }}
 {{- else }}
 {{- .Values.externalRedis.host }}
 {{- end }}
@@ -95,9 +95,9 @@ Redis host
 {{/*
 NATS host
 */}}
-{{- define "netnynja.natsHost" -}}
+{{- define "gridwatch.natsHost" -}}
 {{- if .Values.nats.enabled }}
-{{- printf "%s-nats" (include "netnynja.fullname" .) }}
+{{- printf "%s-nats" (include "gridwatch.fullname" .) }}
 {{- else }}
 {{- .Values.externalNats.host }}
 {{- end }}

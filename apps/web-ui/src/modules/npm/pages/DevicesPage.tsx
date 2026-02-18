@@ -9,9 +9,9 @@ import {
   Select,
   StatusIndicator,
   Badge,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import type { Device } from "@netnynja/shared-types";
+import type { Device } from "@gridwatch/shared-types";
 import { useNPMStore, type PollDeviceResponse } from "../../../stores/npm";
 import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
 import { useDeviceGroupsStore } from "../../../stores/device-groups";

@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Phase Implementation Details
+# GridWatch NetEnterprise - Phase Implementation Details
 
 > Detailed implementation documentation for all project phases (0-9)
 >
@@ -151,7 +151,7 @@
 | Charts           | Recharts 2.10     | React-native, composable, responsive            |
 | Tables           | TanStack Table 8  | Headless, sorting, filtering, pagination        |
 
-### Component Library (`@netnynja/shared-ui`)
+### Component Library (`@gridwatch/shared-ui`)
 
 | Category     | Components                            |
 | ------------ | ------------------------------------- |
@@ -395,17 +395,17 @@ Published to GitHub Container Registry (`ghcr.io/remeadows/`):
 
 | Image                   | Description            |
 | ----------------------- | ---------------------- |
-| `netnynja-gateway`      | Fastify API Gateway    |
-| `netnynja-web-ui`       | React Frontend         |
-| `netnynja-auth-service` | Authentication Service |
-| `netnynja-ipam`         | IPAM Python Service    |
-| `netnynja-npm`          | NPM Python Service     |
-| `netnynja-stig`         | STIG Python Service    |
-| `netnynja-syslog`       | Syslog Python Service  |
+| `gridwatch-gateway`      | Fastify API Gateway    |
+| `gridwatch-web-ui`       | React Frontend         |
+| `gridwatch-auth-service` | Authentication Service |
+| `gridwatch-ipam`         | IPAM Python Service    |
+| `gridwatch-npm`          | NPM Python Service     |
+| `gridwatch-stig`         | STIG Python Service    |
+| `gridwatch-syslog`       | Syslog Python Service  |
 
 ### Helm Chart
 
-Located in `charts/netnynja-enterprise/`:
+Located in `charts/gridwatch-net-enterprise/`:
 
 | File                                | Description                      |
 | ----------------------------------- | -------------------------------- |

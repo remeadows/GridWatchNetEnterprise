@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     SYSLOG_MAX_BUFFER_SIZE: int = 100000
 
     # Database
-    POSTGRES_URL: str = "postgresql://netnynja:netnynja@localhost:5432/netnynja"
+    POSTGRES_URL: str = "postgresql://gridwatch:gridwatch@localhost:5432/gridwatch"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379"

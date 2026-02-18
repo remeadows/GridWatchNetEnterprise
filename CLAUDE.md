@@ -1,12 +1,12 @@
-# CLAUDE.md - NetNynja Enterprise
+# CLAUDE.md - GridWatch NetEnterprise
 
 ## Project Overview
 
-NetNynja Enterprise is a unified network management platform combining three applications:
+GridWatch NetEnterprise is a unified network management platform combining three applications:
 
-- **NetNynja IPAM** - IP Address Management
-- **NetNynja NPM** - Network Performance Monitoring
-- **NetNynja STIG Manager** - Security Technical Implementation Guide compliance
+- **GridWatch IPAM** - IP Address Management
+- **GridWatch NPM** - Network Performance Monitoring
+- **GridWatch STIG Manager** - Security Technical Implementation Guide compliance
 
 Target deployment platforms: macOS, Red Hat Enterprise Linux 9.x, Windows 11/Server
 
@@ -32,7 +32,7 @@ Target deployment platforms: macOS, Red Hat Enterprise Linux 9.x, Windows 11/Ser
 ## Repository Structure
 
 ```
-netnynja-enterprise/
+gridwatch-net-enterprise/
 ├── infrastructure/     # Docker configs, scripts, observability
 ├── packages/          # Shared TypeScript libraries (npm workspaces)
 ├── services/          # Shared Python microservices

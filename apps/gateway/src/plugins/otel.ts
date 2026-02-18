@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - OpenTelemetry Instrumentation
+ * GridWatch NetEnterprise - OpenTelemetry Instrumentation
  */
 
 import { NodeSDK } from "@opentelemetry/sdk-node";
@@ -20,7 +20,7 @@ export function initTelemetry(): void {
   }
 
   const resource = new Resource({
-    "service.name": "netnynja-gateway",
+    "service.name": "GridWatch-gateway",
     "service.version": "0.1.0",
     "deployment.environment": config.NODE_ENV,
   });

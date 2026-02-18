@@ -5,9 +5,9 @@ import {
   CardContent,
   DataTable,
   Badge,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Alert } from "@netnynja/shared-types";
+import type { Alert } from "@gridwatch/shared-types";
 import { useNPMStore } from "../../../stores/npm";
 
 const severityColors = {

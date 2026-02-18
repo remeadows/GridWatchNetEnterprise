@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - Authentication Flow (Phase 2 Validation)
+GridWatch NetEnterprise E2E Tests - Authentication Flow (Phase 2 Validation)
 
 Tests the unified authentication system including:
 - JWT token issuance and validation
@@ -335,7 +335,7 @@ class TestSessionManagement:
         user_id = claims.get("sub")
         
         # Look for session keys
-        session_keys = redis_client.keys(f"netnynja:session:*{user_id}*")
+        session_keys = redis_client.keys(f"GridWatch:session:*{user_id}*")
         # Alternative patterns
         if not session_keys:
             session_keys = redis_client.keys(f"session:*")
@@ -360,7 +360,7 @@ class TestSessionManagement:
         assert response.status_code == 200
         
         # Find session keys
-        session_keys = redis_client.keys("netnynja:session:*")
+        session_keys = redis_client.keys("GridWatch:session:*")
         
         if session_keys:
             # Check TTL on first session key

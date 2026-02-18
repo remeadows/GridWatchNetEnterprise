@@ -1,5 +1,5 @@
 # ===========================================
-# NetNynja Enterprise - Production Vault Configuration
+# GridWatch NetEnterprise - Production Vault Configuration
 # ===========================================
 # Use this file to override the default Vault configuration
 # for production deployments.
@@ -11,7 +11,7 @@ services:
   vault:
     # Use specific version for production
     image: hashicorp/vault:1.15
-    container_name: netnynja-vault
+    container_name: GridWatch-vault
     restart: unless-stopped
     cap_add:
       - IPC_LOCK
@@ -49,8 +49,8 @@ services:
       retries: 3
       start_period: 10s
     networks:
-      - netnynja-network
+      - GridWatch-network
 
 volumes:
   vault_data:
-    name: netnynja-vault-data
+    name: GridWatch-vault-data

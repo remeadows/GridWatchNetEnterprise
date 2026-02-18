@@ -12,10 +12,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       // In Docker, packages are mounted at /packages; use pre-built dist files
-      "@netnynja/shared-ui": isDocker
+      "@gridwatch/shared-ui": isDocker
         ? "/packages/shared-ui/dist"
         : path.resolve(__dirname, "../../packages/shared-ui/src"),
-      "@netnynja/shared-types": isDocker
+      "@gridwatch/shared-types": isDocker
         ? "/packages/shared-types/dist"
         : path.resolve(__dirname, "../../packages/shared-types/src"),
     },

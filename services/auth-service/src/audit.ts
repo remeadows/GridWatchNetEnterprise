@@ -1,10 +1,10 @@
 /**
- * NetNynja Enterprise - Auth Service Audit Logging
+ * GridWatch NetEnterprise - Auth Service Audit Logging
  */
 
 import { query } from "./db";
 import { logger } from "./logger";
-import type { AuditModule } from "@netnynja/shared-types";
+import type { AuditModule } from "@gridwatch/shared-types";
 
 export interface AuditEvent {
   userId?: string;

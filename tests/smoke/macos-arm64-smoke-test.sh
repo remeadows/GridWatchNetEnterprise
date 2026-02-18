@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NetNynja Enterprise - macOS ARM64 Smoke Test Suite
+# GridWatch NetEnterprise - macOS ARM64 Smoke Test Suite
 # Phase 8: Cross-Platform Testing
 #
 # Usage: ./tests/smoke/macos-arm64-smoke-test.sh [--profile PROFILE]
@@ -191,7 +191,7 @@ test_infrastructure() {
     sleep 15
 
     # Test 2.3: PostgreSQL health
-    if docker exec netnynja-postgres pg_isready -U netnynja > /dev/null 2>&1; then
+    if docker exec GridWatch-postgres pg_isready -U GridWatch > /dev/null 2>&1; then
         log_pass "2.3 PostgreSQL healthy"
     else
         log_fail "2.3 PostgreSQL healthy" "pg_isready failed"
@@ -199,7 +199,7 @@ test_infrastructure() {
 
     # Test 2.4: PostgreSQL schemas created
     local schema_count
-    schema_count=$(docker exec netnynja-postgres psql -U netnynja -d netnynja -t -c "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name IN ('shared', 'ipam', 'npm', 'stig');" 2>/dev/null | tr -d ' ')
+    schema_count=$(docker exec GridWatch-postgres psql -U GridWatch -d GridWatch -t -c "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name IN ('shared', 'ipam', 'npm', 'stig');" 2>/dev/null | tr -d ' ')
     if [ "$schema_count" = "4" ]; then
         log_pass "2.4 PostgreSQL schemas created (shared, ipam, npm, stig)"
     else
@@ -207,7 +207,7 @@ test_infrastructure() {
     fi
 
     # Test 2.5: Redis health
-    if docker exec netnynja-redis redis-cli -a redis-dev-2025 ping 2>/dev/null | grep -q PONG; then
+    if docker exec GridWatch-redis redis-cli -a redis-dev-2025 ping 2>/dev/null | grep -q PONG; then
         log_pass "2.5 Redis healthy"
     else
         log_fail "2.5 Redis healthy" "Redis ping failed"
@@ -288,8 +288,8 @@ test_infrastructure() {
     fi
 
     # Test 2.16: Docker network created
-    if docker network inspect netnynja-network > /dev/null 2>&1; then
-        log_pass "2.16 Docker network 'netnynja-network' created"
+    if docker network inspect GridWatch-network > /dev/null 2>&1; then
+        log_pass "2.16 Docker network 'GridWatch-network' created"
     else
         log_fail "2.16 Docker network" "Network not found"
     fi
@@ -311,21 +311,21 @@ test_network_connectivity() {
     log_section "Section 3: Network Connectivity"
 
     # Test 3.1: Inter-container DNS resolution (postgres)
-    if docker run --rm --network netnynja-network alpine nslookup postgres > /dev/null 2>&1; then
+    if docker run --rm --network GridWatch-network alpine nslookup postgres > /dev/null 2>&1; then
         log_pass "3.1 DNS resolution for 'postgres'"
     else
         log_fail "3.1 DNS resolution" "Cannot resolve 'postgres'"
     fi
 
     # Test 3.2: Inter-container DNS resolution (redis)
-    if docker run --rm --network netnynja-network alpine nslookup redis > /dev/null 2>&1; then
+    if docker run --rm --network GridWatch-network alpine nslookup redis > /dev/null 2>&1; then
         log_pass "3.2 DNS resolution for 'redis'"
     else
         log_fail "3.2 DNS resolution" "Cannot resolve 'redis'"
     fi
 
     # Test 3.3: Inter-container DNS resolution (nats)
-    if docker run --rm --network netnynja-network alpine nslookup nats > /dev/null 2>&1; then
+    if docker run --rm --network GridWatch-network alpine nslookup nats > /dev/null 2>&1; then
         log_pass "3.3 DNS resolution for 'nats'"
     else
         log_fail "3.3 DNS resolution" "Cannot resolve 'nats'"
@@ -360,14 +360,14 @@ test_network_connectivity() {
     fi
 
     # Test 3.8: Container-to-container TCP (postgres from temp container)
-    if docker run --rm --network netnynja-network alpine sh -c "nc -z postgres 5432" 2>/dev/null; then
+    if docker run --rm --network GridWatch-network alpine sh -c "nc -z postgres 5432" 2>/dev/null; then
         log_pass "3.8 Container-to-container: postgres:5432"
     else
         log_fail "3.8 Container-to-container" "Cannot reach postgres:5432"
     fi
 
     # Test 3.9: Container-to-container TCP (redis from temp container)
-    if docker run --rm --network netnynja-network alpine sh -c "nc -z redis 6379" 2>/dev/null; then
+    if docker run --rm --network GridWatch-network alpine sh -c "nc -z redis 6379" 2>/dev/null; then
         log_pass "3.9 Container-to-container: redis:6379"
     else
         log_fail "3.9 Container-to-container" "Cannot reach redis:6379"
@@ -402,7 +402,7 @@ test_application_services() {
     sleep 60
 
     # Test 4.1: Gateway container running
-    if docker ps --format '{{.Names}}' | grep -q "netnynja-gateway"; then
+    if docker ps --format '{{.Names}}' | grep -q "GridWatch-gateway"; then
         log_pass "4.1 Gateway container running"
     else
         log_fail "4.1 Gateway container" "Container not running"
@@ -437,7 +437,7 @@ test_application_services() {
     fi
 
     # Test 4.6: Web UI container running
-    if docker ps --format '{{.Names}}' | grep -q "netnynja-web-ui"; then
+    if docker ps --format '{{.Names}}' | grep -q "GridWatch-web-ui"; then
         log_pass "4.6 Web UI container running"
     else
         log_fail "4.6 Web UI container" "Container not running"
@@ -589,7 +589,7 @@ test_performance_baseline() {
     # Test 6.1: PostgreSQL connection latency
     local pg_start pg_end pg_latency
     pg_start=$(date +%s%N)
-    docker exec netnynja-postgres psql -U netnynja -d netnynja -c "SELECT 1" > /dev/null 2>&1
+    docker exec GridWatch-postgres psql -U GridWatch -d GridWatch -c "SELECT 1" > /dev/null 2>&1
     pg_end=$(date +%s%N)
     pg_latency=$(( (pg_end - pg_start) / 1000000 ))
 
@@ -602,7 +602,7 @@ test_performance_baseline() {
     # Test 6.2: Redis latency
     local redis_start redis_end redis_latency
     redis_start=$(date +%s%N)
-    docker exec netnynja-redis redis-cli -a redis-dev-2025 ping > /dev/null 2>&1
+    docker exec GridWatch-redis redis-cli -a redis-dev-2025 ping > /dev/null 2>&1
     redis_end=$(date +%s%N)
     redis_latency=$(( (redis_end - redis_start) / 1000000 ))
 
@@ -707,7 +707,7 @@ cleanup() {
 main() {
     echo ""
     echo "=============================================="
-    echo " NetNynja Enterprise - macOS ARM64 Smoke Test"
+    echo " GridWatch NetEnterprise - macOS ARM64 Smoke Test"
     echo " Profile: $PROFILE"
     echo " Time: $(date)"
     echo "=============================================="

@@ -8,9 +8,9 @@ import {
   Input,
   Select,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Target } from "@netnynja/shared-types";
+import type { Target } from "@gridwatch/shared-types";
 import { useSTIGStore, type TargetDefinition, type AuditGroup } from "../../../stores/stig";
 import { api } from "../../../lib/api";
 

@@ -1,9 +1,9 @@
 @echo off
-REM NetNynja Enterprise - Cross-platform Preflight Runner (Windows CMD wrapper)
+REM GridWatch NetEnterprise - Cross-platform Preflight Runner (Windows CMD wrapper)
 REM Runs preflight.ps1 for Windows environments
 
 echo.
-echo Running NetNynja Enterprise Pre-flight Checks...
+echo Running GridWatch NetEnterprise Pre-flight Checks...
 echo.
 
 REM Check if PowerShell is available

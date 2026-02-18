@@ -1,4 +1,4 @@
-# NetNynja Enterprise - PostgreSQL Backup & Restore
+# GridWatch NetEnterprise - PostgreSQL Backup & Restore
 
 This directory contains backup and restore scripts for the PostgreSQL database.
 
@@ -21,7 +21,7 @@ This directory contains backup and restore scripts for the PostgreSQL database.
 
 ```bash
 # Restore from backup file
-./restore.sh --input ./backups/netnynja_netnynja_20260106_120000.dump.gz
+./restore.sh --input ./backups/gridwatch_gridwatch_20260106_120000.dump.gz
 
 # Restore with clean (drops existing objects first)
 ./restore.sh --input ./backups/latest --clean
@@ -56,8 +56,8 @@ Both scripts use these environment variables:
 | ------------------- | ------------------------ | ----------- |
 | `POSTGRES_HOST`     | Database host            | `localhost` |
 | `POSTGRES_PORT`     | Database port            | `5432`      |
-| `POSTGRES_DB`       | Database name            | `netnynja`  |
-| `POSTGRES_USER`     | Database user            | `netnynja`  |
+| `POSTGRES_DB`       | Database name            | `gridwatch` |
+| `POSTGRES_USER`     | Database user            | `gridwatch` |
 | `POSTGRES_PASSWORD` | Database password        | -           |
 | `BACKUP_OUTPUT_DIR` | Default backup directory | `./backups` |
 | `BACKUP_KEEP`       | Default retention count  | `7`         |
@@ -66,7 +66,7 @@ Both scripts use these environment variables:
 
 The backup script creates:
 
-1. **Backup file**: `netnynja_{db}_{timestamp}.dump.gz`
+1. **Backup file**: `gridwatch_{db}_{timestamp}.dump.gz`
    - PostgreSQL custom format (pg_dump -Fc)
    - Gzip compressed (unless `--no-compress`)
 
@@ -75,9 +75,9 @@ The backup script creates:
 3. **Manifest**: `manifest.json` with backup metadata
    ```json
    {
-     "latest_backup": "netnynja_netnynja_20260106_120000.dump.gz",
+     "latest_backup": "gridwatch_gridwatch_20260106_120000.dump.gz",
      "timestamp": "20260106_120000",
-     "database": "netnynja",
+     "database": "gridwatch",
      "host": "localhost",
      "schemas": "all",
      "compressed": true,
@@ -90,7 +90,7 @@ The backup script creates:
 
 Both scripts automatically detect if PostgreSQL is running in Docker:
 
-- If `netnynja-postgres` container is running, uses `docker exec`
+- If `gridwatch-postgres` container is running, uses `docker exec`
 - Otherwise, uses local `pg_dump`/`pg_restore` commands
 
 ## Automated Backups
@@ -100,7 +100,7 @@ Both scripts automatically detect if PostgreSQL is running in Docker:
 ```bash
 # Add to crontab: crontab -e
 # Daily backup at 2 AM
-0 2 * * * cd /path/to/netnynja-enterprise && POSTGRES_PASSWORD=your-password ./infrastructure/postgres/backup.sh --output /mnt/backups >> /var/log/netnynja-backup.log 2>&1
+0 2 * * * cd /path/to/gridwatch-net-enterprise && POSTGRES_PASSWORD=your-password ./infrastructure/postgres/backup.sh --output /mnt/backups >> /var/log/gridwatch-backup.log 2>&1
 ```
 
 ### Docker Healthcheck
@@ -161,7 +161,7 @@ Then restore to a specific time:
 
 ```bash
 # Restore base backup
-./restore.sh --input ./backups/netnynja_20260105.dump.gz
+./restore.sh --input ./backups/gridwatch_20260105.dump.gz
 
 # Apply WAL logs up to target time
 pg_restore --target-time='2026-01-06 10:00:00' ...
@@ -183,7 +183,7 @@ chmod +x backup.sh restore.sh
 docker ps | grep postgres
 
 # Verify connection
-PGPASSWORD=your-password psql -h localhost -p 5432 -U netnynja -d netnynja -c '\conninfo'
+PGPASSWORD=your-password psql -h localhost -p 5432 -U gridwatch -d gridwatch -c '\conninfo'
 ```
 
 ### Backup Too Large

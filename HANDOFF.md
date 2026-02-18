@@ -135,10 +135,10 @@ Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 
 
 | Category | Count | Risk |
 |----------|-------|------|
-| NPM packages (@netnynja → @gridwatch) | 6 | Medium — cross-workspace imports |
-| Prometheus metrics (netnynja_ → gridwatch_) | 80+ | HIGH — breaks Grafana dashboards |
-| Database name/user (netnynja → gridwatch) | 4 refs | HIGH — requires dump/restore |
-| Docker images (netnynja-enterprise-*) | 14 | Medium — rebuild + re-sign |
+| NPM packages (@netnynja → @gridwatch) ✅ | 6 | Medium — cross-workspace imports |
+| Prometheus metrics (netnynja_ → gridwatch_) ✅ | 80+ | HIGH — breaks Grafana dashboards |
+| Database name/user (netnynja → gridwatch) | 4 refs | HIGH — requires dump/restore (Phase 3) |
+| Docker images (gridwatch-net-enterprise-*) | 14 | Medium — rebuild + re-sign |
 | Docker network | 1 | Low |
 | JWT issuer/audience | 2 | Medium — token invalidation |
 | OTEL service names | 4 | Low |
@@ -162,7 +162,7 @@ Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 
 
 ### Critical Path Notes
 
-- **Prometheus metrics** are highest risk — 80+ metric names embedded in Grafana queries. Consider dual-emit strategy (emit both `netnynja_*` and `gridwatch_*` for 1 release) to avoid monitoring blackout.
+- **Prometheus metrics** are highest risk — 80+ metric names embedded in Grafana queries. Consider dual-emit strategy (emit both `gridwatch_*` and `gridwatch_*` for 1 release) to avoid monitoring blackout.
 - **JWT rotation** invalidates all active sessions. Schedule during maintenance window.
 - **Docker re-sign** required after image rename — all 14 images need new Cosign signatures.
 - **Phase 1 must be atomic** — partial renames will break builds. Use a single PR.

@@ -9,9 +9,9 @@ import {
   Input,
   Select,
   Badge,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { User, UserRole } from "@netnynja/shared-types";
+import type { User, UserRole } from "@gridwatch/shared-types";
 import {
   useUsersStore,
   type CreateUserInput,

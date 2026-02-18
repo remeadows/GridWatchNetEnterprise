@@ -1,11 +1,11 @@
 [project]
-name = "netnynja-ipam"
+name = "gridwatch-ipam"
 version = "0.2.15"
-description = "NetNynja Enterprise - IP Address Management Service"
+description = "GridWatch NetEnterprise - IP Address Management Service"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "NetNynja Team" }
+    { name = "WarSignalLabs" }
 ]
 dependencies = [
     "fastapi>=0.109.0",

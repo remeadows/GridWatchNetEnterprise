@@ -146,7 +146,7 @@ class ICMPPinger:
         """Create ICMP echo request packet."""
         self.sequence = (self.sequence + 1) & 0xffff
         header = struct.pack('!BBHHH', self.ICMP_ECHO_REQUEST, 0, 0, os.getpid() & 0xffff, self.sequence)
-        data = b'NetNynja' * 4
+        data = b'GridWatch' * 4
         checksum = self._checksum(header + data)
         header = struct.pack('!BBHHH', self.ICMP_ECHO_REQUEST, 0, checksum, os.getpid() & 0xffff, self.sequence)
         return header + data

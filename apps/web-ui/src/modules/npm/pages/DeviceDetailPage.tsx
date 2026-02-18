@@ -11,7 +11,7 @@ import {
   LineChart,
   Input,
   Select,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import {
   useNPMStore,
   type PollDeviceResponse,

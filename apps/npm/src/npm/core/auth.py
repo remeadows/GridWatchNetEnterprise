@@ -57,8 +57,8 @@ def verify_token(token: str) -> JWTPayload:
             token,
             key,
             algorithms=algorithms,
-            audience="netnynja-api",
-            issuer="netnynja-enterprise",
+            audience="GridWatch-api",
+            issuer="gridwatch-net-enterprise",
         )
 
         # Check expiration

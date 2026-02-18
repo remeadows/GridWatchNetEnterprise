@@ -569,7 +569,7 @@
   "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["stig", "compliance", "netnynja"],
+  "tags": ["stig", "compliance", "gridwatch"],
   "templating": {
     "list": []
   },
@@ -579,8 +579,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "NetNynja STIG Manager",
-  "uid": "netnynja-stig",
+  "title": "GridWatch STIG Manager",
+  "uid": "gridwatch-stig",
   "version": 1,
   "weekStart": ""
 }

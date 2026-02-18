@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Auth Service Routes
+ * GridWatch NetEnterprise - Auth Service Routes
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
@@ -11,13 +11,13 @@ import {
   hashToken,
   verifyRefreshToken,
   verifyAccessToken,
-} from "@netnynja/shared-auth";
+} from "@gridwatch/shared-auth";
 import {
   LoginSchema,
   type ApiResponse,
   type AuthTokens,
   type User,
-} from "@netnynja/shared-types";
+} from "@gridwatch/shared-types";
 import { config } from "./config";
 import * as users from "./users";
 import * as redis from "./redis";

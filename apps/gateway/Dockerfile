@@ -1,4 +1,4 @@
-# NetNynja Enterprise - API Gateway Dockerfile
+# GridWatch NetEnterprise - API Gateway Dockerfile
 # Multi-stage build for development and production
 
 # ============================================
@@ -42,10 +42,10 @@ COPY apps/gateway ./apps/gateway
 COPY --from=deps /app/node_modules ./node_modules
 
 # Ensure workspace package symlinks are correct in node_modules
-RUN mkdir -p node_modules/@netnynja && \
-    rm -rf node_modules/@netnynja/shared-types node_modules/@netnynja/shared-auth && \
-    ln -s ../../packages/shared-types node_modules/@netnynja/shared-types && \
-    ln -s ../../packages/shared-auth node_modules/@netnynja/shared-auth
+RUN mkdir -p node_modules/@GridWatch && \
+    rm -rf node_modules/@GridWatch/shared-types node_modules/@GridWatch/shared-auth && \
+    ln -s ../../packages/shared-types node_modules/@GridWatch/shared-types && \
+    ln -s ../../packages/shared-auth node_modules/@GridWatch/shared-auth
 
 # Build shared packages first, then gateway (with increased memory for CI)
 # Skip DTS generation in Docker (not needed for production runtime, avoids type resolution issues)
@@ -68,7 +68,7 @@ RUN apk add --no-cache nmap nmap-scripts && \
 COPY apps/gateway/package.json ./
 
 # Remove workspace dependencies and install
-RUN cat package.json | sed 's/"@netnynja\/shared-auth": "\*",//g' | sed 's/"@netnynja\/shared-types": "\*",//g' > package.temp.json && mv package.temp.json package.json
+RUN cat package.json | sed 's/"@GridWatch\/shared-auth": "\*",//g' | sed 's/"@GridWatch\/shared-types": "\*",//g' > package.temp.json && mv package.temp.json package.json
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
@@ -78,7 +78,7 @@ ENV NODE_ENV=development
 ENV PORT=3001
 
 # Create symlinks at runtime for shared packages and their dependencies, then start tsx
-CMD ["sh", "-c", "mkdir -p /app/node_modules/@netnynja && ln -sf /packages/shared-auth/dist /app/node_modules/@netnynja/shared-auth && ln -sf /packages/shared-types/dist /app/node_modules/@netnynja/shared-types && ln -sf /app/node_modules /packages/shared-auth/node_modules && ln -sf /app/node_modules /packages/shared-types/node_modules && tsx watch src/index.ts"]
+CMD ["sh", "-c", "mkdir -p /app/node_modules/@GridWatch && ln -sf /packages/shared-auth/dist /app/node_modules/@GridWatch/shared-auth && ln -sf /packages/shared-types/dist /app/node_modules/@GridWatch/shared-types && ln -sf /app/node_modules /packages/shared-auth/node_modules && ln -sf /app/node_modules /packages/shared-types/node_modules && tsx watch src/index.ts"]
 
 # ============================================
 # Production stage
@@ -104,8 +104,8 @@ COPY --from=builder /app/apps/gateway/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
 # Overlay built shared packages (replacing workspace symlinks)
-COPY --from=builder /app/packages/shared-types/dist ./node_modules/@netnynja/shared-types
-COPY --from=builder /app/packages/shared-auth/dist ./node_modules/@netnynja/shared-auth
+COPY --from=builder /app/packages/shared-types/dist ./node_modules/@GridWatch/shared-types
+COPY --from=builder /app/packages/shared-auth/dist ./node_modules/@GridWatch/shared-auth
 
 USER gateway
 

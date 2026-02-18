@@ -1,4 +1,4 @@
-# NetNynja Syslog Service Dockerfile
+# GridWatch Syslog Service Dockerfile
 # Multi-stage build for development and production
 
 # ============================================

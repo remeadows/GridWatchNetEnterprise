@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - User Management Routes
+ * GridWatch NetEnterprise - User Management Routes
  * Admin-only user management endpoints
  */
 

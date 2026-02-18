@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - Container Security Scanner
+# GridWatch NetEnterprise - Container Security Scanner
 # ===========================================
 # Local container vulnerability scanning using Trivy.
 #
@@ -66,7 +66,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
-      echo "  --all           Scan all running NetNynja containers"
+      echo "  --all           Scan all running GridWatch containers"
       echo "  --image IMAGE   Scan a specific image"
       echo "  --severity SEV  Severity levels (default: CRITICAL,HIGH)"
       echo "  --output DIR    Output directory (default: ./security-reports)"
@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${GREEN}NetNynja Enterprise - Container Security Scanner${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - Container Security Scanner${NC}"
 echo "=================================================="
 echo ""
 
@@ -161,13 +161,13 @@ if [ -n "$SPECIFIC_IMAGE" ]; then
   # Scan specific image
   scan_image "$SPECIFIC_IMAGE"
 elif [ "$SCAN_ALL" = true ]; then
-  # Scan all NetNynja containers
-  echo "Discovering NetNynja containers..."
+  # Scan all GridWatch containers
+  echo "Discovering GridWatch containers..."
 
-  CONTAINERS=$(docker ps --format '{{.Image}}' | grep -E '(netnynja|postgres|redis|vault|grafana|loki|nats|victoriametrics|jaeger|prometheus)' | sort -u)
+  CONTAINERS=$(docker ps --format '{{.Image}}' | grep -E '(GridWatch|postgres|redis|vault|grafana|loki|nats|victoriametrics|jaeger|prometheus)' | sort -u)
 
   if [ -z "$CONTAINERS" ]; then
-    echo -e "${YELLOW}No NetNynja containers found running${NC}"
+    echo -e "${YELLOW}No GridWatch containers found running${NC}"
     exit 0
   fi
 
@@ -190,7 +190,7 @@ elif [ "$SCAN_ALL" = true ]; then
   fi
 else
   # Default: scan infrastructure images used in docker-compose
-  echo "Scanning standard NetNynja images..."
+  echo "Scanning standard GridWatch images..."
   echo ""
 
   IMAGES=(

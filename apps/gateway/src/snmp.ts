@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - SNMPv3 Client Utilities
+ * GridWatch NetEnterprise - SNMPv3 Client Utilities
  * Provides SNMPv3 testing and querying capabilities
  */
 

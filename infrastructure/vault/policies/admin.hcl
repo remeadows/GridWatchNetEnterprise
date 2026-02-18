@@ -1,14 +1,14 @@
 # ===========================================
-# NetNynja Admin - Vault Policy
+# GridWatch Admin - Vault Policy
 # ===========================================
 # Full administrative access for operators
 
-# Full access to all NetNynja secrets
-path "secret/data/netnynja/*" {
+# Full access to all GridWatch secrets
+path "secret/data/GridWatch/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
 }
 
-path "secret/metadata/netnynja/*" {
+path "secret/metadata/GridWatch/*" {
   capabilities = ["list", "read", "delete"]
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * NetNynja Enterprise - Run All Benchmarks
+ * GridWatch NetEnterprise - Run All Benchmarks
  *
  * Runs all benchmark suites and generates a summary report.
  *
@@ -96,7 +96,7 @@ async function main() {
 
   if (!jsonOutput) {
     console.log("\n" + "=".repeat(70));
-    console.log("NetNynja Enterprise - Performance Benchmark Suite");
+    console.log("GridWatch NetEnterprise - Performance Benchmark Suite");
     console.log("=".repeat(70));
     console.log(`\nStarted at: ${new Date().toISOString()}`);
   }

@@ -2,7 +2,7 @@
 # Deploys API documentation and project overview to GitHub Pages
 #
 # Trigger: Manual dispatch or on release
-# URL: https://<org>.github.io/netnynja-enterprise/
+# URL: https://<org>.github.io/gridwatch-net-enterprise/
 
 name: Deploy Documentation
 
@@ -61,7 +61,7 @@ jobs:
       - name: Create docs index
         run: |
           cat > docs/_config.yml << 'EOF'
-          title: NetNynja Enterprise
+          title: GridWatch NetEnterprise
           description: Unified Network Management Platform
           theme: jekyll-theme-minimal
           plugins:

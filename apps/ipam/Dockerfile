@@ -1,5 +1,5 @@
-# NetNynja IPAM Service - Multi-stage Dockerfile
-# Build: docker build --target production -t netnynja-ipam .
+# GridWatch IPAM Service - Multi-stage Dockerfile
+# Build: docker build --target production -t GridWatch-ipam .
 
 # ==================================================
 # Base image with Python 3.13 (security update)

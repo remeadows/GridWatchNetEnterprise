@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Authentication Errors
+ * GridWatch NetEnterprise - Authentication Errors
  */
 
 export class AuthError extends Error {

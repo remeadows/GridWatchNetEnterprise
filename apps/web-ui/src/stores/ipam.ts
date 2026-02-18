@@ -4,7 +4,7 @@ import type {
   IPAddress,
   ScanJob,
   IPAMDashboard,
-} from "@netnynja/shared-types";
+} from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 // Response type for adding addresses to NPM

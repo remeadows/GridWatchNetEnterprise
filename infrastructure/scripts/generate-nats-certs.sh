@@ -18,7 +18,7 @@ openssl genrsa -out "$CERT_DIR/ca.key" 4096
 # Generate CA certificate
 openssl req -new -x509 -days $VALIDITY_DAYS -key "$CERT_DIR/ca.key" \
     -out "$CERT_DIR/ca.crt" \
-    -subj "/C=US/ST=State/L=City/O=NetNynja/OU=Infrastructure/CN=NetNynja NATS CA"
+    -subj "/C=US/ST=State/L=City/O=GridWatch/OU=Infrastructure/CN=GridWatch NATS CA"
 
 # Generate server private key
 openssl genrsa -out "$CERT_DIR/server.key" 2048
@@ -26,7 +26,7 @@ openssl genrsa -out "$CERT_DIR/server.key" 2048
 # Generate server certificate signing request
 openssl req -new -key "$CERT_DIR/server.key" \
     -out "$CERT_DIR/server.csr" \
-    -subj "/C=US/ST=State/L=City/O=NetNynja/OU=Infrastructure/CN=netnynja-nats"
+    -subj "/C=US/ST=State/L=City/O=GridWatch/OU=Infrastructure/CN=GridWatch-nats"
 
 # Create SAN extension file for server certificate
 cat > "$CERT_DIR/server.ext" << EOF
@@ -38,7 +38,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = localhost
 DNS.2 = nats
-DNS.3 = netnynja-nats
+DNS.3 = GridWatch-nats
 IP.1 = 127.0.0.1
 EOF
 

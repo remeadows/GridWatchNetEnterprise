@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Promtail Configuration
+# GridWatch NetEnterprise - Promtail Configuration
 
 server:
   http_listen_port: 9080
@@ -9,7 +9,7 @@ positions:
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
-    tenant_id: netnynja
+    tenant_id: GridWatch
     batchwait: 1s
     batchsize: 1048576
     timeout: 10s
@@ -53,9 +53,9 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      # Only keep containers with netnynja label or name prefix
+      # Only keep containers with GridWatch label or name prefix
       - source_labels: ["__meta_docker_container_name"]
-        regex: "/(netnynja-.*)"
+        regex: "/(GridWatch-.*)"
         action: keep
       - source_labels: ["__meta_docker_container_name"]
         regex: "/(.*)"
@@ -68,7 +68,7 @@ scrape_configs:
     pipeline_stages:
       # Parse JSON logs from application containers
       - match:
-          selector: '{container=~"netnynja-gateway|netnynja-web-ui"}'
+          selector: '{container=~"GridWatch-gateway|GridWatch-web-ui"}'
           stages:
             - json:
                 expressions:
@@ -88,7 +88,7 @@ scrape_configs:
 
       # Parse Python structured logs
       - match:
-          selector: '{container=~"netnynja-ipam.*|netnynja-npm.*|netnynja-stig.*"}'
+          selector: '{container=~"GridWatch-ipam.*|GridWatch-npm.*|GridWatch-stig.*"}'
           stages:
             - json:
                 expressions:
@@ -109,7 +109,7 @@ scrape_configs:
 
       # Drop health check logs to reduce noise
       - match:
-          selector: '{container=~"netnynja-.*"}'
+          selector: '{container=~"GridWatch-.*"}'
           stages:
             - drop:
                 expression: ".*GET /health.*"
@@ -117,10 +117,10 @@ scrape_configs:
 
       # Add application label based on container name
       - match:
-          selector: '{container=~"netnynja-.*"}'
+          selector: '{container=~"GridWatch-.*"}'
           stages:
             - regex:
-                expression: "netnynja-(?P<app>[a-z]+).*"
+                expression: "GridWatch-(?P<app>[a-z]+).*"
                 source: container
             - labels:
                 app:

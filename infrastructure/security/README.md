@@ -1,10 +1,10 @@
-# NetNynja Enterprise - Security Scanning
+# GridWatch NetEnterprise - Security Scanning
 
 This directory contains security scanning configuration and scripts for container vulnerability scanning, dependency auditing, and infrastructure-as-code analysis.
 
 ## Overview
 
-NetNynja Enterprise uses [Trivy](https://trivy.dev/) for comprehensive security scanning:
+GridWatch NetEnterprise uses [Trivy](https://trivy.dev/) for comprehensive security scanning:
 
 - **Container Image Scanning** - Detect vulnerabilities in Docker images
 - **Dependency Scanning** - Audit npm and Python dependencies
@@ -30,11 +30,11 @@ docker pull aquasec/trivy:latest
 ### Run Local Scan
 
 ```bash
-# Scan all running NetNynja containers
+# Scan all running GridWatch containers
 ./scan-containers.sh --all
 
 # Scan a specific image
-./scan-containers.sh --image netnynja/gateway:latest
+./scan-containers.sh --image gridwatch/gateway:latest
 
 # Scan with medium severity included
 ./scan-containers.sh --all --severity CRITICAL,HIGH,MEDIUM

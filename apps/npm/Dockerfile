@@ -1,5 +1,5 @@
-# NetNynja NPM Service - Multi-stage Dockerfile
-# Build: docker build --target production -t netnynja-npm .
+# GridWatch NPM Service - Multi-stage Dockerfile
+# Build: docker build --target production -t GridWatch-npm .
 
 # ==================================================
 # Base image with Python 3.13 (security update)

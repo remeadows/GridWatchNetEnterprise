@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { User, UserRole } from "@netnynja/shared-types";
+import type { User, UserRole } from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 interface UsersState {

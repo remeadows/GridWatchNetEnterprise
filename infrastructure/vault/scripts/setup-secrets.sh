@@ -1,9 +1,9 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - Vault Secrets Setup
+# GridWatch NetEnterprise - Vault Secrets Setup
 # ===========================================
 # This script populates Vault with initial secrets for
-# NetNynja services. Customize the values before running.
+# GridWatch services. Customize the values before running.
 #
 # Prerequisites:
 #   - Vault must be initialized, unsealed, and policies configured
@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${GREEN}NetNynja Enterprise - Vault Secrets Setup${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - Vault Secrets Setup${NC}"
 echo "============================================"
 echo ""
 
@@ -68,12 +68,12 @@ if [ -f "$JWT_KEYS_DIR/jwt-private.pem" ] && [ -f "$JWT_KEYS_DIR/jwt-public.pem"
   JWT_PRIVATE=$(cat "$JWT_KEYS_DIR/jwt-private.pem" | jq -Rs '.')
   JWT_PUBLIC=$(cat "$JWT_KEYS_DIR/jwt-public.pem" | jq -Rs '.')
 
-  write_secret "netnynja/jwt" "{
+  write_secret "GridWatch/jwt" "{
     \"private_key\": $JWT_PRIVATE,
     \"public_key\": $JWT_PUBLIC,
     \"algorithm\": \"RS256\",
-    \"issuer\": \"netnynja-enterprise\",
-    \"audience\": \"netnynja-api\",
+    \"issuer\": \"gridwatch-net-enterprise\",
+    \"audience\": \"GridWatch-api\",
     \"access_expiry\": \"15m\",
     \"refresh_expiry\": \"7d\"
   }"
@@ -81,11 +81,11 @@ else
   echo -e "${YELLOW}  JWT keys not found. Generating placeholder...${NC}"
   echo "  Run ./infrastructure/scripts/generate-jwt-keys.sh first for production use."
 
-  write_secret "netnynja/jwt" '{
+  write_secret "GridWatch/jwt" '{
     "secret": "CHANGE-ME-IN-PRODUCTION-use-generate-jwt-keys-script",
     "algorithm": "HS256",
-    "issuer": "netnynja-enterprise",
-    "audience": "netnynja-api",
+    "issuer": "gridwatch-net-enterprise",
+    "audience": "GridWatch-api",
     "access_expiry": "15m",
     "refresh_expiry": "7d"
   }'
@@ -99,11 +99,11 @@ echo -e "${YELLOW}Configuring database secrets...${NC}"
 # Default values - CHANGE THESE FOR PRODUCTION
 DB_HOST="${POSTGRES_HOST:-postgres}"
 DB_PORT="${POSTGRES_PORT:-5432}"
-DB_NAME="${POSTGRES_DB:-netnynja}"
-DB_USER="${POSTGRES_USER:-netnynja}"
+DB_NAME="${POSTGRES_DB:-GridWatch}"
+DB_USER="${POSTGRES_USER:-GridWatch}"
 DB_PASSWORD="${POSTGRES_PASSWORD:-CHANGE-ME-IN-PRODUCTION}"
 
-write_secret "netnynja/database" "{
+write_secret "GridWatch/database" "{
   \"host\": \"$DB_HOST\",
   \"port\": $DB_PORT,
   \"database\": \"$DB_NAME\",
@@ -122,7 +122,7 @@ REDIS_HOST="${REDIS_HOST:-redis}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-CHANGE-ME-IN-PRODUCTION}"
 
-write_secret "netnynja/redis" "{
+write_secret "GridWatch/redis" "{
   \"host\": \"$REDIS_HOST\",
   \"port\": $REDIS_PORT,
   \"password\": \"$REDIS_PASSWORD\",
@@ -137,7 +137,7 @@ echo -e "${YELLOW}Configuring NATS secrets...${NC}"
 NATS_HOST="${NATS_HOST:-nats}"
 NATS_PORT="${NATS_PORT:-4222}"
 
-write_secret "netnynja/nats" "{
+write_secret "GridWatch/nats" "{
   \"host\": \"$NATS_HOST\",
   \"port\": $NATS_PORT,
   \"connection_string\": \"nats://$NATS_HOST:$NATS_PORT\"
@@ -149,19 +149,19 @@ write_secret "netnynja/nats" "{
 echo -e "${YELLOW}Configuring service-specific secrets...${NC}"
 
 # IPAM service secrets
-write_secret "netnynja/services/ipam" '{
+write_secret "GridWatch/services/ipam" '{
   "scan_timeout": 30,
   "max_concurrent_scans": 10
 }'
 
 # NPM service secrets
-write_secret "netnynja/services/npm" '{
+write_secret "GridWatch/services/npm" '{
   "snmp_community": "public",
   "poll_interval": 60
 }'
 
 # STIG service secrets
-write_secret "netnynja/services/stig" '{
+write_secret "GridWatch/services/stig" '{
   "ssh_timeout": 30,
   "max_concurrent_audits": 5
 }'
@@ -171,7 +171,7 @@ write_secret "netnynja/services/stig" '{
 # ===========================================
 echo -e "${YELLOW}Configuring gateway secrets...${NC}"
 
-write_secret "netnynja/gateway/config" '{
+write_secret "GridWatch/gateway/config" '{
   "rate_limit_max": 100,
   "rate_limit_auth_max": 10,
   "rate_limit_window_ms": 60000,
@@ -186,19 +186,19 @@ echo -e "${GREEN}Secrets setup complete!${NC}"
 echo "============================================"
 echo ""
 echo "Secrets configured:"
-echo "  - netnynja/jwt"
-echo "  - netnynja/database"
-echo "  - netnynja/redis"
-echo "  - netnynja/nats"
-echo "  - netnynja/services/ipam"
-echo "  - netnynja/services/npm"
-echo "  - netnynja/services/stig"
-echo "  - netnynja/gateway/config"
+echo "  - GridWatch/jwt"
+echo "  - GridWatch/database"
+echo "  - GridWatch/redis"
+echo "  - GridWatch/nats"
+echo "  - GridWatch/services/ipam"
+echo "  - GridWatch/services/npm"
+echo "  - GridWatch/services/stig"
+echo "  - GridWatch/gateway/config"
 echo ""
 echo -e "${YELLOW}IMPORTANT: Update the default passwords for production use!${NC}"
 echo ""
 echo "To view a secret:"
-echo "  vault kv get secret/netnynja/database"
+echo "  vault kv get secret/GridWatch/database"
 echo ""
 echo "To update a secret:"
-echo "  vault kv put secret/netnynja/database password=new-secure-password"
+echo "  vault kv put secret/GridWatch/database password=new-secure-password"

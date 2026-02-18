@@ -1,5 +1,5 @@
 #!/bin/bash
-# NetNynja Enterprise - NATS JetStream Stream Initialization
+# GridWatch NetEnterprise - NATS JetStream Stream Initialization
 # Run this script after NATS is healthy to create streams
 
 set -euo pipefail

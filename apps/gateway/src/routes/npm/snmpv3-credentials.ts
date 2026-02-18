@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - SNMPv3 Credentials API Routes
+ * GridWatch NetEnterprise - SNMPv3 Credentials API Routes
  * FIPS-compliant SNMPv3 credential management
  */
 

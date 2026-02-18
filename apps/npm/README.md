@@ -1,6 +1,6 @@
-# NetNynja NPM Service
+# GridWatch NPM Service
 
-Network Performance Monitoring service for NetNynja Enterprise.
+Network Performance Monitoring service for GridWatch NetEnterprise.
 
 ## Features
 
@@ -51,7 +51,7 @@ uvicorn npm.main:app --reload --port 3004
 For existing databases, run the migration script:
 
 ```bash
-docker compose exec -T postgres psql -U netnynja -d netnynja \
+docker compose exec -T postgres psql -U gridwatch -d gridwatch \
   -f /dev/stdin < infrastructure/postgres/migrations/001_add_disk_service_metrics.sql
 ```
 

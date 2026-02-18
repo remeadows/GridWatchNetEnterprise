@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Auth Service Logger
+ * GridWatch NetEnterprise - Auth Service Logger
  */
 
 import pino from "pino";

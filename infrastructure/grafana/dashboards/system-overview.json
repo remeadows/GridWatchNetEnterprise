@@ -10,7 +10,7 @@
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
-      "tags": ["netnynja"],
+      "tags": ["gridwatch"],
       "targetBlank": false,
       "title": "Application Dashboards",
       "type": "dashboards"
@@ -857,7 +857,7 @@
   "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["system", "infrastructure", "netnynja"],
+  "tags": ["system", "infrastructure", "gridwatch"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},

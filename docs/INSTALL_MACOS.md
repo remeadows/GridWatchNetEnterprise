@@ -1,6 +1,6 @@
 # macOS Installation (Intel & Apple Silicon)
 
-> Platform-specific installation guide for NetNynja Enterprise on macOS
+> Platform-specific installation guide for GridWatch NetEnterprise on macOS
 
 ## Prerequisites
 
@@ -56,8 +56,8 @@ poetry --version    # Should show 1.7.x or higher
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/netnynja-enterprise.git
-cd netnynja-enterprise
+git clone https://github.com/your-org/gridwatch-net-enterprise.git
+cd gridwatch-net-enterprise
 
 # Copy environment file and configure
 cp .env.example .env

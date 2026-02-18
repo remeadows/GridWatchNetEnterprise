@@ -7,7 +7,7 @@ import {
   CardTitle,
   Badge,
   Input,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 
 interface SyslogFilter {
   id: string;

@@ -2,27 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "netnynja.fullname" . }}-gateway
+  name: {{ include "gridwatch.fullname" . }}-gateway
   labels:
-    {{- include "netnynja.labels" . | nindent 4 }}
+    {{- include "gridwatch.labels" . | nindent 4 }}
     app.kubernetes.io/component: gateway
 spec:
   replicas: {{ .Values.gateway.replicaCount }}
   selector:
     matchLabels:
-      {{- include "netnynja.selectorLabels" . | nindent 6 }}
+      {{- include "gridwatch.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: gateway
   template:
     metadata:
       labels:
-        {{- include "netnynja.selectorLabels" . | nindent 8 }}
+        {{- include "gridwatch.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: gateway
     spec:
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "netnynja.serviceAccountName" . }}
+      serviceAccountName: {{ include "gridwatch.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.security.podSecurityContext | nindent 8 }}
       containers:
@@ -45,23 +45,23 @@ spec:
             - name: POSTGRES_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "netnynja.fullname" . }}-secrets
+                  name: {{ include "gridwatch.fullname" . }}-secrets
                   key: postgres-url
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "netnynja.fullname" . }}-secrets
+                  name: {{ include "gridwatch.fullname" . }}-secrets
                   key: redis-url
             - name: NATS_URL
-              value: "nats://{{ include "netnynja.natsHost" . }}:4222"
+              value: "nats://{{ include "gridwatch.natsHost" . }}:4222"
             - name: AUTH_SERVICE_URL
-              value: "http://{{ include "netnynja.fullname" . }}-auth-service:3006"
+              value: "http://{{ include "gridwatch.fullname" . }}-auth-service:3006"
             - name: IPAM_SERVICE_URL
-              value: "http://{{ include "netnynja.fullname" . }}-ipam:3003"
+              value: "http://{{ include "gridwatch.fullname" . }}-ipam:3003"
             - name: NPM_SERVICE_URL
-              value: "http://{{ include "netnynja.fullname" . }}-npm:3004"
+              value: "http://{{ include "gridwatch.fullname" . }}-npm:3004"
             - name: STIG_SERVICE_URL
-              value: "http://{{ include "netnynja.fullname" . }}-stig:3005"
+              value: "http://{{ include "gridwatch.fullname" . }}-stig:3005"
           livenessProbe:
             httpGet:
               path: /livez
@@ -92,9 +92,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "netnynja.fullname" . }}-gateway
+  name: {{ include "gridwatch.fullname" . }}-gateway
   labels:
-    {{- include "netnynja.labels" . | nindent 4 }}
+    {{- include "gridwatch.labels" . | nindent 4 }}
     app.kubernetes.io/component: gateway
 spec:
   type: {{ .Values.gateway.service.type }}
@@ -104,6 +104,6 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "netnynja.selectorLabels" . | nindent 4 }}
+    {{- include "gridwatch.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: gateway
 {{- end }}

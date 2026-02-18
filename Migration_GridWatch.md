@@ -1,4 +1,4 @@
-# Migration Plan: NetNynja Enterprise -> GridWatch NetEnterprise
+# Migration Plan: GridWatch NetEnterprise -> GridWatch NetEnterprise
 
 **Created**: 2026-02-18
 **Author**: Claude Opus 4.6 (Analysis Agent)
@@ -56,7 +56,7 @@ Only IPAM was migrated to `services/shared-python/`. Three other Python services
 
 ### ISSUE 5: Logo Asset Mismatch in LoginPage
 
-LoginPage.tsx:28 references `/assets/NetNNJA2.jpg` but the actual logo file is `NetNynjaLogo.png`. The `dist/` folder also has `NetNynjaLogo.png`. There's an inconsistency between what the login page loads and what exists.
+LoginPage.tsx:28 references `/assets/NetNNJA2.jpg` but the actual logo file is `GridWatchLogo.png`. The `dist/` folder also has `GridWatchLogo.png`. There's an inconsistency between what the login page loads and what exists.
 
 **Impact**: Potential broken logo on login page depending on which asset is actually served.
 **Fix**: Verify which asset is correct, rename to match, and update the reference during rebrand.
@@ -90,8 +90,8 @@ While these are dev defaults (and the project has `docker-compose.prod.yml` with
 
 | Category | Files Affected | Occurrences | Rename Risk |
 |----------|---------------|-------------|-------------|
-| NPM Package Names (`@netnynja/*`) | 6 packages + all consumers | ~60 imports | **CRITICAL** - breaks builds |
-| Prometheus Metrics (`netnynja_*`) | 1 file + all dashboards | 28 metric defs | **CRITICAL** - breaks monitoring |
+| NPM Package Names (`@gridwatch/*`) | 6 packages + all consumers | ~60 imports | **CRITICAL** - breaks builds |
+| Prometheus Metrics (`gridwatch_*`) | 1 file + all dashboards | 28 metric defs | **CRITICAL** - breaks monitoring |
 | Docker Compose (`netnynja-*`) | 2 compose files | ~35 refs | HIGH |
 | Helm Chart (`netnynja.*`) | 7 template files | ~80 refs | HIGH |
 | CI/CD Workflows | 6 workflow files | ~30 refs | HIGH |
@@ -110,41 +110,41 @@ While these are dev defaults (and the project has `docker-compose.prod.yml` with
 **A. NPM Scoped Packages (@netnynja -> @gridwatch)**
 
 ```
-packages/shared-auth/package.json     name: @netnynja/shared-auth
-packages/shared-types/package.json    name: @netnynja/shared-types
-packages/shared-ui/package.json       name: @netnynja/shared-ui
-apps/gateway/package.json             name: @netnynja/gateway
-apps/web-ui/package.json              name: @netnynja/web-ui
-services/auth-service/package.json    name: @netnynja/auth-service
-root package.json                     name: netnynja-enterprise
+packages/shared-auth/package.json     name: @gridwatch/shared-auth
+packages/shared-types/package.json    name: @gridwatch/shared-types
+packages/shared-ui/package.json       name: @gridwatch/shared-ui
+apps/gateway/package.json             name: @gridwatch/gateway
+apps/web-ui/package.json              name: @gridwatch/web-ui
+services/auth-service/package.json    name: @gridwatch/auth-service
+root package.json                     name: gridwatch-net-enterprise
 ```
 
-All TypeScript import statements using `@netnynja/*`:
-- `apps/web-ui/src/stores/*.ts` (7 files with @netnynja/shared-types imports)
-- `apps/web-ui/src/pages/auth/LoginPage.tsx` (@netnynja/shared-ui)
+All TypeScript import statements using `@gridwatch/*`:
+- `apps/web-ui/src/stores/*.ts` (7 files with @gridwatch/shared-types imports)
+- `apps/web-ui/src/pages/auth/LoginPage.tsx` (@gridwatch/shared-ui)
 - `apps/gateway/src/**/*.ts` (all route files importing shared packages)
 - `services/auth-service/src/**/*.ts`
 - `.github/workflows/validate-workspaces.yml` (lines 94-99)
 
-**B. Prometheus Metrics Prefix (netnynja_ -> gridwatch_)**
+**B. Prometheus Metrics Prefix (gridwatch_ -> gridwatch_)**
 
 `apps/gateway/src/plugins/metrics.ts`: 28 metric definitions:
-- `netnynja_nodejs_*` (default metrics prefix, line 27)
-- `netnynja_http_requests_total` (line 35)
-- `netnynja_http_request_duration_seconds` (line 41)
-- `netnynja_http_request_size_bytes` (line 49)
-- `netnynja_http_response_size_bytes` (line 57)
-- `netnynja_active_connections` (line 65)
-- `netnynja_auth_attempts_total` (line 75)
-- `netnynja_active_sessions` (line 82)
-- `netnynja_rate_limit_exceeded_total` (line 93)
-- `netnynja_ipam_*` (12 IPAM metrics, lines 104-184)
-- `netnynja_db_*` (3 DB metrics, lines 190-208)
-- `netnynja_redis_*` (2 Redis metrics, lines 214-227)
+- `gridwatch_nodejs_*` (default metrics prefix, line 27)
+- `gridwatch_http_requests_total` (line 35)
+- `gridwatch_http_request_duration_seconds` (line 41)
+- `gridwatch_http_request_size_bytes` (line 49)
+- `gridwatch_http_response_size_bytes` (line 57)
+- `gridwatch_active_connections` (line 65)
+- `gridwatch_auth_attempts_total` (line 75)
+- `gridwatch_active_sessions` (line 82)
+- `gridwatch_rate_limit_exceeded_total` (line 93)
+- `gridwatch_ipam_*` (12 IPAM metrics, lines 104-184)
+- `gridwatch_db_*` (3 DB metrics, lines 190-208)
+- `gridwatch_redis_*` (2 Redis metrics, lines 214-227)
 - Default label: `app: "netnynja"` (line 19)
 - Plugin name: `netnynja-metrics` (line 393)
 
-All Grafana dashboards in `infrastructure/grafana/dashboards/` with PromQL queries referencing `netnynja_*`.
+All Grafana dashboards in `infrastructure/grafana/dashboards/` with PromQL queries referencing `gridwatch_*`.
 
 **C. Database Name & User**
 
@@ -167,10 +167,10 @@ infrastructure/postgres/init.sql
 
 ```
 docker-compose.yml:
-  netnynja-postgres, netnynja-redis, netnynja-nats, netnynja-vault,
-  netnynja-victoriametrics, netnynja-prometheus, netnynja-loki,
-  netnynja-promtail, netnynja-jaeger, netnynja-grafana,
-  netnynja-gateway, netnynja-auth-service, + all Python service containers
+  gridwatch-postgres, gridwatch-redis, gridwatch-nats, gridwatch-vault,
+  gridwatch-victoriametrics, gridwatch-prometheus, gridwatch-loki,
+  gridwatch-promtail, gridwatch-jaeger, gridwatch-grafana,
+  gridwatch-gateway, gridwatch-auth-service, + all Python service containers
 ```
 
 **E. Docker Network**
@@ -182,7 +182,7 @@ docker-compose.yml:  networks: netnynja-network (referenced ~15 times)
 **F. Docker Compose Project Name**
 
 ```
-docker-compose.yml:10  name: netnynja-enterprise
+docker-compose.yml:10  name: gridwatch-net-enterprise
 ```
 
 **G. Vault Dev Token**
@@ -197,7 +197,7 @@ docker-compose.yml:273  VAULT_TOKEN: ${VAULT_DEV_TOKEN:-netnynja-dev-token}
 **H. JWT Issuer & Audience**
 
 ```
-apps/gateway/src/config.ts:27  JWT_ISSUER: "netnynja-enterprise"
+apps/gateway/src/config.ts:27  JWT_ISSUER: "gridwatch-net-enterprise"
 apps/gateway/src/config.ts:28  JWT_AUDIENCE: "netnynja-api"
 services/auth-service/src/config.ts  (same pattern)
 ```
@@ -206,7 +206,7 @@ WARNING: Changing JWT issuer/audience invalidates ALL active tokens.
 **I. OTEL Service Name**
 
 ```
-apps/gateway/src/config.ts:60  OTEL_SERVICE_NAME: "netnynja-gateway"
+apps/gateway/src/config.ts:60  OTEL_SERVICE_NAME: "gridwatch-gateway"
 docker-compose.yml OTEL env vars
 ```
 
@@ -230,19 +230,19 @@ apps/gateway/src/config.ts:124  https://app.netnynja.com
 **L. Frontend UI Branding**
 
 ```
-apps/web-ui/src/pages/auth/LoginPage.tsx:29   alt="NetNynja Logo"
-apps/web-ui/src/pages/auth/LoginPage.tsx:33   "NetNynja Enterprise"
-apps/web-ui/public/assets/NetNynjaLogo.png    (logo file)
+apps/web-ui/src/pages/auth/LoginPage.tsx:29   alt="GridWatch Logo"
+apps/web-ui/src/pages/auth/LoginPage.tsx:33   "GridWatch NetEnterprise"
+apps/web-ui/public/assets/GridWatchLogo.png    (logo file)
 apps/web-ui/public/assets/NetNNJA2.jpg        (alternate logo)
-apps/web-ui/dist/assets/NetNynjaLogo.png      (built asset)
+apps/web-ui/dist/assets/GridWatchLogo.png      (built asset)
 ```
 
 **M. Swagger/OpenAPI Branding**
 
 ```
-apps/gateway/src/plugins/swagger.ts:16   title: "NetNynja Enterprise API"
-apps/gateway/src/plugins/swagger.ts:18   # NetNynja Enterprise API
-apps/gateway/src/plugins/swagger.ts:74   name: "NetNynja Team"
+apps/gateway/src/plugins/swagger.ts:16   title: "GridWatch NetEnterprise API"
+apps/gateway/src/plugins/swagger.ts:18   # GridWatch NetEnterprise API
+apps/gateway/src/plugins/swagger.ts:74   name: "WarSignalLabs"
 apps/gateway/src/plugins/swagger.ts:75   email: support@netnynja.local
 apps/gateway/src/plugins/swagger.ts:76   url: https://netnynja.local/support
 apps/gateway/src/plugins/swagger.ts:77-83  license, terms URLs
@@ -253,11 +253,11 @@ apps/gateway/src/plugins/swagger.ts:95   https://api.netnynja.local
 **N. Helm Chart (Directory + Content)**
 
 ```
-charts/netnynja-enterprise/              (directory name)
-charts/netnynja-enterprise/Chart.yaml    name, description, URLs, maintainer
-charts/netnynja-enterprise/values.yaml   image repos, hostnames, DB names
-charts/netnynja-enterprise/README.md     all references
-charts/netnynja-enterprise/templates/    _helpers.tpl (15+ template functions)
+charts/gridwatch-net-enterprise/              (directory name)
+charts/gridwatch-net-enterprise/Chart.yaml    name, description, URLs, maintainer
+charts/gridwatch-net-enterprise/values.yaml   image repos, hostnames, DB names
+charts/gridwatch-net-enterprise/README.md     all references
+charts/gridwatch-net-enterprise/templates/    _helpers.tpl (15+ template functions)
                                          gateway-deployment.yaml
                                          web-ui-deployment.yaml
                                          ingress.yaml, secrets.yaml
@@ -271,23 +271,23 @@ charts/netnynja-enterprise/templates/    _helpers.tpl (15+ template functions)
 .github/workflows/release.yml:33,110,144,262,288,311,345,367,370,377,378
 .github/workflows/security-scan.yml:65,75,93  netnynja/ image prefix
 .github/workflows/test.yml:42,84,93,119,193,203  test_netnynja DB
-.github/workflows/validate-workspaces.yml:94-99  @netnynja/* packages
+.github/workflows/validate-workspaces.yml:94-99  @gridwatch/* packages
 .github/workflows/docs.yml:5,64  netnynja references
 ```
 
 **P. Python Package**
 
 ```
-pyproject.toml:2   name = "netnynja-enterprise"
-pyproject.toml:4   description = "NetNynja Enterprise - Python Services"
+pyproject.toml:2   name = "gridwatch-net-enterprise"
+pyproject.toml:4   description = "GridWatch NetEnterprise - Python Services"
 ```
 
 **Q. GitHub Repository**
 
 ```
-Repository URL: github.com/remeadows/NetNynjaEnterprise
+Repository URL: github.com/remeadows/GridWatchEnterprise
 GHCR path: ghcr.io/remeadows/netnynja*
-Local directory: C:\Users\rmeadows\Code Development\dev\NetNynja\NetNynjaEnterprise
+Local directory: C:\Users\rmeadows\Code Development\dev\GridWatch\GridWatchEnterprise
 Cosign signatures: tied to current image names (must re-sign)
 ```
 
@@ -300,7 +300,7 @@ GO.md, README.md, COMMIT.md, RELEASE.md, CLAUDE_ENTERPRISE_SKILL.md,
 HANDOFF.md, CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md,
 docs/*.md, docs/*.html, archive/**/*.md
 ```
-Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
+Estimated 200+ occurrences of "GridWatch"/"netnynja" across 30+ files.
 
 ---
 
@@ -311,7 +311,7 @@ Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
 - [ ] Commit all pending Sprint 2 & 3 work to main
 - [ ] Fix pre-migration issues (version entropy, logo mismatch)
 - [ ] Create feature branch: `refactor/gridwatch-rebrand`
-- [ ] Dump PostgreSQL database: `pg_dump -U netnynja netnynja > netnynja_backup.sql`
+- [ ] Dump PostgreSQL database: `pg_dump -U gridwatch netnynja > gridwatch_backup.sql`
 - [ ] Export Grafana dashboards as JSON
 - [ ] Document all JWT signing keys for rotation
 - [ ] Archive `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md` to sprint-history
@@ -321,10 +321,10 @@ Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
 
 **MUST BE ATOMIC - single commit, builds break until complete**
 
-- [ ] Rename all NPM package names (@netnynja/* -> @gridwatch/*)
+- [ ] Rename all NPM package names (@gridwatch/* -> @gridwatch/*)
 - [ ] Update all TypeScript import statements
 - [ ] Update root package.json workspace config
-- [ ] Rename Prometheus metric prefix (netnynja_ -> gridwatch_)
+- [ ] Rename Prometheus metric prefix (gridwatch_ -> gridwatch_)
 - [ ] Update metrics plugin default label
 - [ ] Update pyproject.toml package name
 - [ ] Update gateway config.ts defaults (JWT issuer/audience, OTEL service name, CORS URL)
@@ -333,7 +333,7 @@ Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
 - [ ] Update swagger.ts (title, contact, URLs, version)
 - [ ] Update LoginPage.tsx (brand text, logo ref, version)
 - [ ] Update MainLayout.tsx (brand text, logo ref)
-- [ ] Replace logo assets (NetNynjaLogo.png -> GridWatchLogo.png)
+- [ ] Replace logo assets (GridWatchLogo.png -> GridWatchLogo.png)
 - [ ] Add WarSignalLabs brand/attribution where appropriate
 - [ ] Rename Helm chart directory and update all templates
 - [ ] Verify TypeScript compiles: `npm run build`
@@ -364,7 +364,7 @@ Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
 
 ### Phase 4: Documentation (Day 5 - 4 hours)
 
-- [ ] Global find/replace "NetNynja" -> "GridWatch" across all .md files
+- [ ] Global find/replace "GridWatch" -> "GridWatch" across all .md files
 - [ ] Global find/replace "netnynja" -> "gridwatch" across all .md files
 - [ ] Update ISSO Executive Summary HTML
 - [ ] Update security reports and docs
@@ -390,7 +390,7 @@ Estimated 200+ occurrences of "NetNynja"/"netnynja" across 30+ files.
 
 ### Phase 6: Repository & External (Day 6 - 2 hours)
 
-- [ ] Rename GitHub repository: NetNynjaEnterprise -> GridWatchNetEnterprise
+- [ ] Rename GitHub repository: GridWatchEnterprise -> GridWatchNetEnterprise
 - [ ] Update all git remotes locally
 - [ ] Update GHCR image paths
 - [ ] Rename local directory

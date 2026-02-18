@@ -1,10 +1,10 @@
-# NetNynja Enterprise - Prometheus Configuration
+# GridWatch NetEnterprise - Prometheus Configuration
 
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: "netnynja-enterprise"
+    cluster: "gridwatch-net-enterprise"
     env: "development"
 
 # Alertmanager configuration (if enabled)

@@ -7,7 +7,7 @@ import {
   CardTitle,
   Badge,
   Input,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import { useSyslogStore } from "../../../stores/syslog";
 
 const severityColors: Record<

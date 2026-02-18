@@ -1,4 +1,4 @@
-# NetNynja Enterprise - npm Workspaces Validation
+# GridWatch NetEnterprise - npm Workspaces Validation
 #
 # This workflow validates npm workspaces across all supported platforms:
 # - macOS (latest)
@@ -91,12 +91,12 @@ jobs:
             const path = require('path');
 
             const workspaces = [
-              '@netnynja/shared-types',
-              '@netnynja/shared-auth',
-              '@netnynja/shared-ui',
-              '@netnynja/gateway',
-              '@netnynja/web-ui',
-              '@netnynja/auth-service'
+              '@gridwatch/shared-types',
+              '@gridwatch/shared-auth',
+              '@gridwatch/shared-ui',
+              '@gridwatch/gateway',
+              '@gridwatch/web-ui',
+              '@gridwatch/auth-service'
             ];
 
             let errors = 0;

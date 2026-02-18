@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NetNynja Enterprise - Production Environment Validator
+# GridWatch NetEnterprise - Production Environment Validator
 # Run this BEFORE starting production containers.
 #
 # Usage:
@@ -21,7 +21,7 @@ WARNINGS=0
 ENV_FILE="${1:-.env}"
 
 echo "============================================"
-echo " NetNynja Enterprise — Production Validator"
+echo " GridWatch NetEnterprise — Production Validator"
 echo "============================================"
 echo ""
 
@@ -88,9 +88,9 @@ check_secret "GRAFANA_PASSWORD" 8
 echo ""
 echo "--- Checking for Development Defaults ---"
 
-check_not_default "JWT_SECRET" "netnynja-dev-jwt-secret-2025" "dev-jwt-secret-change-in-production" "changeme"
-check_not_default "CREDENTIAL_ENCRYPTION_KEY" "netnynja-dev-encryption-key-32ch" "changeme"
-check_not_default "VAULT_TOKEN" "netnynja-dev-token" "dev-only-token" "root"
+check_not_default "JWT_SECRET" "GridWatch-dev-jwt-secret-2025" "dev-jwt-secret-change-in-production" "changeme"
+check_not_default "CREDENTIAL_ENCRYPTION_KEY" "GridWatch-dev-encryption-key-32ch" "changeme"
+check_not_default "VAULT_TOKEN" "GridWatch-dev-token" "dev-only-token" "root"
 check_not_default "POSTGRES_PASSWORD" "changeme_in_production" "changeme" "postgres" "password"
 check_not_default "GRAFANA_PASSWORD" "admin" "changeme" "password"
 

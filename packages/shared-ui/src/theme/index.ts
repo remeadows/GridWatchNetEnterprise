@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Theme Configuration
+ * GridWatch NetEnterprise - Theme Configuration
  * Dark cyberpunk theme with neon accents
  */
 

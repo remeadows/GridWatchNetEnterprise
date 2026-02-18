@@ -1,6 +1,6 @@
-# NetNynja STIG Manager Service
+# GridWatch STIG Manager Service
 
-Security Technical Implementation Guide compliance service for NetNynja Enterprise.
+Security Technical Implementation Guide compliance service for GridWatch NetEnterprise.
 
 ## Features
 

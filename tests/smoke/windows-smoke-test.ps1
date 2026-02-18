@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Windows 11/Server Smoke Test Suite
+# GridWatch NetEnterprise - Windows 11/Server Smoke Test Suite
 # Phase 8: Cross-Platform Testing
 #
 # Usage: .\tests\smoke\windows-smoke-test.ps1 [-Profile <profile>]
@@ -427,7 +427,7 @@ function Invoke-Cleanup {
 function Main {
     Write-Host ""
     Write-Host "==============================================" -ForegroundColor Cyan
-    Write-Host " NetNynja Enterprise - Windows Smoke Test" -ForegroundColor Cyan
+    Write-Host " GridWatch NetEnterprise - Windows Smoke Test" -ForegroundColor Cyan
     Write-Host " Profile: $Profile" -ForegroundColor Cyan
     Write-Host " Time: $(Get-Date)" -ForegroundColor Cyan
     Write-Host "==============================================" -ForegroundColor Cyan

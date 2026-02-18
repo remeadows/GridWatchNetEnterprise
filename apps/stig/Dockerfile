@@ -1,5 +1,5 @@
-# NetNynja STIG Service - Multi-stage Dockerfile
-# Build: docker build --target production -t netnynja-stig .
+# GridWatch STIG Service - Multi-stage Dockerfile
+# Build: docker build --target production -t GridWatch-stig .
 
 # ==================================================
 # Base image with Python 3.13 (security update)

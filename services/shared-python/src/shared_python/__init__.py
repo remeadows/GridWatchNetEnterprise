@@ -1,4 +1,4 @@
-"""NetNynja Enterprise - Shared Python Library.
+"""GridWatch NetEnterprise - Shared Python Library.
 
 Consolidates common patterns used across IPAM, NPM, STIG, and Syslog services:
 - BaseServiceSettings: Pydantic config with common infra fields

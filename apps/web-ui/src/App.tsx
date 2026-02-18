@@ -56,7 +56,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  // Force dark mode on mount - NetNynja brand is dark cyberpunk only
+  // Force dark mode on mount - GridWatch brand is dark cyberpunk only
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);

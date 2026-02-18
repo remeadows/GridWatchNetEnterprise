@@ -4,7 +4,7 @@
 
 **Version**: 1.0.0
 **Last Updated**: 2026-01-18
-**Author**: NetNynja Enterprise
+**Author**: GridWatch NetEnterprise
 
 ---
 
@@ -12,7 +12,7 @@
 
 Many network devices require **multiple STIGs** based on the functional roles they perform. A single physical device may act as a firewall, VPN concentrator, intrusion detection system, and router simultaneously. Each role has its own STIG with specific security requirements.
 
-NetNynja STIG Manager supports **multi-STIG assignments** per asset, allowing you to:
+GridWatch STIG Manager supports **multi-STIG assignments** per asset, allowing you to:
 
 - Assign multiple applicable STIGs to a single target
 - Mark one STIG as "primary" for quick audits
@@ -113,7 +113,7 @@ The Juniper SRX SG STIG package contains 4 distinct STIGs:
 
 ---
 
-## Using Multi-STIG in NetNynja STIG Manager
+## Using Multi-STIG in GridWatch STIG Manager
 
 ### Assigning STIGs to Assets
 

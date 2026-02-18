@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Auth Plugin
+ * GridWatch NetEnterprise - Gateway Auth Plugin
  */
 
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
@@ -8,9 +8,9 @@ import {
   configureAuth,
   verifyAccessToken,
   type JWTPayload,
-} from "@netnynja/shared-auth";
-import { UnauthorizedError, ForbiddenError } from "@netnynja/shared-auth";
-import type { UserRole } from "@netnynja/shared-types";
+} from "@gridwatch/shared-auth";
+import { UnauthorizedError, ForbiddenError } from "@gridwatch/shared-auth";
+import type { UserRole } from "@gridwatch/shared-types";
 import { config } from "../config";
 
 // Extend Fastify types

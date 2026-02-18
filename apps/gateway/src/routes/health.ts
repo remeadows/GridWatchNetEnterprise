@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Health Check Routes
+ * GridWatch NetEnterprise - Gateway Health Check Routes
  */
 
 import type { FastifyPluginAsync } from "fastify";

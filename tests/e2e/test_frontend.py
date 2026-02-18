@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - Frontend Validation (Playwright)
+GridWatch NetEnterprise E2E Tests - Frontend Validation (Playwright)
 
 Tests the unified web UI including:
 - Login flow

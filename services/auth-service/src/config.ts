@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Auth Service Configuration
+ * GridWatch NetEnterprise - Auth Service Configuration
  */
 
 import { z } from "zod";
@@ -36,8 +36,8 @@ const ConfigSchema = z.object({
   JWT_PUBLIC_KEY: z.string().optional(),
   JWT_ACCESS_EXPIRY: z.string().default("15m"),
   JWT_REFRESH_EXPIRY: z.string().default("7d"),
-  JWT_ISSUER: z.string().default("netnynja-enterprise"),
-  JWT_AUDIENCE: z.string().default("netnynja-api"),
+  JWT_ISSUER: z.string().default("gridwatch-net-enterprise"),
+  JWT_AUDIENCE: z.string().default("gridwatch-api"),
 
   // Security
   MAX_LOGIN_ATTEMPTS: z.coerce.number().default(5),

@@ -1,17 +1,17 @@
 #!/bin/bash
-# NetNynja Enterprise - Vault Initialization
+# GridWatch NetEnterprise - Vault Initialization
 # Sets up Vault secrets structure for development
 
 set -euo pipefail
 
 VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-netnynja-dev-token}"
+VAULT_TOKEN="${VAULT_TOKEN:-GridWatch-dev-token}"
 
 export VAULT_ADDR
 export VAULT_TOKEN
 
 echo "============================================"
-echo "NetNynja Enterprise - Vault Setup"
+echo "GridWatch NetEnterprise - Vault Setup"
 echo "============================================"
 echo ""
 
@@ -33,11 +33,11 @@ echo "Creating secrets structure..."
 
 # Database credentials
 vault kv put secret/database \
-    postgres_user="netnynja" \
+    postgres_user="GridWatch" \
     postgres_password="${POSTGRES_PASSWORD:-changeme}" \
     postgres_host="postgres" \
     postgres_port="5432" \
-    postgres_db="netnynja"
+    postgres_db="GridWatch"
 
 # Redis credentials
 vault kv put secret/redis \
@@ -72,13 +72,13 @@ vault kv put secret/smtp \
     port="587" \
     user="" \
     password="" \
-    from="netnynja@example.com"
+    from="GridWatch@example.com"
 
 echo ""
 echo "Creating policies..."
 
 # Create read-only policy for applications
-vault policy write netnynja-app - <<EOF
+vault policy write GridWatch-app - <<EOF
 # Read access to all secrets
 path "secret/data/*" {
   capabilities = ["read"]
@@ -90,7 +90,7 @@ path "secret/metadata/*" {
 EOF
 
 # Create admin policy
-vault policy write netnynja-admin - <<EOF
+vault policy write GridWatch-admin - <<EOF
 # Full access to secrets
 path "secret/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
@@ -105,7 +105,7 @@ vault auth enable approle 2>/dev/null || echo "AppRole already enabled"
 
 # Create AppRole for gateway
 vault write auth/approle/role/gateway \
-    token_policies="netnynja-app" \
+    token_policies="GridWatch-app" \
     token_ttl="1h" \
     token_max_ttl="4h" \
     secret_id_ttl="0"

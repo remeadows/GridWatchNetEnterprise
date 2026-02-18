@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Project Context
+# GridWatch NetEnterprise - Project Context
 
 > Comprehensive context for AI-assisted and human development
 
@@ -8,7 +8,7 @@
 
 ## Project Vision
 
-NetNynja Enterprise unifies three critical network management capabilities into a single platform, providing IT and security teams with comprehensive visibility and control over their network infrastructure.
+GridWatch NetEnterprise unifies three critical network management capabilities into a single platform, providing IT and security teams with comprehensive visibility and control over their network infrastructure.
 
 ### Core Applications
 
@@ -53,7 +53,7 @@ NetNynja Enterprise unifies three critical network management capabilities into 
       │             │                │               │
       ▼             ▼                ▼               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   NetNynja Enterprise                        │
+│                   GridWatch NetEnterprise                        │
 │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────────┐ │
 │  │  Auth   │   │  IPAM   │   │   NPM   │   │STIG Manager │ │
 │  └─────────┘   └─────────┘   └─────────┘   └─────────────┘ │

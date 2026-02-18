@@ -1,5 +1,5 @@
 # ===========================================
-# NetNynja Enterprise - Trivy Ignore File
+# GridWatch NetEnterprise - Trivy Ignore File
 # ===========================================
 # List CVEs to ignore during scanning.
 # Each line should contain a CVE ID and optionally an expiration date.

@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Auth Service Entry Point
+ * GridWatch NetEnterprise - Auth Service Entry Point
  */
 
 import "dotenv/config";

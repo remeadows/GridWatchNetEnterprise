@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-A comprehensive vulnerability scan has identified **15+ CRITICAL** and **200+ HIGH** severity vulnerabilities across NetNynja Enterprise container images. Multiple internet-facing services are affected, including authentication and gateway components.
+A comprehensive vulnerability scan has identified **15+ CRITICAL** and **200+ HIGH** severity vulnerabilities across GridWatch NetEnterprise container images. Multiple internet-facing services are affected, including authentication and gateway components.
 
 **Immediate Risk**: Remote code execution vulnerabilities in OpenSSL affect core services.
 
@@ -24,8 +24,8 @@ A comprehensive vulnerability scan has identified **15+ CRITICAL** and **200+ HI
 **Attack Vector**: Network  
 **Affected Services**:
 
-- netnynja-enterprise-auth-service
-- netnynja-enterprise-gateway
+- gridwatch-net-enterprise-auth-service
+- gridwatch-net-enterprise-gateway
 - postgres:16-alpine
 - redis:7-alpine
 - nats:2.10-alpine
@@ -54,7 +54,7 @@ A comprehensive vulnerability scan has identified **15+ CRITICAL** and **200+ HI
 
 ### 4. CVE-2025-7458 - SQLite Integer Overflow (CRITICAL)
 
-**Affected Service**: netnynja-enterprise-ipam-service  
+**Affected Service**: gridwatch-net-enterprise-ipam-service  
 **Impact**: Integer overflow leading to memory corruption  
 **Fix**: No patch available - mitigation required
 

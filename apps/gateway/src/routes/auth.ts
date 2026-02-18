@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Auth Routes (Proxy to Auth Service)
+ * GridWatch NetEnterprise - Gateway Auth Routes (Proxy to Auth Service)
  */
 
 import type { FastifyPluginAsync } from "fastify";

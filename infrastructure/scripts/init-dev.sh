@@ -1,5 +1,5 @@
 #!/bin/bash
-# NetNynja Enterprise - Development Environment Setup
+# GridWatch NetEnterprise - Development Environment Setup
 # Initializes all services and creates necessary configurations
 
 set -euo pipefail
@@ -20,7 +20,7 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 echo "============================================"
-echo "NetNynja Enterprise - Environment Setup"
+echo "GridWatch NetEnterprise - Environment Setup"
 echo "============================================"
 echo ""
 
@@ -113,7 +113,7 @@ if [ ! -f "$PROJECT_ROOT/infrastructure/nginx/ssl/server.crt" ]; then
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout "$PROJECT_ROOT/infrastructure/nginx/ssl/server.key" \
             -out "$PROJECT_ROOT/infrastructure/nginx/ssl/server.crt" \
-            -subj "/C=US/ST=Dev/L=Local/O=NetNynja/CN=localhost" \
+            -subj "/C=US/ST=Dev/L=Local/O=GridWatch/CN=localhost" \
             2>/dev/null
         log_success "Generated self-signed SSL certificate"
     else

@@ -1,5 +1,5 @@
 /**
- * NetNynja IPAM - Type Definitions
+ * GridWatch IPAM - Type Definitions
  */
 
 import { z } from "zod";

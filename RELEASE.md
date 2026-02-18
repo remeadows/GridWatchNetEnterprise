@@ -1,6 +1,6 @@
 # RELEASE.md - Release and Code Signing Workflow
 
-> Instructions for creating signed releases of NetNynja Enterprise
+> Instructions for creating signed releases of GridWatch NetEnterprise
 
 **Last Updated**: 2026-01-15  
 **Version**: 1.0
@@ -119,7 +119,7 @@ git pull origin main
 # 1. package.json (root and all apps/packages)
 # 2. pyproject.toml (all Python services)
 # 3. PROJECT_STATUS.md (version header)
-# 4. docs/NetNynja_Executive_Summary_ISSO.html (version references)
+# 4. docs/GridWatch_Executive_Summary_ISSO.html (version references)
 
 # Example: v0.2.4 → v0.2.5
 ```
@@ -127,7 +127,7 @@ git pull origin main
 **Commit version bump:**
 
 ```bash
-git add package.json pyproject.toml PROJECT_STATUS.md docs/NetNynja_Executive_Summary_ISSO.html
+git add package.json pyproject.toml PROJECT_STATUS.md docs/GridWatch_Executive_Summary_ISSO.html
 git commit -m "chore: bump version to v0.2.5"
 git push origin main
 ```
@@ -145,20 +145,20 @@ docker compose build
 
 # Tag with version
 IMAGES=(
-  "netnynja-enterprise-gateway"
-  "netnynja-enterprise-web-ui"
-  "netnynja-enterprise-ipam-service"
-  "netnynja-enterprise-ipam-scanner"
-  "netnynja-enterprise-npm-service"
-  "netnynja-enterprise-npm-collector"
-  "netnynja-enterprise-npm-alerts"
-  "netnynja-enterprise-stig-service"
-  "netnynja-enterprise-stig-collector"
-  "netnynja-enterprise-stig-reports"
-  "netnynja-enterprise-auth-service"
-  "netnynja-enterprise-syslog-service"
-  "netnynja-enterprise-syslog-collector"
-  "netnynja-enterprise-syslog-forwarder"
+  "gridwatch-net-enterprise-gateway"
+  "gridwatch-net-enterprise-web-ui"
+  "gridwatch-net-enterprise-ipam-service"
+  "gridwatch-net-enterprise-ipam-scanner"
+  "gridwatch-net-enterprise-npm-service"
+  "gridwatch-net-enterprise-npm-collector"
+  "gridwatch-net-enterprise-npm-alerts"
+  "gridwatch-net-enterprise-stig-service"
+  "gridwatch-net-enterprise-stig-collector"
+  "gridwatch-net-enterprise-stig-reports"
+  "gridwatch-net-enterprise-auth-service"
+  "gridwatch-net-enterprise-syslog-service"
+  "gridwatch-net-enterprise-syslog-collector"
+  "gridwatch-net-enterprise-syslog-forwarder"
 )
 
 for IMAGE in "${IMAGES[@]}"; do
@@ -203,9 +203,9 @@ echo "✅ All images signed successfully!"
 
 ```bash
 # Verify a few key images
-cosign verify --key cosign.pub ${REGISTRY}/netnynja-enterprise-gateway:${VERSION}
-cosign verify --key cosign.pub ${REGISTRY}/netnynja-enterprise-web-ui:${VERSION}
-cosign verify --key cosign.pub ${REGISTRY}/netnynja-enterprise-stig-service:${VERSION}
+cosign verify --key cosign.pub ${REGISTRY}/gridwatch-net-enterprise-gateway:${VERSION}
+cosign verify --key cosign.pub ${REGISTRY}/gridwatch-net-enterprise-web-ui:${VERSION}
+cosign verify --key cosign.pub ${REGISTRY}/gridwatch-net-enterprise-stig-service:${VERSION}
 ```
 
 ### Step 6: Create Git Tag
@@ -218,7 +218,7 @@ VERSION="v0.2.5"
 # Create signed tag
 git tag -s ${VERSION} -m "Release ${VERSION}
 
-NetNynja Enterprise ${VERSION}
+GridWatch NetEnterprise ${VERSION}
 
 Key Changes:
 - [List major changes here]
@@ -226,10 +226,10 @@ Key Changes:
 - [New features]
 
 All container images have been built, signed with Cosign, and published to:
-ghcr.io/<your-username>/netnynja-enterprise-*:${VERSION}
+ghcr.io/<your-username>/gridwatch-net-enterprise-*:${VERSION}
 
 Verification:
-cosign verify --key cosign.pub ghcr.io/<your-username>/netnynja-enterprise-gateway:${VERSION}
+cosign verify --key cosign.pub ghcr.io/<your-username>/gridwatch-net-enterprise-gateway:${VERSION}
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
@@ -245,7 +245,7 @@ git push origin ${VERSION}
 VERSION="v0.2.5"
 
 # Create release archive
-tar -czf netnynja-enterprise-${VERSION}.tar.gz \
+tar -czf gridwatch-net-enterprise-${VERSION}.tar.gz \
   --exclude='node_modules' \
   --exclude='.git' \
   --exclude='*.log' \
@@ -253,25 +253,25 @@ tar -czf netnynja-enterprise-${VERSION}.tar.gz \
   .
 
 # Generate checksums
-sha256sum netnynja-enterprise-${VERSION}.tar.gz > netnynja-enterprise-${VERSION}.sha256
+sha256sum gridwatch-net-enterprise-${VERSION}.tar.gz > gridwatch-net-enterprise-${VERSION}.sha256
 
 # Sign checksum file
-gpg --armor --detach-sign netnynja-enterprise-${VERSION}.sha256
+gpg --armor --detach-sign gridwatch-net-enterprise-${VERSION}.sha256
 
 # Create GitHub release
 gh release create ${VERSION} \
-  --title "NetNynja Enterprise ${VERSION}" \
+  --title "GridWatch NetEnterprise ${VERSION}" \
   --notes "See PROJECT_STATUS.md for full changelog" \
-  netnynja-enterprise-${VERSION}.tar.gz \
-  netnynja-enterprise-${VERSION}.sha256 \
-  netnynja-enterprise-${VERSION}.sha256.asc
+  gridwatch-net-enterprise-${VERSION}.tar.gz \
+  gridwatch-net-enterprise-${VERSION}.sha256 \
+  gridwatch-net-enterprise-${VERSION}.sha256.asc
 ```
 
 **Option B: Manual via GitHub Web UI**
 
-1. Go to https://github.com/<your-username>/NetNynjaEnterprise/releases/new
+1. Go to https://github.com/<your-username>/GridWatchEnterprise/releases/new
 2. Select tag: `v0.2.5`
-3. Release title: `NetNynja Enterprise v0.2.5`
+3. Release title: `GridWatch NetEnterprise v0.2.5`
 4. Description: Copy from PROJECT_STATUS.md changelog
 5. Attach files: `.tar.gz`, `.sha256`, `.sha256.asc`
 6. Click "Publish release"
@@ -297,7 +297,7 @@ Container Images:
 All images signed and published to ghcr.io/<your-username>/ with tag v0.2.5
 
 Verification:
-cosign verify --key cosign.pub ghcr.io/<your-username>/netnynja-enterprise-gateway:v0.2.5
+cosign verify --key cosign.pub ghcr.io/<your-username>/gridwatch-net-enterprise-gateway:v0.2.5
 ```
 
 **Commit documentation updates:**
@@ -365,20 +365,20 @@ docker compose build
 # Tag images
 echo "🏷️  Tagging images..."
 IMAGES=(
-  "netnynja-enterprise-gateway"
-  "netnynja-enterprise-web-ui"
-  "netnynja-enterprise-ipam-service"
-  "netnynja-enterprise-ipam-scanner"
-  "netnynja-enterprise-npm-service"
-  "netnynja-enterprise-npm-collector"
-  "netnynja-enterprise-npm-alerts"
-  "netnynja-enterprise-stig-service"
-  "netnynja-enterprise-stig-collector"
-  "netnynja-enterprise-stig-reports"
-  "netnynja-enterprise-auth-service"
-  "netnynja-enterprise-syslog-service"
-  "netnynja-enterprise-syslog-collector"
-  "netnynja-enterprise-syslog-forwarder"
+  "gridwatch-net-enterprise-gateway"
+  "gridwatch-net-enterprise-web-ui"
+  "gridwatch-net-enterprise-ipam-service"
+  "gridwatch-net-enterprise-ipam-scanner"
+  "gridwatch-net-enterprise-npm-service"
+  "gridwatch-net-enterprise-npm-collector"
+  "gridwatch-net-enterprise-npm-alerts"
+  "gridwatch-net-enterprise-stig-service"
+  "gridwatch-net-enterprise-stig-collector"
+  "gridwatch-net-enterprise-stig-reports"
+  "gridwatch-net-enterprise-auth-service"
+  "gridwatch-net-enterprise-syslog-service"
+  "gridwatch-net-enterprise-syslog-collector"
+  "gridwatch-net-enterprise-syslog-forwarder"
 )
 
 for IMAGE in "${IMAGES[@]}"; do
@@ -401,7 +401,7 @@ done
 
 # Verify signatures
 echo "✅ Verifying signatures..."
-cosign verify --key cosign.pub ${REGISTRY}/netnynja-enterprise-gateway:${VERSION}
+cosign verify --key cosign.pub ${REGISTRY}/gridwatch-net-enterprise-gateway:${VERSION}
 
 # Create git tag
 echo "🏷️  Creating git tag..."
@@ -411,9 +411,9 @@ git push origin ${VERSION}
 echo "✅ Release ${VERSION} complete!"
 echo ""
 echo "Next steps:"
-echo "1. Create GitHub release at: https://github.com/remeadows/NetNynjaEnterprise/releases/new"
+echo "1. Create GitHub release at: https://github.com/remeadows/GridWatchEnterprise/releases/new"
 echo "2. Update PROJECT_STATUS.md with release notes"
-echo "3. Verify images: cosign verify --key cosign.pub ${REGISTRY}/netnynja-enterprise-gateway:${VERSION}"
+echo "3. Verify images: cosign verify --key cosign.pub ${REGISTRY}/gridwatch-net-enterprise-gateway:${VERSION}"
 ```
 
 Make executable:

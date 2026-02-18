@@ -7,7 +7,7 @@ import {
   Badge,
   Input,
   Select,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useSTIGStore } from "../../../stores/stig";
 import type { SSHCredential, SSHCredentialInput } from "../../../stores/stig";

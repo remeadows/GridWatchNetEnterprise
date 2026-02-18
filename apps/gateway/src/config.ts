@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - API Gateway Configuration
+ * GridWatch NetEnterprise - API Gateway Configuration
  */
 
 import { z } from "zod";
@@ -24,10 +24,10 @@ const ConfigSchema = z.object({
   // JWT
   JWT_SECRET: z.string().optional(),
   JWT_PUBLIC_KEY: z.string().optional(),
-  JWT_ISSUER: z.string().default("netnynja-enterprise"),
-  JWT_AUDIENCE: z.string().default("netnynja-api"),
+  JWT_ISSUER: z.string().default("gridwatch-net-enterprise"),
+  JWT_AUDIENCE: z.string().default("gridwatch-api"),
 
-  // CORS - In production, use explicit allowlist (e.g., "https://app.netnynja.com")
+  // CORS - In production, use explicit allowlist (e.g., "https://app.gridwatch.io")
   // Default "true" allows any origin (only safe in development)
   CORS_ORIGIN: z
     .string()
@@ -57,7 +57,7 @@ const ConfigSchema = z.object({
   // Observability
   OTEL_ENABLED: z.coerce.boolean().default(false),
   OTEL_EXPORTER_ENDPOINT: z.string().default("http://localhost:4318"),
-  OTEL_SERVICE_NAME: z.string().default("netnynja-gateway"),
+  OTEL_SERVICE_NAME: z.string().default("gridwatch-gateway"),
   JAEGER_ENDPOINT: z.string().optional(),
 
   // Logging
@@ -121,7 +121,7 @@ function loadConfig(): Config {
         "SECURITY ERROR: CORS_ORIGIN=true (allow all origins) is not permitted in production.",
       );
       console.error(
-        "Set CORS_ORIGIN to an explicit allowlist (e.g., 'https://app.netnynja.com')",
+        "Set CORS_ORIGIN to an explicit allowlist (e.g., 'https://app.gridwatch.io')",
       );
       process.exit(1);
     }

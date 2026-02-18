@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
-        title="NetNynja NPM Service",
+        title="GridWatch NPM Service",
         description="Network Performance Monitoring microservice",
         version="0.1.0",
         lifespan=lifespan,

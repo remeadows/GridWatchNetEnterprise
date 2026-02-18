@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - Shared Fixtures and Configuration
+GridWatch NetEnterprise E2E Tests - Shared Fixtures and Configuration
 """
 import os
 import json
@@ -30,9 +30,9 @@ class TestConfig:
     gateway_url: str = field(default_factory=lambda: os.getenv("GATEWAY_URL", "http://localhost:3001"))
     postgres_host: str = field(default_factory=lambda: os.getenv("POSTGRES_HOST", "localhost"))
     postgres_port: int = field(default_factory=lambda: int(os.getenv("POSTGRES_PORT", "5433")))
-    postgres_db: str = field(default_factory=lambda: os.getenv("POSTGRES_DB", "netnynja"))
-    postgres_user: str = field(default_factory=lambda: os.getenv("POSTGRES_USER", "netnynja"))
-    postgres_password: str = field(default_factory=lambda: os.getenv("POSTGRES_PASSWORD", "netnynja-dev-2025"))
+    postgres_db: str = field(default_factory=lambda: os.getenv("POSTGRES_DB", "GridWatch"))
+    postgres_user: str = field(default_factory=lambda: os.getenv("POSTGRES_USER", "GridWatch"))
+    postgres_password: str = field(default_factory=lambda: os.getenv("POSTGRES_PASSWORD", "GridWatch-dev-2025"))
     redis_host: str = field(default_factory=lambda: os.getenv("REDIS_HOST", "localhost"))
     redis_port: int = field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
     redis_password: str = field(default_factory=lambda: os.getenv("REDIS_PASSWORD", "redis-dev-2025"))
@@ -449,7 +449,7 @@ def pytest_configure(config):
 
 def pytest_html_report_title(report):
     """Set custom HTML report title."""
-    report.title = "NetNynja Enterprise E2E Test Report"
+    report.title = "GridWatch NetEnterprise E2E Test Report"
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -469,7 +469,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     failed = len(terminalreporter.stats.get("failed", []))
     errors = len(terminalreporter.stats.get("error", []))
     
-    terminalreporter.write_sep("=", "NetNynja E2E Test Summary")
+    terminalreporter.write_sep("=", "GridWatch E2E Test Summary")
     terminalreporter.write_line(f"Passed: {passed}")
     terminalreporter.write_line(f"Failed: {failed}")
     terminalreporter.write_line(f"Errors: {errors}")

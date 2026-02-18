@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "shared-python"
 version = "0.2.15"
-description = "NetNynja Enterprise - Shared Python library for backend services"
-authors = ["NetNynja Team"]
+description = "GridWatch NetEnterprise - Shared Python library for backend services"
+authors = ["WarSignalLabs"]
 packages = [
     { include = "shared_python", from = "src" },
 ]

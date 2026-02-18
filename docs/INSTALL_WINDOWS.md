@@ -1,6 +1,6 @@
 # Windows 11 / Windows Server 2022 Installation
 
-> Platform-specific installation guide for NetNynja Enterprise on Windows
+> Platform-specific installation guide for GridWatch NetEnterprise on Windows
 
 ## Prerequisites
 
@@ -80,8 +80,8 @@ git config --global core.eol lf
 
 ```powershell
 # Clone the repository
-git clone https://github.com/your-org/netnynja-enterprise.git
-cd netnynja-enterprise
+git clone https://github.com/your-org/gridwatch-net-enterprise.git
+cd gridwatch-net-enterprise
 
 # Copy environment file
 Copy-Item .env.example .env
