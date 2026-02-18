@@ -75,17 +75,15 @@ services:
     volumes:
       - ./infrastructure/coredns/Corefile:/etc/coredns/Corefile:ro
       - ./infrastructure/coredns/hosts.local:/etc/coredns/hosts.local:ro
-    ports:
-      # Expose DNS on localhost for host-level resolution testing
-      - "127.0.0.1:5353:53/udp"
-      - "127.0.0.1:5353:53/tcp"
+    # No host ports — Windows blocks 5353 (mDNS reserved). DNS is internal only.
+    # To test: docker exec gridwatch-gateway nslookup arista.local.gridwatch 172.30.0.2
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
     logging: *default-logging
     networks:
       gridwatch-network:
-        ipv4_address: 172.30.0.2
+        ipv4_address: 172.30.0.17
 
   nats:
     image: nats:2.10-alpine
@@ -323,7 +321,7 @@ services:
         condition: service_healthy
     # Use CoreDNS for local hostname resolution (.local.gridwatch zone)
     dns:
-      - 172.30.0.2
+      - 172.30.0.17
     healthcheck:
       <<: *healthcheck-defaults
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/healthz"]
@@ -477,7 +475,7 @@ services:
         condition: service_healthy
     # Use CoreDNS for local hostname resolution during network scans
     dns:
-      - 172.30.0.2
+      - 172.30.0.17
     # SEC-021: Minimum capabilities — NET_RAW for ICMP ping/nmap (NET_ADMIN removed)
     cap_drop:
       - ALL
