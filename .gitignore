@@ -123,6 +123,10 @@ docker-compose.override.yml
 *.sqlite3
 *.db
 data/
+# SQL dump/backup files (may contain sensitive data)
+*_backup_*.sql
+*.dump.sql
+*.pg_dump
 
 # ===========================================
 # Misc
