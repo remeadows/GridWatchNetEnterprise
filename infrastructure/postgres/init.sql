@@ -17,7 +17,7 @@ CREATE SCHEMA IF NOT EXISTS stig;
 CREATE SCHEMA IF NOT EXISTS syslog;
 
 -- Set search path
-ALTER DATABASE gridwatch SET search_path TO shared, ipam, npm, stig, syslog, public;
+ALTER DATABASE "GridWatch" SET search_path TO shared, ipam, npm, stig, syslog, public;
 
 -- ============================================
 -- SHARED SCHEMA - Cross-application tables
@@ -364,7 +364,7 @@ CREATE INDEX idx_discovered_hosts_site ON npm.discovered_hosts(site);
 -- Device Metrics (time-series storage for CPU, memory, latency, availability)
 -- Partitioned by timestamp for efficient querying and retention management
 CREATE TABLE npm.device_metrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID DEFAULT uuid_generate_v4(),
     device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
     collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     -- ICMP metrics
@@ -396,7 +396,9 @@ CREATE TABLE npm.device_metrics (
     -- Service status (vendor-specific, stored as JSON)
     services_status JSONB,
     -- Availability calculation (based on poll results)
-    is_available BOOLEAN DEFAULT false
+    is_available BOOLEAN DEFAULT false,
+    -- Partition key must be included in PK for partitioned tables
+    PRIMARY KEY (id, collected_at)
 ) PARTITION BY RANGE (collected_at);
 
 -- Create partitions for metrics (daily partitions)
@@ -409,7 +411,7 @@ CREATE INDEX idx_device_metrics_device_time ON npm.device_metrics(device_id, col
 
 -- Interface Metrics (bandwidth utilization, errors)
 CREATE TABLE npm.interface_metrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID DEFAULT uuid_generate_v4(),
     interface_id UUID REFERENCES npm.interfaces(id) ON DELETE CASCADE,
     device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
     collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -430,7 +432,8 @@ CREATE TABLE npm.interface_metrics (
     utilization_out_percent NUMERIC(5, 2),
     -- Status
     admin_status VARCHAR(20),
-    oper_status VARCHAR(20)
+    oper_status VARCHAR(20),
+    PRIMARY KEY (id, collected_at)
 ) PARTITION BY RANGE (collected_at);
 
 CREATE TABLE npm.interface_metrics_default PARTITION OF npm.interface_metrics DEFAULT;
@@ -442,7 +445,7 @@ CREATE INDEX idx_interface_metrics_if_time ON npm.interface_metrics(interface_id
 
 -- Volume Metrics (storage utilization)
 CREATE TABLE npm.volume_metrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID DEFAULT uuid_generate_v4(),
     volume_id UUID REFERENCES npm.volumes(id) ON DELETE CASCADE,
     device_id UUID REFERENCES npm.devices(id) ON DELETE CASCADE,
     collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -450,7 +453,8 @@ CREATE TABLE npm.volume_metrics (
     total_bytes BIGINT,
     used_bytes BIGINT,
     available_bytes BIGINT,
-    utilization_percent NUMERIC(5, 2)
+    utilization_percent NUMERIC(5, 2),
+    PRIMARY KEY (id, collected_at)
 ) PARTITION BY RANGE (collected_at);
 
 CREATE TABLE npm.volume_metrics_default PARTITION OF npm.volume_metrics DEFAULT;
@@ -724,7 +728,7 @@ CREATE INDEX idx_syslog_sources_active ON syslog.sources(is_active);
 -- Syslog events (with 10GB circular buffer - managed by partitioning)
 -- Events are partitioned by received_at for efficient buffer management
 CREATE TABLE syslog.events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID DEFAULT uuid_generate_v4(),
     source_id UUID REFERENCES syslog.sources(id) ON DELETE SET NULL,
     source_ip INET NOT NULL,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -744,7 +748,9 @@ CREATE TABLE syslog.events (
     event_type VARCHAR(100),
     tags TEXT[],
     -- Raw message
-    raw_message TEXT NOT NULL
+    raw_message TEXT NOT NULL,
+    -- Partition key must be included in PK for partitioned tables
+    PRIMARY KEY (id, received_at)
 ) PARTITION BY RANGE (received_at);
 
 -- Create partitions for the last 7 days and next day
