@@ -74,7 +74,7 @@ export function LoginPage() {
       </form>
 
       {/* Version info */}
-      <p className="mt-6 text-center text-xs text-silver-500">Version 0.2.15</p>
+      <p className="mt-6 text-center text-xs text-silver-500">Version 0.3.0</p>
     </div>
   );
 }
