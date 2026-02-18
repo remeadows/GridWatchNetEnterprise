@@ -20,11 +20,11 @@ Target deployment platforms: macOS, Red Hat Enterprise Linux 9.x, Windows 11/Ser
 - All internal service communication over TLS
 - Container images scanned with Trivy before deployment
 
-### Technology Standards (Verified 2026-02-13)
+### Technology Standards (Verified 2026-02-18)
 
 - **API Gateway**: Node.js 20+ / Fastify 5.2 / TypeScript 5.3+
 - **Frontend**: React 18 / TypeScript / Tailwind CSS 3.4 / Vite 7.3
-- **Python Services**: Python 3.13+ with AsyncIO
+- **Python Services**: Python 3.13+ with AsyncIO (Alpine-based images — deb.debian.org blocked at network level)
 - **Database**: PostgreSQL 15+ (primary), VictoriaMetrics (time-series), Redis 7+ (cache)
 - **Messaging**: NATS 2.10 with JetStream
 - **Observability**: Grafana 11.4 / Prometheus 2.48 / Loki 2.9 / Jaeger 1.51
@@ -155,6 +155,23 @@ Required environment variables (see `.env.example`):
 - **Integration Tests**: Testcontainers for database/Redis/NATS
 - **E2E Tests**: Playwright against docker-compose environment
 - **Security Tests**: Trivy container scanning, npm audit, safety (Python)
+
+## Current State (2026-02-18)
+
+- **Version**: 0.2.15 (bump to 0.3.0 is next task)
+- **Repo**: https://github.com/remeadows/GridWatchNetEnterprise
+- **Local path**: `C:\Users\rmeadows\Code Development\dev\GridWatchNetEnterprise`
+- **Rebrand**: Complete — NetNynja → GridWatch fully merged to main (commit ccb336d)
+- **Stack**: Running on Docker Desktop / WSL2. Start with `docker compose --profile ipam up -d`
+- **Gateway health**: `curl http://localhost:3001/healthz` → `{"status":"healthy","services":{"database":"up","redis":"up"}}`
+- **Known broken**: ipam-service + ipam-scanner crash (`ModuleNotFoundError: No module named 'shared_python'`) — pre-existing
+- **gh CLI**: Installed at `C:\Program Files\GitHub CLI` — run `$env:PATH += ";C:\Program Files\GitHub CLI"` each session
+
+### Pending Tasks (priority order):
+1. Bump version 0.2.15 → 0.3.0 (7 package.json + 5 pyproject.toml files)
+2. Rotate JWT secret in Vault
+3. Fix `shared_python` missing module for IPAM/syslog
+4. Create `apps/web-ui/public/assets/GridWatchLogo.png`
 
 ## Working with This Codebase
 
