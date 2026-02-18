@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Device, Alert, NPMDashboard } from "@netnynja/shared-types";
+import type { Device, Alert, NPMDashboard } from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 export interface CreateDeviceInput {

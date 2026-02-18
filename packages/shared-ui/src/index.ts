@@ -1,6 +1,6 @@
 /**
- * NetNynja Enterprise - Shared UI Component Library
- * Reusable React components for all NetNynja modules
+ * GridWatch NetEnterprise - Shared UI Component Library
+ * Reusable React components for all GridWatch modules
  */
 
 // Utility functions

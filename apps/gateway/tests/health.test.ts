@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Health Routes Integration Tests
+ * GridWatch NetEnterprise - Health Routes Integration Tests
  */
 
 import Fastify, { FastifyInstance } from "fastify";

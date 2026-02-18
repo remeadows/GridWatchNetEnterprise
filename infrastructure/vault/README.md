@@ -1,6 +1,6 @@
-# NetNynja Enterprise - Vault Configuration
+# GridWatch NetEnterprise - Vault Configuration
 
-This directory contains HashiCorp Vault configuration for secure secrets management in NetNynja Enterprise.
+This directory contains HashiCorp Vault configuration for secure secrets management in GridWatch NetEnterprise.
 
 ## Directory Structure
 
@@ -30,7 +30,7 @@ docker compose up -d vault
 
 # Use the dev token
 export VAULT_ADDR=http://localhost:8200
-export VAULT_TOKEN=netnynja-dev-token
+export VAULT_TOKEN=gridwatch-dev-token
 
 # Verify access
 vault status
@@ -94,10 +94,10 @@ export VAULT_TOKEN=<root-token>
 ./setup-secrets.sh
 
 # Or manually:
-vault kv put secret/netnynja/database \
+vault kv put secret/gridwatch/database \
   host=postgres \
   port=5432 \
-  username=netnynja \
+  username=gridwatch \
   password=your-secure-password
 ```
 
@@ -122,7 +122,7 @@ seal "azurekeyvault" {
   tenant_id     = "your-tenant-id"
   client_id     = "your-client-id"
   client_secret = "your-client-secret"
-  vault_name    = "netnynja-vault"
+  vault_name    = "gridwatch-vault"
   key_name      = "vault-unseal-key"
 }
 ```
@@ -144,10 +144,10 @@ Services retrieve secrets from Vault using tokens:
 
 ```bash
 # Gateway retrieves JWT keys
-vault kv get -field=private_key secret/netnynja/jwt
+vault kv get -field=private_key secret/gridwatch/jwt
 
 # Service retrieves database credentials
-vault kv get secret/netnynja/database
+vault kv get secret/gridwatch/database
 ```
 
 ### Environment Variables
@@ -171,7 +171,7 @@ VAULT_TOKEN=<service-token>
 
 ```
 secret/
-└── netnynja/
+└── gridwatch/
     ├── jwt/              # JWT signing keys
     │   ├── private_key
     │   ├── public_key
@@ -225,7 +225,7 @@ vault token create -policy=admin -ttl=24h
 docker ps | grep vault
 
 # Check logs
-docker logs netnynja-vault
+docker logs gridwatch-vault
 
 # Verify network
 curl http://localhost:8200/v1/sys/health

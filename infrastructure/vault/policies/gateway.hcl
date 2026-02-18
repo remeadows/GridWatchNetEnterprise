@@ -1,30 +1,30 @@
 # ===========================================
-# NetNynja Gateway - Vault Policy
+# GridWatch Gateway - Vault Policy
 # ===========================================
 # Allows the API Gateway to read secrets it needs
 
 # Read JWT signing keys
-path "secret/data/netnynja/jwt" {
+path "secret/data/GridWatch/jwt" {
   capabilities = ["read"]
 }
 
 # Read database credentials
-path "secret/data/netnynja/database" {
+path "secret/data/GridWatch/database" {
   capabilities = ["read"]
 }
 
 # Read Redis credentials
-path "secret/data/netnynja/redis" {
+path "secret/data/GridWatch/redis" {
   capabilities = ["read"]
 }
 
 # Read NATS credentials (if authentication enabled)
-path "secret/data/netnynja/nats" {
+path "secret/data/GridWatch/nats" {
   capabilities = ["read"]
 }
 
 # Read gateway-specific configuration
-path "secret/data/netnynja/gateway/*" {
+path "secret/data/GridWatch/gateway/*" {
   capabilities = ["read"]
 }
 

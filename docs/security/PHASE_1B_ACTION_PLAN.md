@@ -114,10 +114,10 @@ docker pull grafana/grafana:11.4.0
 docker-compose up -d postgres redis nats grafana
 
 # Verify OpenSSL version
-docker exec netnynja-postgres apk info openssl
-docker exec netnynja-redis apk info openssl
-docker exec netnynja-nats apk info openssl
-docker exec netnynja-grafana apk info openssl
+docker exec gridwatch-postgres apk info openssl
+docker exec gridwatch-redis apk info openssl
+docker exec gridwatch-nats apk info openssl
+docker exec gridwatch-grafana apk info openssl
 ```
 
 - [ ] Create runbook for rapid deployment
@@ -193,8 +193,8 @@ npm run test:integration
 
 ```bash
 # Scan updated images
-docker scout cves --only-severity critical,high local://netnynja-enterprise-auth-service:latest
-docker scout cves --only-severity critical,high local://netnynja-enterprise-gateway:latest
+docker scout cves --only-severity critical,high local://gridwatch-net-enterprise-auth-service:latest
+docker scout cves --only-severity critical,high local://gridwatch-net-enterprise-gateway:latest
 ```
 
 **Expected Results:**
@@ -276,7 +276,7 @@ docker-compose up -d ipam-service
 #### ✅ Step 3: Scan and Verify
 
 ```bash
-docker scout cves --only-severity critical,high local://netnynja-enterprise-ipam-service:latest
+docker scout cves --only-severity critical,high local://gridwatch-net-enterprise-ipam-service:latest
 ```
 
 - [ ] Run vulnerability scan
@@ -320,7 +320,7 @@ jobs:
             --only-severity critical,high \
             --format sarif \
             --output auth-service.sarif \
-            local://netnynja-enterprise-auth-service:latest
+            local://gridwatch-net-enterprise-auth-service:latest
 
       - name: Upload results
         uses: github/codeql-action/upload-sarif@v2

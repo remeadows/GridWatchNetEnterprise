@@ -1,5 +1,5 @@
 #===============================================================================
-# NetNynja Enterprise - Infrastructure Pre-flight Health Checks (Windows)
+# GridWatch NetEnterprise - Infrastructure Pre-flight Health Checks (Windows)
 # PowerShell wrapper for Windows environments
 # Run this BEFORE API/Frontend tests to validate all services are operational
 #===============================================================================
@@ -27,7 +27,7 @@ if (Test-Path $EnvFile) {
 
 # Configuration with defaults
 $Config = @{
-    COMPOSE_PROJECT = if ($env:COMPOSE_PROJECT) { $env:COMPOSE_PROJECT } else { "netnynja" }
+    COMPOSE_PROJECT = if ($env:COMPOSE_PROJECT) { $env:COMPOSE_PROJECT } else { "GridWatch" }
     POSTGRES_HOST = if ($env:POSTGRES_HOST) { $env:POSTGRES_HOST } else { "localhost" }
     POSTGRES_PORT = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { "5433" }
     REDIS_HOST = if ($env:REDIS_HOST) { $env:REDIS_HOST } else { "localhost" }
@@ -195,7 +195,7 @@ function Test-PostgreSQL {
     Write-Test "PostgreSQL connection"
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     try {
-        $result = docker exec "$($Config.COMPOSE_PROJECT)-postgres" pg_isready -U netnynja 2>$null
+        $result = docker exec "$($Config.COMPOSE_PROJECT)-postgres" pg_isready -U GridWatch 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Pass $sw.ElapsedMilliseconds
         } else {
@@ -445,7 +445,7 @@ function Test-Gateway {
 function Write-Report {
     Write-Host ""
     Write-Host ("=" * 70) -ForegroundColor Blue
-    Write-Host "         NETNYNJA INFRASTRUCTURE PRE-FLIGHT REPORT" -ForegroundColor Blue
+    Write-Host "         GridWatch INFRASTRUCTURE PRE-FLIGHT REPORT" -ForegroundColor Blue
     Write-Host ("=" * 70) -ForegroundColor Blue
     Write-Host ""
 
@@ -482,7 +482,7 @@ function Write-Report {
 
 Write-Host ""
 Write-Host ("=" * 70) -ForegroundColor Blue
-Write-Host "      NETNYNJA ENTERPRISE - INFRASTRUCTURE PRE-FLIGHT CHECK" -ForegroundColor Blue
+Write-Host "      GridWatch NetEnterprise - INFRASTRUCTURE PRE-FLIGHT CHECK" -ForegroundColor Blue
 Write-Host "                     $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Blue
 Write-Host ("=" * 70) -ForegroundColor Blue
 

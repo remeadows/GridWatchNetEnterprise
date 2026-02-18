@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "netnynja-syslog"
+name = "gridwatch-syslog"
 version = "0.2.15"
-description = "NetNynja Syslog Collection Service"
+description = "GridWatch Syslog Collection Service"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

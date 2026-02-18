@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Web UI Dockerfile
+# GridWatch NetEnterprise - Web UI Dockerfile
 # Multi-stage build for development and production
 
 # ============================================
@@ -41,10 +41,10 @@ COPY apps/web-ui ./apps/web-ui
 COPY --from=deps /app/node_modules ./node_modules
 
 # Ensure workspace package symlinks are correct in node_modules
-RUN mkdir -p node_modules/@netnynja && \
-    rm -rf node_modules/@netnynja/shared-types node_modules/@netnynja/shared-ui && \
-    ln -s ../../packages/shared-types node_modules/@netnynja/shared-types && \
-    ln -s ../../packages/shared-ui node_modules/@netnynja/shared-ui
+RUN mkdir -p node_modules/@GridWatch && \
+    rm -rf node_modules/@GridWatch/shared-types node_modules/@GridWatch/shared-ui && \
+    ln -s ../../packages/shared-types node_modules/@GridWatch/shared-types && \
+    ln -s ../../packages/shared-ui node_modules/@GridWatch/shared-ui
 
 # Build shared packages first, then web-ui (with increased memory for CI)
 ARG VITE_API_URL=/api
@@ -65,7 +65,7 @@ WORKDIR /app
 COPY apps/web-ui/package.json ./
 
 # Create a modified package.json without workspace dependencies for container build
-RUN cat package.json | sed 's/"@netnynja\/shared-types": "\*",//g' | sed 's/"@netnynja\/shared-ui": "\*",//g' > package.temp.json && mv package.temp.json package.json
+RUN cat package.json | sed 's/"@GridWatch\/shared-types": "\*",//g' | sed 's/"@GridWatch\/shared-ui": "\*",//g' > package.temp.json && mv package.temp.json package.json
 
 # Install all dependencies including dev deps
 RUN npm install --legacy-peer-deps

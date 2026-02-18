@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Health Endpoints Benchmark
+ * GridWatch NetEnterprise - Health Endpoints Benchmark
  *
  * Benchmarks the health check endpoints to ensure they meet performance targets.
  *
@@ -118,7 +118,7 @@ async function runBenchmark(name, config) {
 
 async function main() {
   console.log("\n" + "=".repeat(60));
-  console.log("NetNynja Enterprise - Health Endpoints Benchmark");
+  console.log("GridWatch NetEnterprise - Health Endpoints Benchmark");
   console.log("=".repeat(60));
   console.log(`\nGateway URL: ${BASE_URL}`);
   console.log("Starting benchmarks...\n");

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# NetNynja Enterprise - Pre-commit Hook
+# GridWatch NetEnterprise - Pre-commit Hook
 #
 # This hook runs before each commit to ensure code quality.
 # It will:

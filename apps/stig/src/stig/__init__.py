@@ -1,3 +1,3 @@
-"""NetNynja STIG Manager Service."""
+"""GridWatch STIG Manager Service."""
 
 __version__ = "0.1.0"

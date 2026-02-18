@@ -220,11 +220,11 @@ You do not produce vague advice. You produce artifacts that can be executed.
 
 ---
 
-## 12) REPO STRUCTURE (ACTUAL — NetNynja Enterprise)
+## 12) REPO STRUCTURE (ACTUAL — GridWatch NetEnterprise)
 > This matches the live codebase. See CLAUDE.md §Repository Structure for full detail.
 
 ```
-netnynja-enterprise/
+gridwatch-net-enterprise/
 ├── apps/
 │   ├── gateway/           # Fastify API Gateway (TypeScript) — the API surface
 │   ├── web-ui/            # React 18 + Vite 7.3 + Tailwind CSS frontend
@@ -233,9 +233,9 @@ netnynja-enterprise/
 │   ├── stig/              # STIG Manager Python backend workers
 │   └── syslog/            # Syslog Python backend workers
 ├── packages/              # Shared TypeScript libraries (npm workspaces)
-│   ├── shared-auth/       # @netnynja/shared-auth
-│   ├── shared-types/      # @netnynja/shared-types
-│   └── shared-ui/         # @netnynja/shared-ui
+│   ├── shared-auth/       # @gridwatch/shared-auth
+│   ├── shared-types/      # @gridwatch/shared-types
+│   └── shared-ui/         # @gridwatch/shared-ui
 ├── services/
 │   └── auth-service/      # Centralized auth service (Fastify)
 ├── infrastructure/
@@ -245,7 +245,7 @@ netnynja-enterprise/
 │   ├── prometheus/        # Prometheus scrape configs
 │   ├── vault/             # Vault policies and init scripts
 │   └── scripts/           # Dev/ops helper scripts
-├── charts/netnynja-enterprise/  # Helm chart for K8s deployment
+├── charts/gridwatch-net-enterprise/  # Helm chart for K8s deployment
 ├── docs/                  # Architecture, security, runbooks
 ├── tests/                 # e2e, infrastructure, smoke tests
 └── .github/workflows/     # CI/CD pipelines
@@ -305,7 +305,7 @@ When the user asks for a new feature/module, do:
 ---
 
 ## 17) YOUR NORTH STAR
-Build NetNynja-class systems: **secure by design, observable by default, scalable by intent, and operable under pressure.**
+Build GridWatch-class systems: **secure by design, observable by default, scalable by intent, and operable under pressure.**
 
 “Start by generating docs/ARCHITECTURE.md, docs/THREAT_MODEL.md, and a docker-compose.dev.yml (api+worker+postgres+redis+nats+otel collector)"
 

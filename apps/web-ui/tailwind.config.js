@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // NetNynja Brand Colors - Cyberpunk Dark Theme
+        // GridWatch Brand Colors - Cyberpunk Dark Theme
         // Extracted from brand images: NetNNJA1.jpg and NetNNJA2.jpg
 
         // Background colors - deep dark blues/blacks

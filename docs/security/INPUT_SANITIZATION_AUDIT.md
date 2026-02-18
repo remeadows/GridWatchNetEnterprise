@@ -1,4 +1,4 @@
-# Input Sanitization Audit — NetNynja Enterprise v0.2.13
+# Input Sanitization Audit — GridWatch NetEnterprise v0.2.13
 
 **Audit Date**: 2026-02-11
 **Sprint**: SEC-HARDENING-01 (Day 4, SEC-019)
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Comprehensive audit of all API endpoints, database queries, subprocess calls, and user input handling across the NetNynja Enterprise codebase. **No critical input sanitization vulnerabilities found.** All SQL queries use parameterized statements, all subprocess calls use exec-style argument arrays, and all gateway routes enforce Zod schema validation.
+Comprehensive audit of all API endpoints, database queries, subprocess calls, and user input handling across the GridWatch NetEnterprise codebase. **No critical input sanitization vulnerabilities found.** All SQL queries use parameterized statements, all subprocess calls use exec-style argument arrays, and all gateway routes enforce Zod schema validation.
 
 **Result**: ✅ PASS — No unmitigated input injection vectors detected.
 
@@ -120,7 +120,7 @@ Python services use implicit Pydantic validation on FastAPI endpoint models. Add
 
 ### Architecture Defense
 
-NetNynja Enterprise uses a **JSON API architecture** — the gateway returns JSON responses, not HTML. The React frontend renders data using JSX, which **auto-escapes all interpolated values by default** (React's built-in XSS protection).
+GridWatch NetEnterprise uses a **JSON API architecture** — the gateway returns JSON responses, not HTML. The React frontend renders data using JSX, which **auto-escapes all interpolated values by default** (React's built-in XSS protection).
 
 ### Specific Considerations
 
@@ -191,7 +191,7 @@ No file uploads are written to disk with user-controlled filenames. All uploads 
 
 ## Conclusion
 
-The NetNynja Enterprise codebase demonstrates consistent security practices across all input handling paths. The combination of Zod (TypeScript) and Pydantic (Python) schema validation at API boundaries, parameterized SQL queries via asyncpg/pg, and exec-style subprocess calls provides defense-in-depth against the OWASP Top 10 injection categories.
+The GridWatch NetEnterprise codebase demonstrates consistent security practices across all input handling paths. The combination of Zod (TypeScript) and Pydantic (Python) schema validation at API boundaries, parameterized SQL queries via asyncpg/pg, and exec-style subprocess calls provides defense-in-depth against the OWASP Top 10 injection categories.
 
 **Remaining recommendations** (non-blocking, for future hardening):
 

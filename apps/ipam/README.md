@@ -1,6 +1,6 @@
-# NetNynja IPAM Service
+# GridWatch IPAM Service
 
-IP Address Management service for NetNynja Enterprise.
+IP Address Management service for GridWatch NetEnterprise.
 
 ## Features
 

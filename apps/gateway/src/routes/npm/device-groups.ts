@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - NPM Device Groups API Routes
+ * GridWatch NetEnterprise - NPM Device Groups API Routes
  * Manage device groups for organizing monitored devices
  */
 

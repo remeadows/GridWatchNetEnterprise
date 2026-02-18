@@ -1,9 +1,9 @@
 /**
- * NetNynja Enterprise - User Repository
+ * GridWatch NetEnterprise - User Repository
  */
 
 import { query } from "./db";
-import type { User, UserRole } from "@netnynja/shared-types";
+import type { User, UserRole } from "@gridwatch/shared-types";
 
 export interface DbUser {
   id: string;

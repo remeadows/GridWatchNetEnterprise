@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - API Gateway Logger
+ * GridWatch NetEnterprise - API Gateway Logger
  *
  * Supports multiple transports:
  * - Development: pino-pretty for colored console output
@@ -40,7 +40,7 @@ function buildTransport():
         batching: true,
         interval: 5, // seconds
         labels: {
-          application: "netnynja-gateway",
+          application: "GridWatch-gateway",
           environment: process.env.NODE_ENV || "production",
         },
       },

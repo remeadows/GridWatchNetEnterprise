@@ -1,13 +1,13 @@
 apiVersion: v2
-name: netnynja-enterprise
-description: A Helm chart for NetNynja Enterprise - Unified Network Management Platform
+name: gridwatch-net-enterprise
+description: A Helm chart for GridWatch NetEnterprise - Unified Network Management Platform
 type: application
 version: 0.1.0
 appVersion: "0.2.0"
 
-home: https://github.com/remeadows/NetNynjaEnterprise
+home: https://github.com/warsignallabs/GridWatchNetEnterprise
 sources:
-  - https://github.com/remeadows/NetNynjaEnterprise
+  - https://github.com/warsignallabs/GridWatchNetEnterprise
 
 keywords:
   - network
@@ -19,8 +19,8 @@ keywords:
   - security
 
 maintainers:
-  - name: NetNynja Team
-    email: support@netnynja.io
+  - name: WarSignalLabs
+    email: support@gridwatch.io
 
 dependencies:
   - name: postgresql
@@ -40,4 +40,4 @@ annotations:
   artifacthub.io/license: Proprietary
   artifacthub.io/signKey: |
     fingerprint: XXX
-    url: https://netnynja.io/keys/helm.asc
+    url: https://gridwatch.io/keys/helm.asc

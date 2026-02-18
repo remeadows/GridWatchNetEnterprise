@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    NetNynja Enterprise - Phase 1 Security Remediation Script
+    GridWatch NetEnterprise - Phase 1 Security Remediation Script
 
 .DESCRIPTION
     Automates the Phase 1 critical vulnerability remediation for SEC-012.
@@ -83,7 +83,7 @@ Write-Host "PHASE 1 SECURITY REMEDIATION" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Yellow
 Write-Host "`nThis script will:" -ForegroundColor Yellow
 Write-Host "1. Pull latest secure base images"
-Write-Host "2. Rebuild custom NetNynja services"
+Write-Host "2. Rebuild custom GridWatch services"
 Write-Host "3. Stop and restart containers"
 Write-Host "4. Verify deployments"
 Write-Host "`nEstimated downtime: 2-5 minutes" -ForegroundColor Red
@@ -103,9 +103,9 @@ if (-not $SkipBackup) {
     
     # Backup Grafana data
     Write-Host "Backing up Grafana data..."
-    docker exec netnynja-grafana tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana 2>$null
+    docker exec GridWatch-grafana tar czf /tmp/grafana-backup.tar.gz /var/lib/grafana 2>$null
     if ($LASTEXITCODE -eq 0) {
-        docker cp netnynja-grafana:/tmp/grafana-backup.tar.gz "$backupDir/grafana-data.tar.gz"
+        docker cp GridWatch-grafana:/tmp/grafana-backup.tar.gz "$backupDir/grafana-data.tar.gz"
         Write-Success "Grafana backup created: $backupDir/grafana-data.tar.gz"
     } else {
         Write-Warning "Grafana backup failed (container may not be running)"
@@ -113,12 +113,12 @@ if (-not $SkipBackup) {
     
     # Backup Vault snapshot (if unsealed)
     Write-Host "Checking Vault status..."
-    $vaultSealed = docker exec netnynja-vault vault status -format=json 2>$null | ConvertFrom-Json
+    $vaultSealed = docker exec GridWatch-vault vault status -format=json 2>$null | ConvertFrom-Json
     if ($vaultSealed.sealed -eq $false) {
         Write-Host "Creating Vault snapshot..."
-        docker exec netnynja-vault vault operator raft snapshot save /tmp/vault-backup.snap 2>$null
+        docker exec GridWatch-vault vault operator raft snapshot save /tmp/vault-backup.snap 2>$null
         if ($LASTEXITCODE -eq 0) {
-            docker cp netnynja-vault:/tmp/vault-backup.snap "$backupDir/vault-snapshot.snap"
+            docker cp GridWatch-vault:/tmp/vault-backup.snap "$backupDir/vault-snapshot.snap"
             Write-Success "Vault snapshot created: $backupDir/vault-snapshot.snap"
         } else {
             Write-Warning "Vault snapshot failed"
@@ -175,8 +175,8 @@ if (Test-Path $composeFile) {
     exit 1
 }
 
-# Step 4: Rebuild custom NetNynja services
-Write-Step "Rebuilding NetNynja services (this may take 5-10 minutes)"
+# Step 4: Rebuild custom GridWatch services
+Write-Step "Rebuilding GridWatch services (this may take 5-10 minutes)"
 
 Write-Host "Building auth-service..."
 docker-compose build --no-cache auth-service
@@ -215,7 +215,7 @@ if (-not $SkipVerification) {
     $allHealthy = $true
     
     foreach ($service in $services) {
-        $containerName = "netnynja-$service"
+        $containerName = "GridWatch-$service"
         $status = docker ps --filter "name=$containerName" --format "{{.Status}}"
         
         if ($status -like "*Up*") {
@@ -277,13 +277,13 @@ Write-Step "Next steps"
 Write-Host @"
 
 1. Run vulnerability scan to verify fixes:
-   trivy image --severity CRITICAL netnynja-enterprise-auth-service:latest
-   trivy image --severity CRITICAL netnynja-enterprise-gateway:latest
+   trivy image --severity CRITICAL gridwatch-net-enterprise-auth-service:latest
+   trivy image --severity CRITICAL gridwatch-net-enterprise-gateway:latest
 
 2. If Vault was unsealed before, unseal it now:
-   docker exec netnynja-vault vault operator unseal <key1>
-   docker exec netnynja-vault vault operator unseal <key2>
-   docker exec netnynja-vault vault operator unseal <key3>
+   docker exec GridWatch-vault vault operator unseal <key1>
+   docker exec GridWatch-vault vault operator unseal <key2>
+   docker exec GridWatch-vault vault operator unseal <key3>
 
 3. Monitor application logs for issues:
    docker-compose logs -f auth-service gateway

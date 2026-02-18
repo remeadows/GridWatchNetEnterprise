@@ -1,8 +1,8 @@
 {
-  "name": "@netnynja/shared-types",
+  "name": "@gridwatch/shared-types",
   "version": "0.2.15",
   "private": true,
-  "description": "Shared TypeScript types for NetNynja Enterprise",
+  "description": "Shared TypeScript types for GridWatch NetEnterprise",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

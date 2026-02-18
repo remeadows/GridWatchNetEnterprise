@@ -1,5 +1,5 @@
 /**
- * NetNynja NPM - Type Definitions
+ * GridWatch NPM - Type Definitions
  */
 
 import { z } from "zod";

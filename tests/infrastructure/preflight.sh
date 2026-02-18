@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# NetNynja Enterprise - Infrastructure Pre-flight Health Checks
+# GridWatch NetEnterprise - Infrastructure Pre-flight Health Checks
 # Run this BEFORE API/Frontend tests to validate all services are operational
 #===============================================================================
 
@@ -17,12 +17,12 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
 fi
 
 # Configuration
-COMPOSE_PROJECT="${COMPOSE_PROJECT:-netnynja}"
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-GridWatch}"
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5433}"
-POSTGRES_USER="${POSTGRES_USER:-netnynja}"
-POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-netnynja-dev-2025}"
-POSTGRES_DB="${POSTGRES_DB:-netnynja}"
+POSTGRES_USER="${POSTGRES_USER:-GridWatch}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-GridWatch-dev-2025}"
+POSTGRES_DB="${POSTGRES_DB:-GridWatch}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-redis-dev-2025}"
@@ -360,7 +360,7 @@ check_redis() {
     log_test "Session write/read/delete cycle"
     test_start=$(date +%s%N)
 
-    local test_key="netnynja:test:$(date +%s)"
+    local test_key="GridWatch:test:$(date +%s)"
     local test_value='{"test":"e2e"}'
 
     # Write
@@ -382,7 +382,7 @@ check_redis() {
 
     # Check for existing session keys (informational)
     log_test "Active sessions"
-    local session_count=$(run_redis KEYS "netnynja:session:*" | wc -l)
+    local session_count=$(run_redis KEYS "GridWatch:session:*" | wc -l)
     echo -e "${GREEN}✓${NC} $session_count active"
     ((PASSED++))
     
@@ -534,7 +534,7 @@ check_vault() {
     # Check JWT signing keys (if token available)
     if [ -n "${VAULT_TOKEN:-}" ]; then
         log_test "JWT signing keys accessible"
-        local jwt_key=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" "${VAULT_ADDR}/v1/secret/data/netnynja/jwt" 2>/dev/null)
+        local jwt_key=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" "${VAULT_ADDR}/v1/secret/data/GridWatch/jwt" 2>/dev/null)
         
         if echo "$jwt_key" | grep -q '"data"'; then
             log_pass
@@ -583,7 +583,7 @@ check_victoriametrics() {
     test_start=$(date +%s%N)
     
     local write_response=$(curl -sf -X POST "http://${VICTORIA_HOST}:${VICTORIA_PORT}/api/v1/write" \
-        -d "netnynja_e2e_test{test=\"preflight\"} $(date +%s)" 2>/dev/null; echo $?)
+        -d "GridWatch_e2e_test{test=\"preflight\"} $(date +%s)" 2>/dev/null; echo $?)
     
     if [ "$write_response" = "0" ]; then
         log_pass "$(measure_time $test_start)"
@@ -605,16 +605,16 @@ check_victoriametrics() {
         section_failures+="Query endpoint failed; "
     fi
     
-    # Check for NetNynja metrics
-    log_test "NetNynja metrics present"
+    # Check for GridWatch metrics
+    log_test "GridWatch metrics present"
     local nn_metrics
-    nn_metrics=$(curl -sf "http://${VICTORIA_HOST}:${VICTORIA_PORT}/api/v1/label/__name__/values" 2>/dev/null | grep -c "netnynja" | tr -d '\n') || nn_metrics="0"
+    nn_metrics=$(curl -sf "http://${VICTORIA_HOST}:${VICTORIA_PORT}/api/v1/label/__name__/values" 2>/dev/null | grep -c "GridWatch" | tr -d '\n') || nn_metrics="0"
 
     if [ "$nn_metrics" -gt 0 ] 2>/dev/null; then
         echo -e "${GREEN}✓${NC} $nn_metrics metric names"
         ((PASSED++))
     else
-        log_warn "No netnynja_* metrics yet"
+        log_warn "No GridWatch_* metrics yet"
     fi
     
     local section_duration=$(measure_time $section_start)
@@ -684,9 +684,9 @@ check_observability() {
         section_failures+="Jaeger; "
     fi
     
-    # Check for traces from NetNynja services
-    log_test "Traces from NetNynja services"
-    local services=$(curl -sf "http://localhost:16686/api/services" 2>/dev/null | grep -c "netnynja" 2>/dev/null | tr -d '\n' || echo "0")
+    # Check for traces from GridWatch services
+    log_test "Traces from GridWatch services"
+    local services=$(curl -sf "http://localhost:16686/api/services" 2>/dev/null | grep -c "GridWatch" 2>/dev/null | tr -d '\n' || echo "0")
     # Ensure we have a valid integer (default to 0 if empty or non-numeric)
     services=${services:-0}
     [[ ! "$services" =~ ^[0-9]+$ ]] && services=0
@@ -695,7 +695,7 @@ check_observability() {
         echo -e "${GREEN}✓${NC} $services services traced"
         ((PASSED++))
     else
-        log_warn "No NetNynja traces yet"
+        log_warn "No GridWatch traces yet"
     fi
     
     local section_duration=$(measure_time $section_start)
@@ -785,7 +785,7 @@ print_report() {
     local total_duration=$(( (end_time - START_TIME) / 1000000 ))
     
     echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║              NETNYNJA INFRASTRUCTURE PRE-FLIGHT REPORT             ║${NC}"
+    echo -e "${BLUE}║              GridWatch INFRASTRUCTURE PRE-FLIGHT REPORT             ║${NC}"
     echo -e "${BLUE}╠════════════════════════════════════════════════════════════════════╣${NC}"
     printf "${BLUE}║${NC} %-24s │ %-8s │ %-10s │ %-15s ${BLUE}║${NC}\n" "Section" "Status" "Duration" "Failures"
     echo -e "${BLUE}╠════════════════════════════════════════════════════════════════════╣${NC}"
@@ -815,7 +815,7 @@ print_report() {
 main() {
     echo -e "${BLUE}"
     echo "╔═══════════════════════════════════════════════════════════════════╗"
-    echo "║       NETNYNJA ENTERPRISE - INFRASTRUCTURE PRE-FLIGHT CHECK       ║"
+    echo "║       GridWatch NetEnterprise - INFRASTRUCTURE PRE-FLIGHT CHECK       ║"
     echo "║                        $(date '+%Y-%m-%d %H:%M:%S')                         ║"
     echo "╚═══════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"

@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Poetry Validation Script for Windows
+# GridWatch NetEnterprise - Poetry Validation Script for Windows
 #
 # This script validates that Poetry is properly installed and configured
 # on Windows systems.
@@ -55,7 +55,7 @@ $script:Failures = 0
 # Platform Detection
 # ============================================
 
-Write-Header "NetNynja Enterprise - Poetry Validator"
+Write-Header "GridWatch NetEnterprise - Poetry Validator"
 
 Write-Info "Detecting platform..."
 $OSVersion = [System.Environment]::OSVersion

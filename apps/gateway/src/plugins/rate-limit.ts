@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Rate Limiting Plugin
+ * GridWatch NetEnterprise - Gateway Rate Limiting Plugin
  *
  * Provides tiered rate limiting:
  * - Global default limits for all authenticated users

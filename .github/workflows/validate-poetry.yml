@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Poetry Validation
+# GridWatch NetEnterprise - Poetry Validation
 #
 # This workflow validates Poetry configuration across all supported platforms:
 # - Ubuntu (latest) - for Linux/RHEL compatibility testing

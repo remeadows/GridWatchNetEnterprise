@@ -9,9 +9,9 @@ import {
   DataTable,
   StatsCard,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import type { IPAddress } from "@netnynja/shared-types";
+import type { IPAddress } from "@gridwatch/shared-types";
 import { useIPAMStore } from "../../../stores/ipam";
 import { useSNMPv3CredentialsStore } from "../../../stores/snmpv3-credentials";
 

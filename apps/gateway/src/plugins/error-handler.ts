@@ -1,10 +1,10 @@
 /**
- * NetNynja Enterprise - Gateway Error Handler Plugin
+ * GridWatch NetEnterprise - Gateway Error Handler Plugin
  */
 
 import type { FastifyPluginAsync, FastifyError } from "fastify";
 import fp from "fastify-plugin";
-import { AuthError } from "@netnynja/shared-auth";
+import { AuthError } from "@gridwatch/shared-auth";
 import { ZodError } from "zod";
 import { logger } from "../logger";
 

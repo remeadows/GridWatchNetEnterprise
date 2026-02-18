@@ -191,7 +191,7 @@ Automated scan via check-alpine-openssl.ps1
             # Note: Configure SMTP settings as needed
             Send-MailMessage `
                 -To $EmailTo `
-                -From "netnynja-security@example.com" `
+                -From "GridWatch-security@example.com" `
                 -Subject $subject `
                 -Body $body `
                 -SmtpServer "smtp.example.com" `

@@ -8,7 +8,7 @@ import {
   Badge,
   Input,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import { useSyslogStore, SyslogSource } from "../../../stores/syslog";
 
 export function SyslogSourcesPage() {

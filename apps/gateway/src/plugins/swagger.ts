@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Swagger/OpenAPI Plugin
+ * GridWatch NetEnterprise - Gateway Swagger/OpenAPI Plugin
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -13,9 +13,9 @@ const swaggerPlugin: FastifyPluginAsync = async (fastify) => {
     openapi: {
       openapi: "3.1.0",
       info: {
-        title: "NetNynja Enterprise API",
+        title: "GridWatch NetEnterprise API",
         description: `
-# NetNynja Enterprise API
+# GridWatch NetEnterprise API
 
 Unified Network Management Platform combining:
 - **IPAM** - IP Address Management
@@ -72,19 +72,19 @@ API version is included in the URL path: \`/api/v1/...\`
         `.trim(),
         version: "0.2.15",
         contact: {
-          name: "NetNynja Team",
-          email: "support@netnynja.local",
-          url: "https://netnynja.local/support",
+          name: "WarSignalLabs",
+          email: "support@warsignallabs.io",
+          url: "https://warsignallabs.io/support",
         },
         license: {
           name: "Proprietary",
-          url: "https://netnynja.local/license",
+          url: "https://warsignallabs.io/license",
         },
-        termsOfService: "https://netnynja.local/terms",
+        termsOfService: "https://gridwatch.io/terms",
       },
       externalDocs: {
         description: "Full Documentation",
-        url: "https://docs.netnynja.local",
+        url: "https://docs.gridwatch.io",
       },
       servers: [
         {
@@ -92,7 +92,7 @@ API version is included in the URL path: \`/api/v1/...\`
           description: "Development server",
         },
         {
-          url: "https://api.netnynja.local",
+          url: "https://api.gridwatch.io",
           description: "Production server",
         },
       ],

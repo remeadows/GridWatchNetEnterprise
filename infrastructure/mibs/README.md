@@ -1,4 +1,4 @@
-# MIB Files for NetNynja Enterprise NPM
+# MIB Files for GridWatch NetEnterprise NPM
 
 This directory contains vendor-specific and standard SNMP MIB files for network device monitoring.
 

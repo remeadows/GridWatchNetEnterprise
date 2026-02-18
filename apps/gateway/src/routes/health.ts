@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Health Check Routes
+ * GridWatch NetEnterprise - Gateway Health Check Routes
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -127,7 +127,7 @@ const healthRoutes: FastifyPluginAsync = async (fastify) => {
         },
       };
 
-      const statusCode = status === "unhealthy" ? 503 : 200;
+      const statusCode = (status === "unhealthy" ? 503 : 200) as 200;
       reply.status(statusCode);
       return response;
     },

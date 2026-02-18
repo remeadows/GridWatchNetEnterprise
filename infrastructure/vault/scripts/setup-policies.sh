@@ -1,9 +1,9 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - Vault Policy Setup
+# GridWatch NetEnterprise - Vault Policy Setup
 # ===========================================
 # This script configures Vault policies and authentication
-# for NetNynja services.
+# for GridWatch services.
 #
 # Prerequisites:
 #   - Vault must be initialized and unsealed
@@ -22,7 +22,7 @@ VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 POLICIES_DIR="$SCRIPT_DIR/../policies"
 
-echo -e "${GREEN}NetNynja Enterprise - Vault Policy Setup${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - Vault Policy Setup${NC}"
 echo "============================================"
 echo ""
 
@@ -87,7 +87,7 @@ GATEWAY_TOKEN=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
   "$VAULT_ADDR/v1/auth/token/create" \
   -d '{
     "policies": ["gateway"],
-    "display_name": "netnynja-gateway",
+    "display_name": "GridWatch-gateway",
     "ttl": "720h",
     "renewable": true,
     "metadata": {"service": "gateway"}
@@ -101,7 +101,7 @@ SERVICE_TOKEN=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
   "$VAULT_ADDR/v1/auth/token/create" \
   -d '{
     "policies": ["service"],
-    "display_name": "netnynja-service",
+    "display_name": "GridWatch-service",
     "ttl": "720h",
     "renewable": true,
     "metadata": {"service": "backend"}
@@ -115,7 +115,7 @@ ADMIN_TOKEN=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
   "$VAULT_ADDR/v1/auth/token/create" \
   -d '{
     "policies": ["admin"],
-    "display_name": "netnynja-admin",
+    "display_name": "GridWatch-admin",
     "ttl": "24h",
     "renewable": true,
     "metadata": {"service": "admin"}

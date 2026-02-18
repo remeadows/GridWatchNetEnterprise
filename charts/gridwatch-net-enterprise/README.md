@@ -1,6 +1,6 @@
-# NetNynja Enterprise Helm Chart
+# GridWatch NetEnterprise Helm Chart
 
-A Helm chart for deploying NetNynja Enterprise - Unified Network Management Platform
+A Helm chart for deploying GridWatch NetEnterprise - Unified Network Management Platform
 
 ## Prerequisites
 
@@ -13,15 +13,15 @@ A Helm chart for deploying NetNynja Enterprise - Unified Network Management Plat
 Add the repository (once published):
 
 ```bash
-helm repo add netnynja https://charts.netnynja.io
+helm repo add gridwatch https://charts.gridwatch.io
 helm repo update
 ```
 
 Install the chart:
 
 ```bash
-helm install netnynja netnynja/netnynja-enterprise \
-  --namespace netnynja \
+helm install gridwatch gridwatch/gridwatch-net-enterprise \
+  --namespace gridwatch \
   --create-namespace \
   --set postgresql.auth.password=your-db-password \
   --set redis.auth.password=your-redis-password
@@ -30,7 +30,7 @@ helm install netnynja netnynja/netnynja-enterprise \
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall netnynja --namespace netnynja
+helm uninstall gridwatch --namespace gridwatch
 ```
 
 ## Configuration
@@ -62,8 +62,8 @@ externalPostgres:
   enabled: true
   host: your-postgres-host
   port: 5432
-  database: netnynja
-  username: netnynja
+  database: gridwatch
+  username: gridwatch
   existingSecret: postgres-credentials
 ```
 
@@ -74,7 +74,7 @@ ingress:
   enabled: true
   className: nginx
   hosts:
-    - host: netnynja.example.com
+    - host: gridwatch.example.com
       paths:
         - path: /
           pathType: Prefix
@@ -83,9 +83,9 @@ ingress:
           pathType: Prefix
           service: gateway
   tls:
-    - secretName: netnynja-tls
+    - secretName: gridwatch-tls
       hosts:
-        - netnynja.example.com
+        - gridwatch.example.com
 ```
 
 ### Production Recommendations
@@ -136,4 +136,4 @@ No breaking changes.
 
 ## License
 
-Proprietary - NetNynja Enterprise
+Proprietary - GridWatch NetEnterprise

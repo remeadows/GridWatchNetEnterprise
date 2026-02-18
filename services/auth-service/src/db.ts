@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Auth Service Database Client
+ * GridWatch NetEnterprise - Auth Service Database Client
  */
 
 import { Pool, PoolClient } from "pg";

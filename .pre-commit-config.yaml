@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Pre-commit Configuration
+# GridWatch NetEnterprise - Pre-commit Configuration
 #
 # This configuration works with the pre-commit framework for Python projects.
 # It complements husky/lint-staged for TypeScript files.

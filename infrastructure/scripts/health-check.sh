@@ -1,5 +1,5 @@
 #!/bin/bash
-# NetNynja Enterprise - Infrastructure Health Check
+# GridWatch NetEnterprise - Infrastructure Health Check
 # Verifies all infrastructure services are healthy
 
 set -euo pipefail
@@ -15,7 +15,7 @@ TIMEOUT=5
 RETRIES=3
 
 echo "============================================"
-echo "NetNynja Enterprise - Health Check"
+echo "GridWatch NetEnterprise - Health Check"
 echo "============================================"
 echo ""
 
@@ -52,10 +52,10 @@ echo "Infrastructure Services:"
 echo "------------------------"
 
 # PostgreSQL
-check_service "PostgreSQL" "docker exec netnynja-postgres pg_isready -U netnynja" || true
+check_service "PostgreSQL" "docker exec GridWatch-postgres pg_isready -U GridWatch" || true
 
 # Redis
-check_service "Redis" "docker exec netnynja-redis redis-cli -a \${REDIS_PASSWORD:-redis} ping" || true
+check_service "Redis" "docker exec GridWatch-redis redis-cli -a \${REDIS_PASSWORD:-redis} ping" || true
 
 # NATS
 check_service "NATS" "curl -sf http://localhost:8222/healthz" || true

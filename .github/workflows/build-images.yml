@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Docker Image Build Workflow
+# GridWatch NetEnterprise - Docker Image Build Workflow
 #
 # This workflow builds and pushes multi-platform Docker images for all services
 # Triggered on:
@@ -30,7 +30,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/netnynja
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/gridwatch
 
 concurrency:
   group: build-${{ github.ref }}

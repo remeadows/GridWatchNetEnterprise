@@ -1,11 +1,11 @@
 /**
- * NetNynja Enterprise - Shared Authentication Library
+ * GridWatch NetEnterprise - Shared Authentication Library
  * JWT + Argon2id implementation
  */
 
 import * as argon2 from "argon2";
 import * as jose from "jose";
-import type { JWTPayload, AuthTokens, UserRole } from "@netnynja/shared-types";
+import type { JWTPayload, AuthTokens, UserRole } from "@gridwatch/shared-types";
 
 // ============================================
 // Configuration
@@ -24,8 +24,8 @@ export interface AuthConfig {
 const DEFAULT_CONFIG: AuthConfig = {
   accessTokenExpiry: "15m",
   refreshTokenExpiry: "7d",
-  issuer: "netnynja-enterprise",
-  audience: "netnynja-api",
+  issuer: "gridwatch-net-enterprise",
+  audience: "GridWatch-api",
 };
 
 let config: AuthConfig = { ...DEFAULT_CONFIG };

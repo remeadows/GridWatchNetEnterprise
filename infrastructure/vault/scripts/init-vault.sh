@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - Vault Initialization Script
+# GridWatch NetEnterprise - Vault Initialization Script
 # ===========================================
 # This script initializes Vault with Shamir key shares and
 # stores the unseal keys and root token securely.
@@ -56,7 +56,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${GREEN}NetNynja Enterprise - Vault Initialization${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - Vault Initialization${NC}"
 echo "============================================"
 echo ""
 echo "Vault Address: $VAULT_ADDR"

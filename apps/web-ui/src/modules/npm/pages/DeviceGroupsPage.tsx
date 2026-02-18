@@ -8,7 +8,7 @@ import {
   DataTable,
   Input,
   Badge,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   useDeviceGroupsStore,

@@ -1,4 +1,4 @@
-# NetNynja Enterprise
+# GridWatch NetEnterprise
 
 > Unified Network Management Platform combining IPAM, NPM, and STIG Manager
 
@@ -9,12 +9,12 @@
 
 ## Overview
 
-NetNynja Enterprise consolidates four network management applications into a unified platform:
+GridWatch NetEnterprise consolidates four network management applications into a unified platform:
 
-- **NetNynja IPAM** - IP Address Management with network scanning, discovery, and fingerprinting
-- **NetNynja NPM** - Network Performance Monitoring with SNMPv3, device discovery, and 3000+ device scale
-- **NetNynja STIG Manager** - Security Technical Implementation Guide compliance auditing with 16+ platforms
-- **NetNynja Syslog** - Centralized syslog collection with 10GB buffer and SIEM forwarding
+- **GridWatch IPAM** - IP Address Management with network scanning, discovery, and fingerprinting
+- **GridWatch NPM** - Network Performance Monitoring with SNMPv3, device discovery, and 3000+ device scale
+- **GridWatch STIG Manager** - Security Technical Implementation Guide compliance auditing with 16+ platforms
+- **GridWatch Syslog** - Centralized syslog collection with 10GB buffer and SIEM forwarding
 
 ### Supported Platforms
 
@@ -59,8 +59,8 @@ The gateway container automatically includes **nmap 7.97+** for IPAM network sca
 
 ```bash
 # Clone and configure
-git clone https://github.com/your-org/netnynja-enterprise.git
-cd netnynja-enterprise
+git clone https://github.com/your-org/gridwatch-net-enterprise.git
+cd gridwatch-net-enterprise
 cp .env.example .env
 # Edit .env with your passwords
 
@@ -129,7 +129,7 @@ docker compose ps
 ## Project Structure
 
 ```
-netnynja-enterprise/
+gridwatch-net-enterprise/
 ├── apps/
 │   ├── gateway/          # Fastify API Gateway
 │   ├── web-ui/           # React Frontend
@@ -238,4 +238,4 @@ Proprietary - All rights reserved.
 
 ---
 
-Built with care by the NetNynja Team
+Built with care by the WarSignalLabs

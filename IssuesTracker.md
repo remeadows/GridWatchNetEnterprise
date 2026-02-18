@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Issues Tracker
+# GridWatch NetEnterprise - Issues Tracker
 
 > Active issues and technical debt tracking
 

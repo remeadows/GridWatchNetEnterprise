@@ -9,7 +9,7 @@ import {
   Input,
   Select,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import {
   useNPMStore,
   type DiscoveryJob,

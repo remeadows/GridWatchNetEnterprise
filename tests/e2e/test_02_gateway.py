@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - API Gateway Routing (Phase 3 Validation)
+GridWatch NetEnterprise E2E Tests - API Gateway Routing (Phase 3 Validation)
 
 Tests the unified API gateway including:
 - Module health endpoints

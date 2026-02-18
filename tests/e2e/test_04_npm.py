@@ -1,5 +1,5 @@
 """
-NetNynja Enterprise E2E Tests - NPM Module (Phase 6 Validation)
+GridWatch NetEnterprise E2E Tests - NPM Module (Phase 6 Validation)
 
 Tests the NPM (Network Performance Monitoring) module including:
 - Collector management

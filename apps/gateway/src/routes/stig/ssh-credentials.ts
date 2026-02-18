@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - SSH Credentials API Routes
+ * GridWatch NetEnterprise - SSH Credentials API Routes
  * Secure SSH credential management for STIG auditing
  */
 

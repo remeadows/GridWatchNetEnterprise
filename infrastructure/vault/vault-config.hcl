@@ -1,5 +1,5 @@
 # ===========================================
-# NetNynja Enterprise - Vault Configuration
+# GridWatch NetEnterprise - Vault Configuration
 # ===========================================
 # Production configuration for HashiCorp Vault
 #
@@ -68,7 +68,7 @@ log_level = "info"
 #   tenant_id      = "your-tenant-id"
 #   client_id      = "your-client-id"
 #   client_secret  = "your-client-secret"
-#   vault_name     = "netnynja-vault"
+#   vault_name     = "gridwatch-vault"
 #   key_name       = "vault-unseal-key"
 # }
 

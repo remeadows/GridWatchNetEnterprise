@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - NPM (Network Performance Monitoring) API Routes
+ * GridWatch NetEnterprise - NPM (Network Performance Monitoring) API Routes
  */
 
 import type { FastifyPluginAsync } from "fastify";

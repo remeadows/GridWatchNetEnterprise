@@ -1,5 +1,5 @@
 #!/bin/bash
-# NetNynja Enterprise - npm Workspaces Validation Script
+# GridWatch NetEnterprise - npm Workspaces Validation Script
 #
 # This script validates that npm workspaces are properly configured
 # and functional across different platforms.
@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}NetNynja Enterprise - Workspace Validator${NC}"
+echo -e "${BLUE}GridWatch NetEnterprise - Workspace Validator${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -187,8 +187,8 @@ validate_workspaces() {
 
         # Validate package name
         PKG_NAME=$(grep '"name"' "$WS_PKG" | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/')
-        if [[ "$PKG_NAME" != @netnynja/* ]]; then
-            log_warn "$ws: Package name '$PKG_NAME' doesn't follow @netnynja/* convention"
+        if [[ "$PKG_NAME" != @GridWatch/* ]]; then
+            log_warn "$ws: Package name '$PKG_NAME' doesn't follow @GridWatch/* convention"
         else
             log_success "$ws: $PKG_NAME"
         fi
@@ -207,7 +207,7 @@ check_optional_packages() {
     log_info "Checking for optional workspace packages..."
 
     # shared-ui is referenced but may not exist yet
-    if grep -q '"@netnynja/shared-ui"' "$ROOT_DIR/apps/web-ui/package.json"; then
+    if grep -q '"@GridWatch/shared-ui"' "$ROOT_DIR/apps/web-ui/package.json"; then
         if [ ! -d "$ROOT_DIR/packages/shared-ui" ]; then
             log_warn "packages/shared-ui is referenced in web-ui but doesn't exist"
         else
@@ -228,8 +228,8 @@ validate_dependencies() {
 
         PKG_NAME=$(basename "$(dirname "$pkg_file")")
 
-        # Look for @netnynja/* dependencies
-        INTERNAL_DEPS=$(grep -o '"@netnynja/[^"]*"' "$pkg_file" 2>/dev/null | sort -u || true)
+        # Look for @GridWatch/* dependencies
+        INTERNAL_DEPS=$(grep -o '"@GridWatch/[^"]*"' "$pkg_file" 2>/dev/null | sort -u || true)
 
         for dep in $INTERNAL_DEPS; do
             # Check if it uses "*" version
@@ -304,7 +304,7 @@ check_cross_platform() {
         [ -f "$pkg_file" ] || continue
 
         PKG_NAME=$(basename "$(dirname "$pkg_file")")
-        [ "$PKG_NAME" = "NetNynja Enterprise" ] && PKG_NAME="root"
+        [ "$PKG_NAME" = "GridWatch NetEnterprise" ] && PKG_NAME="root"
 
         # Check for rm -rf (use rimraf instead for Windows)
         if grep -q '"rm -rf' "$pkg_file" 2>/dev/null; then

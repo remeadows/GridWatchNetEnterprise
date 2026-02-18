@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Docker Compose Structure
+# GridWatch NetEnterprise - Docker Compose Structure
 
 > Complete reference for the containerized architecture
 
@@ -138,66 +138,66 @@ Profiles allow selective service startup based on what you're working on.
 
 | Container           | Image                | Port(s)    | Purpose             | Health Check     |
 | ------------------- | -------------------- | ---------- | ------------------- | ---------------- |
-| `netnynja-postgres` | postgres:15-alpine   | 5433→5432  | Primary database    | `pg_isready`     |
-| `netnynja-redis`    | redis:7-alpine       | 6379       | Cache & sessions    | `redis-cli ping` |
-| `netnynja-nats`     | nats:2.10-alpine     | 4222, 8222 | JetStream messaging | HTTP /healthz    |
-| `netnynja-vault`    | hashicorp/vault:1.15 | 8200       | Secrets management  | `vault status`   |
+| `gridwatch-postgres` | postgres:15-alpine   | 5433→5432  | Primary database    | `pg_isready`     |
+| `gridwatch-redis`    | redis:7-alpine       | 6379       | Cache & sessions    | `redis-cli ping` |
+| `gridwatch-nats`     | nats:2.10-alpine     | 4222, 8222 | JetStream messaging | HTTP /healthz    |
+| `gridwatch-vault`    | hashicorp/vault:1.15 | 8200       | Secrets management  | `vault status`   |
 
 ### Observability Stack
 
 | Container                  | Image                                    | Port(s)           | Purpose                     | Health Check     |
 | -------------------------- | ---------------------------------------- | ----------------- | --------------------------- | ---------------- |
-| `netnynja-victoriametrics` | victoriametrics/victoria-metrics:v1.93.0 | 8428              | Time-series metrics storage | HTTP /health     |
-| `netnynja-prometheus`      | prom/prometheus:v2.48.0                  | 9090              | Metrics scraping            | HTTP /-/healthy  |
-| `netnynja-loki`            | grafana/loki:2.9.0                       | 3100              | Log aggregation             | HTTP /ready      |
-| `netnynja-promtail`        | grafana/promtail:2.9.0                   | -                 | Log shipping                | -                |
-| `netnynja-jaeger`          | jaegertracing/all-in-one:1.51            | 16686, 4317, 4318 | Distributed tracing         | HTTP /           |
-| `netnynja-grafana`         | grafana/grafana:10.2.0                   | 3002→3000         | Visualization dashboards    | HTTP /api/health |
+| `gridwatch-victoriametrics` | victoriametrics/victoria-metrics:v1.93.0 | 8428              | Time-series metrics storage | HTTP /health     |
+| `gridwatch-prometheus`      | prom/prometheus:v2.48.0                  | 9090              | Metrics scraping            | HTTP /-/healthy  |
+| `gridwatch-loki`            | grafana/loki:2.9.0                       | 3100              | Log aggregation             | HTTP /ready      |
+| `gridwatch-promtail`        | grafana/promtail:2.9.0                   | -                 | Log shipping                | -                |
+| `gridwatch-jaeger`          | jaegertracing/all-in-one:1.51            | 16686, 4317, 4318 | Distributed tracing         | HTTP /           |
+| `gridwatch-grafana`         | grafana/grafana:10.2.0                   | 3002→3000         | Visualization dashboards    | HTTP /api/health |
 
 ### Application Services
 
 | Container               | Build Context           | Port | Purpose                       | Health Check  |
 | ----------------------- | ----------------------- | ---- | ----------------------------- | ------------- |
-| `netnynja-gateway`      | ./apps/gateway          | 3001 | Unified API gateway (Fastify) | HTTP /health  |
-| `netnynja-auth-service` | ./services/auth-service | 3006 | Authentication & RBAC         | HTTP /healthz |
-| `netnynja-web-ui`       | ./apps/web-ui           | 3000 | React frontend (Vite)         | -             |
+| `gridwatch-gateway`      | ./apps/gateway          | 3001 | Unified API gateway (Fastify) | HTTP /health  |
+| `gridwatch-auth-service` | ./services/auth-service | 3006 | Authentication & RBAC         | HTTP /healthz |
+| `gridwatch-web-ui`       | ./apps/web-ui           | 3000 | React frontend (Vite)         | -             |
 
 ### IPAM Services
 
 | Container               | Build Target | Port | Purpose                | Special Capabilities   |
 | ----------------------- | ------------ | ---- | ---------------------- | ---------------------- |
-| `netnynja-ipam-service` | development  | 3003 | FastAPI backend        | -                      |
-| `netnynja-ipam-scanner` | scanner      | -    | Network scanner worker | `NET_RAW`, `NET_ADMIN` |
+| `gridwatch-ipam-service` | development  | 3003 | FastAPI backend        | -                      |
+| `gridwatch-ipam-scanner` | scanner      | -    | Network scanner worker | `NET_RAW`, `NET_ADMIN` |
 
 ### NPM Services
 
 | Container                | Build Target | Port | Purpose                  |
 | ------------------------ | ------------ | ---- | ------------------------ |
-| `netnynja-npm-service`   | development  | 3004 | FastAPI backend          |
-| `netnynja-npm-collector` | collector    | -    | SNMP polling worker      |
-| `netnynja-npm-alerts`    | alerts       | -    | Alert evaluation service |
+| `gridwatch-npm-service`   | development  | 3004 | FastAPI backend          |
+| `gridwatch-npm-collector` | collector    | -    | SNMP polling worker      |
+| `gridwatch-npm-alerts`    | alerts       | -    | Alert evaluation service |
 
 ### STIG Services
 
 | Container                 | Build Target | Port | Purpose                  |
 | ------------------------- | ------------ | ---- | ------------------------ |
-| `netnynja-stig-service`   | development  | 3005 | FastAPI backend          |
-| `netnynja-stig-collector` | collector    | -    | SSH/Netmiko audit worker |
-| `netnynja-stig-reports`   | reports      | -    | CKL/PDF report generator |
+| `gridwatch-stig-service`   | development  | 3005 | FastAPI backend          |
+| `gridwatch-stig-collector` | collector    | -    | SSH/Netmiko audit worker |
+| `gridwatch-stig-reports`   | reports      | -    | CKL/PDF report generator |
 
 ### Syslog Services
 
 | Container                   | Build Target | Port(s)          | Purpose          | Special Capabilities |
 | --------------------------- | ------------ | ---------------- | ---------------- | -------------------- |
-| `netnynja-syslog-service`   | development  | 3007             | FastAPI backend  | -                    |
-| `netnynja-syslog-collector` | collector    | 514/udp, 514/tcp | UDP/TCP listener | `NET_BIND_SERVICE`   |
-| `netnynja-syslog-forwarder` | forwarder    | -                | SIEM forwarding  | -                    |
+| `gridwatch-syslog-service`   | development  | 3007             | FastAPI backend  | -                    |
+| `gridwatch-syslog-collector` | collector    | 514/udp, 514/tcp | UDP/TCP listener | `NET_BIND_SERVICE`   |
+| `gridwatch-syslog-forwarder` | forwarder    | -                | SIEM forwarding  | -                    |
 
 ### Production
 
 | Container        | Image             | Port(s) | Purpose                         |
 | ---------------- | ----------------- | ------- | ------------------------------- |
-| `netnynja-nginx` | nginx:1.25-alpine | 80, 443 | TLS termination & reverse proxy |
+| `gridwatch-nginx` | nginx:1.25-alpine | 80, 443 | TLS termination & reverse proxy |
 
 ---
 
@@ -236,14 +236,14 @@ Named volumes for persistent data:
 
 | Volume                          | Container                  | Mount Path               | Purpose               |
 | ------------------------------- | -------------------------- | ------------------------ | --------------------- |
-| `netnynja-postgres-data`        | postgres                   | /var/lib/postgresql/data | Database files        |
-| `netnynja-redis-data`           | redis                      | /data                    | Redis AOF persistence |
-| `netnynja-nats-data`            | nats                       | /data                    | JetStream storage     |
-| `netnynja-victoriametrics-data` | victoriametrics            | /victoria-metrics-data   | Time-series data      |
-| `netnynja-prometheus-data`      | prometheus                 | /prometheus              | Metrics storage       |
-| `netnynja-loki-data`            | loki                       | /loki                    | Log storage           |
-| `netnynja-grafana-data`         | grafana                    | /var/lib/grafana         | Dashboards & config   |
-| `netnynja-stig-reports`         | stig-service, stig-reports | /app/output              | Generated reports     |
+| `gridwatch-postgres-data`        | postgres                   | /var/lib/postgresql/data | Database files        |
+| `gridwatch-redis-data`           | redis                      | /data                    | Redis AOF persistence |
+| `gridwatch-nats-data`            | nats                       | /data                    | JetStream storage     |
+| `gridwatch-victoriametrics-data` | victoriametrics            | /victoria-metrics-data   | Time-series data      |
+| `gridwatch-prometheus-data`      | prometheus                 | /prometheus              | Metrics storage       |
+| `gridwatch-loki-data`            | loki                       | /loki                    | Log storage           |
+| `gridwatch-grafana-data`         | grafana                    | /var/lib/grafana         | Dashboards & config   |
+| `gridwatch-stig-reports`         | stig-service, stig-reports | /app/output              | Generated reports     |
 
 ---
 
@@ -253,8 +253,8 @@ All services communicate on a single Docker bridge network:
 
 ```yaml
 networks:
-  netnynja-network:
-    name: netnynja-network
+  gridwatch-network:
+    name: gridwatch-network
     driver: bridge
     ipam:
       config:
@@ -352,15 +352,15 @@ Required variables (from `.env` file):
 
 ```bash
 # Database
-POSTGRES_USER=netnynja
+POSTGRES_USER=gridwatch
 POSTGRES_PASSWORD=<required>
-POSTGRES_DB=netnynja
+POSTGRES_DB=gridwatch
 
 # Redis
 REDIS_PASSWORD=<required>
 
 # Vault
-VAULT_DEV_TOKEN=netnynja-dev-token
+VAULT_DEV_TOKEN=gridwatch-dev-token
 
 # JWT
 JWT_SECRET=<required>
@@ -423,7 +423,7 @@ Changes to source files trigger automatic reload in development mode.
 docker compose logs -f gateway
 
 # Shell into container
-docker exec -it netnynja-gateway sh
+docker exec -it gridwatch-gateway sh
 
 # Check health status
 docker compose ps
@@ -491,10 +491,10 @@ lsof -i :3001
 
 ```bash
 # Verify PostgreSQL is healthy
-docker exec netnynja-postgres pg_isready
+docker exec gridwatch-postgres pg_isready
 
 # Check connection string
-docker exec netnynja-gateway env | grep POSTGRES
+docker exec gridwatch-gateway env | grep POSTGRES
 ```
 
 ### Port already in use

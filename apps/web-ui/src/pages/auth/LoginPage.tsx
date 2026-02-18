@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Alert } from "@netnynja/shared-ui";
+import { Button, Input, Alert } from "@gridwatch/shared-ui";
 import { useAuthStore } from "../../stores/auth";
 
 export function LoginPage() {
@@ -25,12 +25,12 @@ export function LoginPage() {
       {/* Logo and Brand */}
       <div className="mb-8 flex flex-col items-center">
         <img
-          src="/assets/NetNNJA2.jpg"
-          alt="NetNynja Logo"
+          src="/assets/GridWatchLogo.png"
+          alt="GridWatch Logo"
           className="h-20 w-20 rounded-xl object-cover shadow-neon-blue"
         />
         <h1 className="mt-4 text-2xl font-bold text-primary-500">
-          NetNynja Enterprise
+          GridWatch NetEnterprise
         </h1>
         <p className="mt-1 text-sm text-silver-400">
           Network Management Platform

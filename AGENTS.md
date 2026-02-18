@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## NetNynja Enterprise — Agent Workload & Execution Rules
+## GridWatch NetEnterprise — Agent Workload & Execution Rules
 
 This file defines how any coding agent (Claude Code, Codex, etc.) operates in this repository.
 If there is ambiguity, follow these rules instead of guessing.

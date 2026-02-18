@@ -1,4 +1,4 @@
--- NetNynja Enterprise - PostgreSQL Initialization
+-- GridWatch NetEnterprise - PostgreSQL Initialization
 -- Creates separate schemas for each application module
 
 -- Enable required extensions
@@ -17,7 +17,7 @@ CREATE SCHEMA IF NOT EXISTS stig;
 CREATE SCHEMA IF NOT EXISTS syslog;
 
 -- Set search path
-ALTER DATABASE netnynja SET search_path TO shared, ipam, npm, stig, syslog, public;
+ALTER DATABASE gridwatch SET search_path TO shared, ipam, npm, stig, syslog, public;
 
 -- ============================================
 -- SHARED SCHEMA - Cross-application tables
@@ -683,7 +683,7 @@ CREATE TRIGGER update_device_group_count_on_delete
 INSERT INTO shared.users (username, email, password_hash, role)
 VALUES (
     'admin',
-    'admin@netnynja.local',
+    'admin@warsignallabs.io',
     '$argon2id$v=19$m=65536,t=3,p=4$RQdT9l4Tz2PIt+0pF2DlcA$/uRbwmrYDTQg+MiqsohbLZRy+dbu/WZUThM/v3sG2jw',
     'admin'
 ) ON CONFLICT (username) DO NOTHING;
@@ -693,10 +693,10 @@ VALUES (
 -- ============================================
 
 -- Application role (create in production with proper credentials)
--- CREATE ROLE netnynja_app WITH LOGIN PASSWORD 'CHANGE_ME';
--- GRANT USAGE ON SCHEMA shared, ipam, npm, stig TO netnynja_app;
--- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA shared, ipam, npm, stig TO netnynja_app;
--- GRANT USAGE ON ALL SEQUENCES IN SCHEMA shared, ipam, npm, stig TO netnynja_app;
+-- CREATE ROLE gridwatch_app WITH LOGIN PASSWORD 'CHANGE_ME';
+-- GRANT USAGE ON SCHEMA shared, ipam, npm, stig TO gridwatch_app;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA shared, ipam, npm, stig TO gridwatch_app;
+-- GRANT USAGE ON ALL SEQUENCES IN SCHEMA shared, ipam, npm, stig TO gridwatch_app;
 
 -- ============================================
 -- SYSLOG SCHEMA

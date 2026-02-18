@@ -4,7 +4,7 @@
 
 ## The Problem
 
-Your NetNynja Enterprise images are built locally and not pushed to a registry yet. Cosign requires images to be in a registry (Docker Hub, GitHub Container Registry, etc.) to sign them properly.
+Your GridWatch NetEnterprise images are built locally and not pushed to a registry yet. Cosign requires images to be in a registry (Docker Hub, GitHub Container Registry, etc.) to sign them properly.
 
 ## Solutions
 
@@ -14,29 +14,29 @@ Your NetNynja Enterprise images are built locally and not pushed to a registry y
 
 ```bash
 # Get digest for your local image
-docker images --digests netnynja-enterprise-gateway
+docker images --digests gridwatch-net-enterprise-gateway
 ```
 
 **Step 2: Sign using the digest**
 
 ```bash
 # Sign with local digest
-cosign sign --key cosign.key netnynja-enterprise-gateway@sha256:<digest>
+cosign sign --key cosign.key gridwatch-net-enterprise-gateway@sha256:<digest>
 ```
 
 **Example:**
 
 ```bash
 # List images with digests
-docker images --digests netnynja-enterprise-gateway
+docker images --digests gridwatch-net-enterprise-gateway
 
 # Output shows:
 # REPOSITORY                        TAG     DIGEST                                                                    IMAGE ID
-# netnynja-enterprise-gateway      latest  sha256:918697d6e32741125bf17c80f9099551ec8b4d186e16a0c9e751b7a516cbdf69  abc123
+# gridwatch-net-enterprise-gateway      latest  sha256:918697d6e32741125bf17c80f9099551ec8b4d186e16a0c9e751b7a516cbdf69  abc123
 
 # Sign using the digest
 cosign sign --key cosign.key \
-  netnynja-enterprise-gateway@sha256:918697d6e32741125bf17c80f9099551ec8b4d186e16a0c9e751b7a516cbdf69
+  gridwatch-net-enterprise-gateway@sha256:918697d6e32741125bf17c80f9099551ec8b4d186e16a0c9e751b7a516cbdf69
 ```
 
 ### Option 2: Use GitHub Container Registry (GHCR) - Best for Production
@@ -45,7 +45,7 @@ cosign sign --key cosign.key \
 
 1. Go to https://github.com/settings/tokens
 2. Click "Generate new token (classic)"
-3. Name: "NetNynja Container Registry"
+3. Name: "GridWatch Container Registry"
 4. Select scopes:
    - ✅ `write:packages`
    - ✅ `read:packages`
@@ -67,11 +67,11 @@ echo "ghp_xxxxxxxxxxxx" | docker login ghcr.io -u russmeadows --password-stdin
 
 ```bash
 # Tag image for GHCR
-docker tag netnynja-enterprise-gateway:latest \
-  ghcr.io/YOUR_GITHUB_USERNAME/netnynja-enterprise-gateway:latest
+docker tag gridwatch-net-enterprise-gateway:latest \
+  ghcr.io/YOUR_GITHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 
 # Push to GHCR
-docker push ghcr.io/YOUR_GITHUB_USERNAME/netnynja-enterprise-gateway:latest
+docker push ghcr.io/YOUR_GITHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 ```
 
 **Step 4: Sign the Registry Image**
@@ -79,7 +79,7 @@ docker push ghcr.io/YOUR_GITHUB_USERNAME/netnynja-enterprise-gateway:latest
 ```bash
 # Now sign the image in the registry
 cosign sign --key cosign.key \
-  ghcr.io/YOUR_GITHUB_USERNAME/netnynja-enterprise-gateway:latest
+  ghcr.io/YOUR_GITHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 ```
 
 **Complete Script for All Images:**
@@ -92,23 +92,23 @@ GITHUB_USER="YOUR_GITHUB_USERNAME"  # Change this
 VERSION="v0.2.4"
 
 IMAGES=(
-  "netnynja-enterprise-gateway"
-  "netnynja-enterprise-web-ui"
-  "netnynja-enterprise-ipam-service"
-  "netnynja-enterprise-ipam-scanner"
-  "netnynja-enterprise-npm-service"
-  "netnynja-enterprise-npm-collector"
-  "netnynja-enterprise-npm-alerts"
-  "netnynja-enterprise-stig-service"
-  "netnynja-enterprise-stig-collector"
-  "netnynja-enterprise-stig-reports"
-  "netnynja-enterprise-auth-service"
-  "netnynja-enterprise-syslog-service"
-  "netnynja-enterprise-syslog-collector"
-  "netnynja-enterprise-syslog-forwarder"
+  "gridwatch-net-enterprise-gateway"
+  "gridwatch-net-enterprise-web-ui"
+  "gridwatch-net-enterprise-ipam-service"
+  "gridwatch-net-enterprise-ipam-scanner"
+  "gridwatch-net-enterprise-npm-service"
+  "gridwatch-net-enterprise-npm-collector"
+  "gridwatch-net-enterprise-npm-alerts"
+  "gridwatch-net-enterprise-stig-service"
+  "gridwatch-net-enterprise-stig-collector"
+  "gridwatch-net-enterprise-stig-reports"
+  "gridwatch-net-enterprise-auth-service"
+  "gridwatch-net-enterprise-syslog-service"
+  "gridwatch-net-enterprise-syslog-collector"
+  "gridwatch-net-enterprise-syslog-forwarder"
 )
 
-echo "🚀 Pushing and signing NetNynja Enterprise images..."
+echo "🚀 Pushing and signing GridWatch NetEnterprise images..."
 echo ""
 
 for IMAGE in "${IMAGES[@]}"; do
@@ -145,7 +145,7 @@ echo "🎉 All images pushed and signed!"
 
 - Go to https://hub.docker.com/repositories
 - Click "Create Repository"
-- Name: `netnynja-enterprise-gateway`
+- Name: `gridwatch-net-enterprise-gateway`
 - Make it Public or Private
 - Repeat for each image
 
@@ -156,15 +156,15 @@ echo "🎉 All images pushed and signed!"
 docker login
 
 # Tag image
-docker tag netnynja-enterprise-gateway:latest \
-  YOUR_DOCKERHUB_USERNAME/netnynja-enterprise-gateway:latest
+docker tag gridwatch-net-enterprise-gateway:latest \
+  YOUR_DOCKERHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 
 # Push to Docker Hub
-docker push YOUR_DOCKERHUB_USERNAME/netnynja-enterprise-gateway:latest
+docker push YOUR_DOCKERHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 
 # Sign
 cosign sign --key cosign.key \
-  YOUR_DOCKERHUB_USERNAME/netnynja-enterprise-gateway:latest
+  YOUR_DOCKERHUB_USERNAME/gridwatch-net-enterprise-gateway:latest
 ```
 
 ### Option 4: Local Registry for Testing
@@ -192,27 +192,27 @@ volumes:
 
 ```bash
 # Tag for local registry
-docker tag netnynja-enterprise-gateway:latest \
-  localhost:5000/netnynja-enterprise-gateway:latest
+docker tag gridwatch-net-enterprise-gateway:latest \
+  localhost:5000/gridwatch-net-enterprise-gateway:latest
 
 # Push to local registry
-docker push localhost:5000/netnynja-enterprise-gateway:latest
+docker push localhost:5000/gridwatch-net-enterprise-gateway:latest
 
 # Sign (requires cosign experimental features)
 COSIGN_EXPERIMENTAL=1 cosign sign --key cosign.key \
-  localhost:5000/netnynja-enterprise-gateway:latest
+  localhost:5000/gridwatch-net-enterprise-gateway:latest
 ```
 
-## Recommended Approach for NetNynja Enterprise
+## Recommended Approach for GridWatch NetEnterprise
 
 **For Development/Testing:**
 
 ```bash
 # Use Option 4 (Local Registry) for quick testing
 docker-compose up -d registry
-docker tag netnynja-enterprise-gateway:latest localhost:5000/netnynja-enterprise-gateway:latest
-docker push localhost:5000/netnynja-enterprise-gateway:latest
-COSIGN_EXPERIMENTAL=1 cosign sign --key cosign.key localhost:5000/netnynja-enterprise-gateway:latest
+docker tag gridwatch-net-enterprise-gateway:latest localhost:5000/gridwatch-net-enterprise-gateway:latest
+docker push localhost:5000/gridwatch-net-enterprise-gateway:latest
+COSIGN_EXPERIMENTAL=1 cosign sign --key cosign.key localhost:5000/gridwatch-net-enterprise-gateway:latest
 ```
 
 **For Production/Distribution:**
@@ -225,11 +225,11 @@ COSIGN_EXPERIMENTAL=1 cosign sign --key cosign.key localhost:5000/netnynja-enter
 echo "YOUR_TOKEN" | docker login ghcr.io -u russmeadows --password-stdin
 
 # 2. Tag and push
-docker tag netnynja-enterprise-gateway:latest ghcr.io/russmeadows/netnynja-enterprise-gateway:v0.2.4
-docker push ghcr.io/russmeadows/netnynja-enterprise-gateway:v0.2.4
+docker tag gridwatch-net-enterprise-gateway:latest ghcr.io/russmeadows/gridwatch-net-enterprise-gateway:v0.2.4
+docker push ghcr.io/russmeadows/gridwatch-net-enterprise-gateway:v0.2.4
 
 # 3. Sign
-cosign sign --key cosign.key ghcr.io/russmeadows/netnynja-enterprise-gateway:v0.2.4
+cosign sign --key cosign.key ghcr.io/russmeadows/gridwatch-net-enterprise-gateway:v0.2.4
 ```
 
 ## Quick Fix Script
@@ -242,7 +242,7 @@ Create this script to set up GHCR and sign all images:
 
 set -e  # Exit on error
 
-echo "🔧 NetNynja Enterprise - GHCR Setup and Signing"
+echo "🔧 GridWatch NetEnterprise - GHCR Setup and Signing"
 echo ""
 
 # Configuration
@@ -272,12 +272,12 @@ fi
 
 # Process images
 IMAGES=(
-  "netnynja-enterprise-gateway"
-  "netnynja-enterprise-web-ui"
-  "netnynja-enterprise-ipam-service"
-  "netnynja-enterprise-npm-service"
-  "netnynja-enterprise-stig-service"
-  "netnynja-enterprise-auth-service"
+  "gridwatch-net-enterprise-gateway"
+  "gridwatch-net-enterprise-web-ui"
+  "gridwatch-net-enterprise-ipam-service"
+  "gridwatch-net-enterprise-npm-service"
+  "gridwatch-net-enterprise-stig-service"
+  "gridwatch-net-enterprise-auth-service"
 )
 
 for IMAGE in "${IMAGES[@]}"; do
@@ -314,7 +314,7 @@ done
 echo "🎉 All images pushed and signed to GHCR!"
 echo ""
 echo "📝 Update your docker-compose.yml to use:"
-echo "   image: ghcr.io/${GITHUB_USER}/netnynja-enterprise-gateway:${VERSION}"
+echo "   image: ghcr.io/${GITHUB_USER}/gridwatch-net-enterprise-gateway:${VERSION}"
 ```
 
 **Run it:**

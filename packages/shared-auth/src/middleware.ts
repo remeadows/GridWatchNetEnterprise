@@ -1,9 +1,9 @@
 /**
- * NetNynja Enterprise - Fastify Authentication Middleware
+ * GridWatch NetEnterprise - Fastify Authentication Middleware
  */
 
 import type { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import type { JWTPayload, UserRole } from "@netnynja/shared-types";
+import type { JWTPayload, UserRole } from "@gridwatch/shared-types";
 import { verifyAccessToken } from "./index";
 import { UnauthorizedError, ForbiddenError, InvalidTokenError } from "./errors";
 
@@ -105,7 +105,7 @@ export async function authPlugin(
   const { exclude = [] } = options;
 
   // Add user property to request
-  fastify.decorateRequest("user", null);
+  fastify.decorateRequest("user", undefined);
 
   // Global auth hook
   fastify.addHook("onRequest", async (request, _reply) => {

@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Authentication Endpoints Benchmark
+ * GridWatch NetEnterprise - Authentication Endpoints Benchmark
  *
  * Benchmarks the authentication endpoints to ensure they meet performance targets.
  *
@@ -178,7 +178,7 @@ async function runBenchmark(name, config) {
 
 async function main() {
   console.log("\n" + "=".repeat(60));
-  console.log("NetNynja Enterprise - Authentication Endpoints Benchmark");
+  console.log("GridWatch NetEnterprise - Authentication Endpoints Benchmark");
   console.log("=".repeat(60));
   console.log(`\nGateway URL: ${BASE_URL}`);
   console.log("Starting benchmarks...\n");

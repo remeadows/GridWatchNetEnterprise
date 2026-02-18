@@ -1,5 +1,5 @@
 /**
- * NetNynja STIG Manager - Type Definitions
+ * GridWatch STIG Manager - Type Definitions
  */
 
 import { z } from "zod";

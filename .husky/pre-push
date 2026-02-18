@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# NetNynja Enterprise - Pre-push Hook
+# GridWatch NetEnterprise - Pre-push Hook
 #
 # This hook runs before pushing to remote to ensure:
 # 1. TypeScript builds successfully

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NetNynja Enterprise - macOS x64 (Intel) Smoke Test Suite
+# GridWatch NetEnterprise - macOS x64 (Intel) Smoke Test Suite
 # Phase 8: Cross-Platform Testing
 #
 # Usage: ./tests/smoke/macos-x64-smoke-test.sh [--profile PROFILE]
@@ -166,7 +166,7 @@ test_prerequisites() {
 main() {
     echo ""
     echo "=============================================="
-    echo " NetNynja Enterprise - macOS x64 Smoke Test"
+    echo " GridWatch NetEnterprise - macOS x64 Smoke Test"
     echo " Profile: $PROFILE"
     echo " Time: $(date)"
     echo "=============================================="

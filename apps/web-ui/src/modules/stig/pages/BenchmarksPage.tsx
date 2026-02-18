@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { Card, CardContent, DataTable, Badge } from "@netnynja/shared-ui";
+import { Card, CardContent, DataTable, Badge } from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { STIGDefinition } from "@netnynja/shared-types";
+import type { STIGDefinition } from "@gridwatch/shared-types";
 import { useSTIGStore } from "../../../stores/stig";
 
 const columns: ColumnDef<STIGDefinition>[] = [

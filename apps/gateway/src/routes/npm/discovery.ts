@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - NPM Discovery API Routes
+ * GridWatch NetEnterprise - NPM Discovery API Routes
  *
  * Network discovery endpoints for scanning networks and discovering devices
  * using ICMP ping and SNMPv3 queries.

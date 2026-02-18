@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ModuleType } from "@netnynja/shared-ui";
+import type { ModuleType } from "@gridwatch/shared-ui";
 
 export type DisplayDensity =
   | "condensed"
@@ -60,7 +60,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: "netnynja-theme",
+      name: "gridwatch-theme",
     },
   ),
 );

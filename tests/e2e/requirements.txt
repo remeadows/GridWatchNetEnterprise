@@ -1,4 +1,4 @@
-# NetNynja Enterprise E2E Test Suite
+# GridWatch NetEnterprise E2E Test Suite
 # Python dependencies
 
 # Testing framework

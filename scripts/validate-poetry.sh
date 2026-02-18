@@ -1,5 +1,5 @@
 #!/bin/bash
-# NetNynja Enterprise - Poetry Validation Script
+# GridWatch NetEnterprise - Poetry Validation Script
 #
 # This script validates that Poetry is properly installed and configured
 # on Linux/macOS systems.
@@ -53,7 +53,7 @@ log_error() {
 }
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}NetNynja Enterprise - Poetry Validator${NC}"
+echo -e "${BLUE}GridWatch NetEnterprise - Poetry Validator${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 

@@ -10,7 +10,7 @@
       "icon": "external link",
       "includeVars": true,
       "keepTime": true,
-      "tags": ["netnynja"],
+      "tags": ["gridwatch"],
       "targetBlank": false,
       "title": "Other Dashboards",
       "type": "dashboards"
@@ -56,7 +56,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_networks_total",
+          "expr": "gridwatch_ipam_networks_total",
           "legendFormat": "Networks",
           "refId": "A"
         }
@@ -94,7 +94,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_subnets_total",
+          "expr": "gridwatch_ipam_subnets_total",
           "legendFormat": "Subnets",
           "refId": "A"
         }
@@ -132,7 +132,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_addresses_total",
+          "expr": "gridwatch_ipam_addresses_total",
           "legendFormat": "Addresses",
           "refId": "A"
         }
@@ -170,7 +170,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_addresses_allocated",
+          "expr": "gridwatch_ipam_addresses_allocated",
           "legendFormat": "Allocated",
           "refId": "A"
         }
@@ -208,7 +208,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_addresses_available",
+          "expr": "gridwatch_ipam_addresses_available",
           "legendFormat": "Available",
           "refId": "A"
         }
@@ -252,7 +252,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "(netnynja_ipam_addresses_allocated / netnynja_ipam_addresses_total) * 100",
+          "expr": "(gridwatch_ipam_addresses_allocated / gridwatch_ipam_addresses_total) * 100",
           "legendFormat": "Utilization",
           "refId": "A"
         }
@@ -313,7 +313,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "(netnynja_ipam_subnet_allocated{subnet!=\"\"} / netnynja_ipam_subnet_total{subnet!=\"\"}) * 100",
+          "expr": "(gridwatch_ipam_subnet_allocated{subnet!=\"\"} / gridwatch_ipam_subnet_total{subnet!=\"\"}) * 100",
           "legendFormat": "{{subnet}}",
           "refId": "A"
         }
@@ -370,12 +370,12 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "increase(netnynja_ipam_allocations_total[1h])",
+          "expr": "increase(gridwatch_ipam_allocations_total[1h])",
           "legendFormat": "Allocations",
           "refId": "A"
         },
         {
-          "expr": "increase(netnynja_ipam_releases_total[1h])",
+          "expr": "increase(gridwatch_ipam_releases_total[1h])",
           "legendFormat": "Releases",
           "refId": "B"
         }
@@ -421,7 +421,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(increase(netnynja_ipam_scans_total[24h]))",
+          "expr": "sum(increase(gridwatch_ipam_scans_total[24h]))",
           "legendFormat": "Scans",
           "refId": "A"
         }
@@ -459,7 +459,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "sum(increase(netnynja_ipam_hosts_discovered[24h]))",
+          "expr": "sum(increase(gridwatch_ipam_hosts_discovered[24h]))",
           "legendFormat": "Discovered",
           "refId": "A"
         }
@@ -499,7 +499,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(netnynja_ipam_scan_duration_seconds_bucket[1h]))",
+          "expr": "histogram_quantile(0.95, rate(gridwatch_ipam_scan_duration_seconds_bucket[1h]))",
           "legendFormat": "p95 Scan Time",
           "refId": "A"
         }
@@ -537,7 +537,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "netnynja_ipam_active_scans",
+          "expr": "gridwatch_ipam_active_scans",
           "legendFormat": "Active",
           "refId": "A"
         }
@@ -594,12 +594,12 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "increase(netnynja_ipam_scans_total{status=\"success\"}[1h])",
+          "expr": "increase(gridwatch_ipam_scans_total{status=\"success\"}[1h])",
           "legendFormat": "Successful",
           "refId": "A"
         },
         {
-          "expr": "increase(netnynja_ipam_scans_total{status=\"failed\"}[1h])",
+          "expr": "increase(gridwatch_ipam_scans_total{status=\"failed\"}[1h])",
           "legendFormat": "Failed",
           "refId": "B"
         }
@@ -652,7 +652,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "topk(10, (netnynja_ipam_subnet_allocated / netnynja_ipam_subnet_total) * 100)",
+          "expr": "topk(10, (gridwatch_ipam_subnet_allocated / gridwatch_ipam_subnet_total) * 100)",
           "legendFormat": "{{subnet}}",
           "refId": "A"
         }
@@ -664,7 +664,7 @@
   "refresh": "1m",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["ipam", "network", "netnynja"],
+  "tags": ["ipam", "network", "gridwatch"],
   "templating": { "list": [] },
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},

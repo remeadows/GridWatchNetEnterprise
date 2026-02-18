@@ -1,9 +1,9 @@
 {
-  "name": "netnynja-enterprise",
+  "name": "gridwatch-net-enterprise",
   "version": "0.2.15",
   "private": true,
-  "description": "NetNynja Enterprise - Unified Network Management Platform",
-  "author": "NetNynja Team",
+  "description": "GridWatch NetEnterprise - Unified Network Management Platform",
+  "author": "GridWatch Team",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.0.0",

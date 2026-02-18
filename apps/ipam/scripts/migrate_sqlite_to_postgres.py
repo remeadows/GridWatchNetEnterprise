@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-SQLite to PostgreSQL Migration Script for NetNynja IPAM.
+SQLite to PostgreSQL Migration Script for GridWatch IPAM.
 
 This script migrates data from an existing SQLite/SQLCipher IPAM database
 to the new PostgreSQL schema with proper INET/CIDR type handling.
 
 Usage:
     python migrate_sqlite_to_postgres.py --sqlite-path /path/to/ipam.db \
-        --postgres-url postgresql://user:pass@host:5432/netnynja
+        --postgres-url postgresql://user:pass@host:5432/GridWatch
 
 Environment:
     SQLITE_PATH - Path to SQLite database (alternative to --sqlite-path)
@@ -387,7 +387,7 @@ class SQLiteMigrator:
     async def run(self) -> dict[str, Any]:
         """Execute the full migration."""
         print(f"\n{'='*60}")
-        print("NetNynja IPAM Migration: SQLite to PostgreSQL")
+        print("GridWatch IPAM Migration: SQLite to PostgreSQL")
         print(f"{'='*60}")
         print(f"Source: {self.sqlite_path}")
         print(f"Target: {self.postgres_url.split('@')[-1]}")  # Hide credentials

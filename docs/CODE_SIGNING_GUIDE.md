@@ -1,4 +1,4 @@
-# Code Signing Guide for NetNynja Enterprise
+# Code Signing Guide for GridWatch NetEnterprise
 
 > Comprehensive guide to signing containers, commits, and releases
 
@@ -116,31 +116,31 @@ gh secret set COSIGN_PASSWORD
 
 ```bash
 # Build image
-docker build -t netnynja-enterprise-gateway:v0.2.4 .
+docker build -t gridwatch-net-enterprise-gateway:v0.2.4 .
 
 # Push to registry
-docker push netnynja-enterprise-gateway:v0.2.4
+docker push gridwatch-net-enterprise-gateway:v0.2.4
 
 # Sign image (with key)
-cosign sign --key cosign.key netnynja-enterprise-gateway:v0.2.4
+cosign sign --key cosign.key gridwatch-net-enterprise-gateway:v0.2.4
 
 # Sign image (keyless)
-cosign sign --yes netnynja-enterprise-gateway:v0.2.4
+cosign sign --yes gridwatch-net-enterprise-gateway:v0.2.4
 ```
 
-**Sign All NetNynja Images:**
+**Sign All GridWatch Images:**
 
 ```bash
 #!/bin/bash
 # sign-all-images.sh
 
 IMAGES=(
-  "netnynja-enterprise-gateway"
-  "netnynja-enterprise-web-ui"
-  "netnynja-enterprise-ipam-service"
-  "netnynja-enterprise-npm-service"
-  "netnynja-enterprise-stig-service"
-  "netnynja-enterprise-auth-service"
+  "gridwatch-net-enterprise-gateway"
+  "gridwatch-net-enterprise-web-ui"
+  "gridwatch-net-enterprise-ipam-service"
+  "gridwatch-net-enterprise-npm-service"
+  "gridwatch-net-enterprise-stig-service"
+  "gridwatch-net-enterprise-auth-service"
 )
 
 VERSION="v0.2.4"
@@ -158,13 +158,13 @@ echo "All images signed!"
 **Verify with Public Key:**
 
 ```bash
-cosign verify --key cosign.pub netnynja-enterprise-gateway:v0.2.4
+cosign verify --key cosign.pub gridwatch-net-enterprise-gateway:v0.2.4
 ```
 
 **Verify Keyless Signature:**
 
 ```bash
-cosign verify netnynja-enterprise-gateway:v0.2.4 \
+cosign verify gridwatch-net-enterprise-gateway:v0.2.4 \
   --certificate-identity=russell.meadows@gmail.com \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
@@ -176,11 +176,11 @@ cosign verify netnynja-enterprise-gateway:v0.2.4 \
 ```yaml
 services:
   gateway:
-    image: netnynja-enterprise-gateway:v0.2.4
+    image: gridwatch-net-enterprise-gateway:v0.2.4
     # Verify signature before deployment
     deploy:
       pre_deploy:
-        - cosign verify --key cosign.pub netnynja-enterprise-gateway:v0.2.4
+        - cosign verify --key cosign.pub gridwatch-net-enterprise-gateway:v0.2.4
 ```
 
 **Kubernetes with Policy Controller:**
@@ -193,10 +193,10 @@ kubectl apply -f https://github.com/sigstore/policy-controller/releases/latest/d
 apiVersion: policy.sigstore.dev/v1beta1
 kind: ClusterImagePolicy
 metadata:
-  name: netnynja-image-policy
+  name: gridwatch-image-policy
 spec:
   images:
-  - glob: "**netnynja-enterprise-**"
+  - glob: "**gridwatch-net-enterprise-**"
   authorities:
   - key:
       data: |
@@ -325,7 +325,7 @@ Sign release archives, binaries, and checksums.
 # create-signed-release.sh
 
 VERSION="v0.2.4"
-RELEASE_NAME="netnynja-enterprise-${VERSION}"
+RELEASE_NAME="gridwatch-net-enterprise-${VERSION}"
 
 # Create release archive
 tar -czf ${RELEASE_NAME}.tar.gz \
@@ -341,9 +341,9 @@ sha256sum ${RELEASE_NAME}.tar.gz > ${RELEASE_NAME}.sha256
 gpg --armor --detach-sign ${RELEASE_NAME}.sha256
 
 # This creates:
-# - netnynja-enterprise-v0.2.4.tar.gz (archive)
-# - netnynja-enterprise-v0.2.4.sha256 (checksum)
-# - netnynja-enterprise-v0.2.4.sha256.asc (signature)
+# - gridwatch-net-enterprise-v0.2.4.tar.gz (archive)
+# - gridwatch-net-enterprise-v0.2.4.sha256 (checksum)
+# - gridwatch-net-enterprise-v0.2.4.sha256.asc (signature)
 ```
 
 ### Verify Release Artifacts
@@ -355,7 +355,7 @@ gpg --armor --detach-sign ${RELEASE_NAME}.sha256
 # verify-release.sh
 
 VERSION="v0.2.4"
-RELEASE_NAME="netnynja-enterprise-${VERSION}"
+RELEASE_NAME="gridwatch-net-enterprise-${VERSION}"
 
 echo "Verifying ${RELEASE_NAME}..."
 
@@ -483,7 +483,7 @@ jobs:
       - name: Create release archive
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          tar -czf netnynja-enterprise-${VERSION}.tar.gz \
+          tar -czf gridwatch-net-enterprise-${VERSION}.tar.gz \
             --exclude='node_modules' \
             --exclude='.git' \
             .
@@ -491,16 +491,16 @@ jobs:
       - name: Generate checksums and signature
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          sha256sum netnynja-enterprise-${VERSION}.tar.gz > netnynja-enterprise-${VERSION}.sha256
-          gpg --armor --detach-sign netnynja-enterprise-${VERSION}.sha256
+          sha256sum gridwatch-net-enterprise-${VERSION}.tar.gz > gridwatch-net-enterprise-${VERSION}.sha256
+          gpg --armor --detach-sign gridwatch-net-enterprise-${VERSION}.sha256
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            netnynja-enterprise-*.tar.gz
-            netnynja-enterprise-*.sha256
-            netnynja-enterprise-*.sha256.asc
+            gridwatch-net-enterprise-*.tar.gz
+            gridwatch-net-enterprise-*.sha256
+            gridwatch-net-enterprise-*.sha256.asc
           body: |
             ## Release ${{ github.ref_name }}
 
@@ -510,10 +510,10 @@ jobs:
             gpg --keyserver keyserver.ubuntu.com --recv-keys <YOUR_KEY_ID>
 
             # Verify signature
-            gpg --verify netnynja-enterprise-${{ github.ref_name }}.sha256.asc
+            gpg --verify gridwatch-net-enterprise-${{ github.ref_name }}.sha256.asc
 
             # Verify checksum
-            sha256sum -c netnynja-enterprise-${{ github.ref_name }}.sha256
+            sha256sum -c gridwatch-net-enterprise-${{ github.ref_name }}.sha256
             ```
 ````
 
@@ -527,7 +527,7 @@ jobs:
 
 ```bash
 # 1. Verify container signature
-cosign verify --key cosign.pub netnynja-enterprise-gateway:latest
+cosign verify --key cosign.pub gridwatch-net-enterprise-gateway:latest
 
 # 2. Verify Git commits
 git log --show-signature -5
@@ -546,9 +546,9 @@ git log --show-signature -5
 
 echo "=== Container Signature Audit ==="
 IMAGES=(
-  "netnynja-enterprise-gateway:latest"
-  "netnynja-enterprise-web-ui:latest"
-  "netnynja-enterprise-ipam-service:latest"
+  "gridwatch-net-enterprise-gateway:latest"
+  "gridwatch-net-enterprise-web-ui:latest"
+  "gridwatch-net-enterprise-ipam-service:latest"
 )
 
 for IMAGE in "${IMAGES[@]}"; do
@@ -590,7 +590,7 @@ Code signing satisfies:
 **Implementation:**
 
 ```markdown
-NetNynja Enterprise implements code signing controls:
+GridWatch NetEnterprise implements code signing controls:
 
 1. Container Images: Signed with Cosign using RSA-4096 keys
 2. Git Commits: Signed with GPG using RSA-4096 keys

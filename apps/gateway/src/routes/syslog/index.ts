@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Syslog API Routes
+ * GridWatch NetEnterprise - Syslog API Routes
  *
  * Provides API endpoints for syslog collection, filtering, and forwarding.
  * UDP 514 listener runs in the syslog-collector service.

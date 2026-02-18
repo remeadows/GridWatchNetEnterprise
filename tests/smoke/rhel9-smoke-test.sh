@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# NetNynja Enterprise - RHEL 9.x Smoke Test Suite
+# GridWatch NetEnterprise - RHEL 9.x Smoke Test Suite
 # Phase 8: Cross-Platform Testing
 #
 # Usage: ./tests/smoke/rhel9-smoke-test.sh [--profile PROFILE] [--podman]
 # Profiles: infra, ipam, npm, stig, all (default: infra)
 # Options: --podman  Use podman instead of docker
 #
-# This script validates NetNynja Enterprise on Red Hat Enterprise Linux 9.x
+# This script validates GridWatch NetEnterprise on Red Hat Enterprise Linux 9.x
 # It can be run directly on RHEL or in a RHEL container for validation.
 
 set -euo pipefail
@@ -266,14 +266,14 @@ test_infrastructure_rhel() {
 
     # Test 2.3-2.14: Same health checks as other platforms
     # PostgreSQL
-    if $CONTAINER_CMD exec netnynja-postgres pg_isready -U netnynja > /dev/null 2>&1; then
+    if $CONTAINER_CMD exec GridWatch-postgres pg_isready -U GridWatch > /dev/null 2>&1; then
         log_pass "2.3 PostgreSQL healthy"
     else
         log_fail "2.3 PostgreSQL healthy" "pg_isready failed"
     fi
 
     # Redis
-    if $CONTAINER_CMD exec netnynja-redis redis-cli -a redis-dev-2025 ping 2>/dev/null | grep -q PONG; then
+    if $CONTAINER_CMD exec GridWatch-redis redis-cli -a redis-dev-2025 ping 2>/dev/null | grep -q PONG; then
         log_pass "2.4 Redis healthy"
     else
         log_fail "2.4 Redis healthy" "Redis ping failed"
@@ -336,13 +336,13 @@ test_network_rhel() {
     log_section "Section 3: Network Connectivity (RHEL)"
 
     # Test container DNS
-    if $CONTAINER_CMD run --rm --network netnynja-network alpine nslookup postgres > /dev/null 2>&1; then
+    if $CONTAINER_CMD run --rm --network GridWatch-network alpine nslookup postgres > /dev/null 2>&1; then
         log_pass "3.1 Container DNS resolution (postgres)"
     else
         log_fail "3.1 Container DNS" "Cannot resolve 'postgres'"
     fi
 
-    if $CONTAINER_CMD run --rm --network netnynja-network alpine nslookup redis > /dev/null 2>&1; then
+    if $CONTAINER_CMD run --rm --network GridWatch-network alpine nslookup redis > /dev/null 2>&1; then
         log_pass "3.2 Container DNS resolution (redis)"
     else
         log_fail "3.2 Container DNS" "Cannot resolve 'redis'"
@@ -441,7 +441,7 @@ cleanup() {
 main() {
     echo ""
     echo "=============================================="
-    echo " NetNynja Enterprise - RHEL 9.x Smoke Test"
+    echo " GridWatch NetEnterprise - RHEL 9.x Smoke Test"
     echo " Container Runtime: $CONTAINER_CMD"
     echo " Profile: $PROFILE"
     echo " Time: $(date)"

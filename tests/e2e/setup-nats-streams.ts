@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - NATS JetStream Setup Script
+ * GridWatch NetEnterprise - NATS JetStream Setup Script
  * Creates required streams for E2E testing
  *
  * Run with: npx tsx Testing/setup-nats-streams.ts

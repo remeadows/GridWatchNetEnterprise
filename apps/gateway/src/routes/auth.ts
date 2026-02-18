@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Gateway Auth Routes (Proxy to Auth Service)
+ * GridWatch NetEnterprise - Gateway Auth Routes (Proxy to Auth Service)
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -90,7 +90,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const data = await response.json();
-      reply.status(response.status).send(data);
+      reply.status(response.status as 200).send(data);
     },
   );
 
@@ -133,7 +133,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const data = await response.json();
-      reply.status(response.status).send(data);
+      reply.status(response.status as 200).send(data);
     },
   );
 
@@ -178,7 +178,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const data = JSON.parse(text);
-        reply.status(response.status).send(data);
+        reply.status(response.status as 200).send(data);
       } catch {
         reply
           .status(response.status)
@@ -230,7 +230,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       const data = await response.json();
-      reply.status(response.status).send(data);
+      reply.status(response.status as 200).send(data);
     },
   );
 };

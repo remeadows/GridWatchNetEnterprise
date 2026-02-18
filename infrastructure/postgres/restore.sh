@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - PostgreSQL Restore Script
+# GridWatch NetEnterprise - PostgreSQL Restore Script
 # ===========================================
 # Restores a PostgreSQL database from a backup created by backup.sh.
 #
@@ -34,8 +34,8 @@ DRY_RUN=false
 # Database connection defaults
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_DB="${POSTGRES_DB:-netnynja}"
-POSTGRES_USER="${POSTGRES_USER:-netnynja}"
+POSTGRES_DB="${POSTGRES_DB:-GridWatch}"
+POSTGRES_USER="${POSTGRES_USER:-GridWatch}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${GREEN}NetNynja Enterprise - PostgreSQL Restore${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - PostgreSQL Restore${NC}"
 echo "============================================"
 echo ""
 
@@ -109,10 +109,10 @@ echo ""
 echo -e "${YELLOW}Backup information:${NC}"
 export PGPASSWORD="${POSTGRES_PASSWORD:-}"
 
-if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "netnynja-postgres"; then
+if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "GridWatch-postgres"; then
   # Copy file to container for inspection
-  docker cp "$RESTORE_FILE" netnynja-postgres:/tmp/restore.dump
-  docker exec netnynja-postgres pg_restore --list /tmp/restore.dump 2>/dev/null | head -20 || true
+  docker cp "$RESTORE_FILE" GridWatch-postgres:/tmp/restore.dump
+  docker exec GridWatch-postgres pg_restore --list /tmp/restore.dump 2>/dev/null | head -20 || true
 else
   pg_restore --list "$RESTORE_FILE" 2>/dev/null | head -20 || true
 fi
@@ -176,11 +176,11 @@ if [ -n "$SCHEMAS" ]; then
 fi
 
 # Perform restore
-if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "netnynja-postgres"; then
+if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "GridWatch-postgres"; then
   echo "Using Docker container for restore..."
 
   # Copy file to container
-  docker cp "$RESTORE_FILE" netnynja-postgres:/tmp/restore.dump
+  docker cp "$RESTORE_FILE" GridWatch-postgres:/tmp/restore.dump
 
   # Build options for docker exec
   DOCKER_OPTS=""
@@ -192,7 +192,7 @@ if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "
   }
 
   # Run pg_restore inside the container
-  docker exec -e PGPASSWORD="$PGPASSWORD" netnynja-postgres \
+  docker exec -e PGPASSWORD="$PGPASSWORD" GridWatch-postgres \
     pg_restore \
     --username="$POSTGRES_USER" \
     --dbname="$POSTGRES_DB" \
@@ -203,7 +203,7 @@ if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "
     /tmp/restore.dump 2>&1 || true
 
   # Cleanup temp file in container
-  docker exec netnynja-postgres rm -f /tmp/restore.dump
+  docker exec GridWatch-postgres rm -f /tmp/restore.dump
 else
   # Run pg_restore directly
   pg_restore "${PG_RESTORE_OPTS[@]}" "$RESTORE_FILE" 2>&1 || true
@@ -221,4 +221,4 @@ echo "To verify the restore:"
 echo "  psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -c '\\dt *.*'"
 echo ""
 echo "Or if using Docker:"
-echo "  docker exec -it netnynja-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c '\\dt *.*'"
+echo "  docker exec -it GridWatch-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c '\\dt *.*'"

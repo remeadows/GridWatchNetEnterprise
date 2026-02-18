@@ -45,8 +45,8 @@ class Settings(BaseSettings):
     # JWT - MUST be set via environment variable in production
     jwt_secret: str = Field(..., alias="JWT_SECRET")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
-    jwt_issuer: str = Field(default="netnynja-enterprise", alias="JWT_ISSUER")
-    jwt_audience: str = Field(default="netnynja-api", alias="JWT_AUDIENCE")
+    jwt_issuer: str = Field(default="gridwatch-net-enterprise", alias="JWT_ISSUER")
+    jwt_audience: str = Field(default="gridwatch-api", alias="JWT_AUDIENCE")
 
     # Audit settings
     default_ssh_timeout: int = Field(default=30, alias="SSH_TIMEOUT")

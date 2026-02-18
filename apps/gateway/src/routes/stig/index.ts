@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - STIG Manager API Routes
+ * GridWatch NetEnterprise - STIG Manager API Routes
  */
 
 import type { FastifyPluginAsync } from "fastify";

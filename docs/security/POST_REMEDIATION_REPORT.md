@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Post-Remediation Vulnerability Report
+# GridWatch NetEnterprise - Post-Remediation Vulnerability Report
 
 **Scan Date:** 2026-02-04 14:30 EST  
 **Scanner:** Docker Scout (Docker Desktop built-in)  
@@ -208,7 +208,7 @@ Fix: No fix available yet (requires npm 11.8.1+, not released)
 ### Auth Service Scan
 
 ```
-netnynja-enterprise-auth-service:latest
+gridwatch-net-enterprise-auth-service:latest
 ├─ Platform: linux/amd64
 ├─ Size: 212 MB
 ├─ Packages: 476
@@ -224,7 +224,7 @@ Vulnerable Packages:
 ### Gateway Scan
 
 ```
-netnynja-enterprise-gateway:latest
+gridwatch-net-enterprise-gateway:latest
 ├─ Status: Scan timed out after 2 minutes
 └─ Expected: Similar to auth-service (same Node.js dependencies)
 ```
@@ -406,8 +406,8 @@ $images = @(
     "redis:7-alpine",
     "nats:2.10-alpine",
     "grafana/grafana:11.4.0",
-    "netnynja-enterprise-auth-service:latest",
-    "netnynja-enterprise-gateway:latest"
+    "gridwatch-net-enterprise-auth-service:latest",
+    "gridwatch-net-enterprise-gateway:latest"
 )
 
 foreach ($image in $images) {
@@ -425,7 +425,7 @@ Schedule daily at 8 AM:
 ```powershell
 $trigger = New-ScheduledTaskTrigger -Daily -At 8AM
 $action = New-ScheduledTaskAction -Execute "pwsh.exe" -Argument "-File C:\path\to\daily-vuln-check.ps1"
-Register-ScheduledTask -TaskName "NetNynja-Daily-Vuln-Scan" -Trigger $trigger -Action $action
+Register-ScheduledTask -TaskName "GridWatch-Daily-Vuln-Scan" -Trigger $trigger -Action $action
 ```
 
 ---

@@ -25,7 +25,7 @@ Or manually:
 **Token name:**
 
 ```
-NetNynja Container Registry
+GridWatch Container Registry
 ```
 
 **Expiration:**
@@ -36,7 +36,7 @@ NetNynja Container Registry
 **Description (optional):**
 
 ```
-Token for pushing and signing NetNynja Enterprise container images to GHCR
+Token for pushing and signing GridWatch NetEnterprise container images to GHCR
 ```
 
 **Resource owner:**
@@ -50,7 +50,7 @@ Token for pushing and signing NetNynja Enterprise container images to GHCR
   OR (more secure):
 
 - Select: **"Only select repositories"**
-- Choose: Your NetNynja Enterprise repository
+- Choose: Your GridWatch NetEnterprise repository
 
 ### Step 3: Set Permissions
 
@@ -116,7 +116,7 @@ echo "YOUR_TOKEN_HERE" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password
 ### With the Setup Script
 
 ```bash
-cd "/Users/russmeadows/Dev/NetNynja/NetNynja Enterprise"
+cd "/Users/russmeadows/Dev/GridWatch/GridWatch NetEnterprise"
 chmod +x setup-ghcr.sh
 ./setup-ghcr.sh
 
@@ -245,7 +245,7 @@ https://github.com/settings/tokens?type=beta
 
 - URL: `ghcr.io`
 - Image format: `ghcr.io/USERNAME/IMAGE:TAG`
-- Example: `ghcr.io/russmeadows/netnynja-enterprise-gateway:v0.2.4`
+- Example: `ghcr.io/russmeadows/gridwatch-net-enterprise-gateway:v0.2.4`
 
 ---
 

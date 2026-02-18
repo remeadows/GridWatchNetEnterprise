@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - Vault Unseal Script
+# GridWatch NetEnterprise - Vault Unseal Script
 # ===========================================
 # This script unseals Vault using Shamir key shares.
 #
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${GREEN}NetNynja Enterprise - Vault Unseal${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - Vault Unseal${NC}"
 echo "============================================"
 echo ""
 echo "Vault Address: $VAULT_ADDR"

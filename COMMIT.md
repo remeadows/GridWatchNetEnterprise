@@ -19,7 +19,7 @@ Update the following documentation files with changes made during this work sess
 4. **README.md**
    - Update only if setup steps, commands, features, or module capabilities changed
 
-5. **docs/NetNynja_Executive_Summary_ISSO.html** (ISSO Deliverable)
+5. **docs/GridWatch_Executive_Summary_ISSO.html** (ISSO Deliverable)
    - Executive Summary document for Information System Security Officer
    - Classification: UNCLASSIFIED
    - Contains: Project overview, deliverables, status, tech stack, security review status

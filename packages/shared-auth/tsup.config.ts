@@ -12,5 +12,5 @@ export default defineConfig({
   sourcemap: true,
   splitting: false,
   treeshake: true,
-  external: ["fastify", "argon2", "jose", "zod", "@netnynja/shared-types"],
+  external: ["fastify", "argon2", "jose", "zod", "@gridwatch/shared-types"],
 });

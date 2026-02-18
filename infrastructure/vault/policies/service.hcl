@@ -1,31 +1,31 @@
 # ===========================================
-# NetNynja Service - Vault Policy
+# GridWatch Service - Vault Policy
 # ===========================================
 # Generic policy for backend services (IPAM, NPM, STIG)
 
 # Read JWT public key for verification
-path "secret/data/netnynja/jwt" {
+path "secret/data/GridWatch/jwt" {
   capabilities = ["read"]
 }
 
 # Read database credentials
-path "secret/data/netnynja/database" {
+path "secret/data/GridWatch/database" {
   capabilities = ["read"]
 }
 
 # Read Redis credentials
-path "secret/data/netnynja/redis" {
+path "secret/data/GridWatch/redis" {
   capabilities = ["read"]
 }
 
 # Read NATS credentials
-path "secret/data/netnynja/nats" {
+path "secret/data/GridWatch/nats" {
   capabilities = ["read"]
 }
 
 # Read service-specific secrets (replace SERVICE with actual service name)
 # Usage: Create separate policies for ipam, npm, stig if needed
-path "secret/data/netnynja/services/*" {
+path "secret/data/GridWatch/services/*" {
   capabilities = ["read"]
 }
 

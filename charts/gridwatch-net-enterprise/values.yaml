@@ -1,9 +1,9 @@
-# NetNynja Enterprise - Helm Values
-# This file contains all configurable values for the NetNynja Enterprise Helm chart
+# GridWatch NetEnterprise - Helm Values
+# This file contains all configurable values for the GridWatch NetEnterprise Helm chart
 
 # Global settings
 global:
-  # Image registry for all NetNynja images
+  # Image registry for all GridWatch images
   imageRegistry: ghcr.io/remeadows
   # Image pull secrets
   imagePullSecrets: []
@@ -15,7 +15,7 @@ gateway:
   enabled: true
   replicaCount: 2
   image:
-    repository: netnynja-gateway
+    repository: gridwatch-gateway
     tag: ""  # Defaults to appVersion
     pullPolicy: IfNotPresent
   service:
@@ -40,7 +40,7 @@ webUI:
   enabled: true
   replicaCount: 2
   image:
-    repository: netnynja-web-ui
+    repository: gridwatch-web-ui
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -62,7 +62,7 @@ authService:
   enabled: true
   replicaCount: 2
   image:
-    repository: netnynja-auth-service
+    repository: gridwatch-auth-service
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -88,7 +88,7 @@ ipam:
   enabled: true
   replicaCount: 1
   image:
-    repository: netnynja-ipam
+    repository: gridwatch-ipam
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -110,7 +110,7 @@ npm:
   enabled: true
   replicaCount: 1
   image:
-    repository: netnynja-npm
+    repository: gridwatch-npm
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -137,7 +137,7 @@ stig:
   enabled: true
   replicaCount: 1
   image:
-    repository: netnynja-stig
+    repository: gridwatch-stig
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -159,7 +159,7 @@ syslog:
   enabled: true
   replicaCount: 1
   image:
-    repository: netnynja-syslog
+    repository: gridwatch-syslog
     tag: ""
     pullPolicy: IfNotPresent
   service:
@@ -186,7 +186,7 @@ ingress:
   className: nginx
   annotations: {}
   hosts:
-    - host: netnynja.local
+    - host: gridwatch.local
       paths:
         - path: /
           pathType: Prefix
@@ -201,8 +201,8 @@ postgresql:
   enabled: true
   auth:
     postgresPassword: ""  # Set via secrets
-    database: netnynja
-    username: netnynja
+    database: gridwatch
+    username: gridwatch
     password: ""  # Set via secrets
   primary:
     persistence:
@@ -245,8 +245,8 @@ externalPostgres:
   enabled: false
   host: ""
   port: 5432
-  database: netnynja
-  username: netnynja
+  database: gridwatch
+  username: gridwatch
   existingSecret: ""
 
 externalRedis:

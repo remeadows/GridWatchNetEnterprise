@@ -1,5 +1,5 @@
 # ===========================================
-# NetNynja Enterprise - Trivy Configuration
+# GridWatch NetEnterprise - Trivy Configuration
 # ===========================================
 # Configuration for Trivy vulnerability scanner
 # Place this file in the project root as trivy.yaml

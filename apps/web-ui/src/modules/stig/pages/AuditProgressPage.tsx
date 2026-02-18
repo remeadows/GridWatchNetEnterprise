@@ -5,7 +5,7 @@ import {
   CardContent,
   Badge,
   StatusIndicator,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import {
   useSTIGStore,
   type AuditGroup,

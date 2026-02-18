@@ -4,7 +4,7 @@ import {
   Sidebar,
   type NavItem,
   type ModuleType,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import { useAuthStore } from "../../stores/auth";
 import { useThemeStore, type DisplayDensity } from "../../stores/theme";
 
@@ -687,18 +687,18 @@ export function MainLayout() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         className="relative z-10"
-        backgroundImage="/assets/NetNynjaLogo.png"
+        backgroundImage="/assets/GridWatchLogo.png"
         header={
           !sidebarCollapsed && (
             <div className="flex items-center gap-3">
               <img
                 src="/assets/NetNNJA2.jpg"
-                alt="NetNynja Logo"
+                alt="GridWatch Logo"
                 className="h-8 w-8 rounded-lg object-cover"
               />
               <div className="flex flex-col leading-tight">
                 <span className="text-lg font-bold text-primary-500">
-                  NetNynja
+                  GridWatch
                 </span>
                 <span className="text-xs font-medium text-silver-400">
                   Enterprise

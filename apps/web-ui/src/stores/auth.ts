@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User, AuthTokens } from "@netnynja/shared-types";
+import type { User, AuthTokens } from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 interface AuthState {
@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "netnynja-auth",
+      name: "gridwatch-auth",
       partialize: (state) => ({
         accessToken: state.accessToken,
         user: state.user,

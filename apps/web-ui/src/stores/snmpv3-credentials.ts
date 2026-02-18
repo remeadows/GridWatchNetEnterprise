@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SNMPv3Credential } from "@netnynja/shared-types";
+import type { SNMPv3Credential } from "@gridwatch/shared-types";
 import { api } from "../lib/api";
 
 export interface CreateSNMPv3CredentialInput {

@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Config Unit Tests
+ * GridWatch NetEnterprise - Config Unit Tests
  */
 
 import { z } from "zod";
@@ -18,8 +18,8 @@ describe("Configuration Schema", () => {
     NATS_URL: z.string().default("nats://localhost:4222"),
     JWT_SECRET: z.string().optional(),
     JWT_PUBLIC_KEY: z.string().optional(),
-    JWT_ISSUER: z.string().default("netnynja-enterprise"),
-    JWT_AUDIENCE: z.string().default("netnynja-api"),
+    JWT_ISSUER: z.string().default("gridwatch-net-enterprise"),
+    JWT_AUDIENCE: z.string().default("GridWatch-api"),
     CORS_ORIGIN: z
       .string()
       .transform((val) => {
@@ -42,7 +42,7 @@ describe("Configuration Schema", () => {
     RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
     OTEL_ENABLED: z.coerce.boolean().default(false),
     OTEL_EXPORTER_ENDPOINT: z.string().default("http://localhost:4318"),
-    OTEL_SERVICE_NAME: z.string().default("netnynja-gateway"),
+    OTEL_SERVICE_NAME: z.string().default("GridWatch-gateway"),
     JAEGER_ENDPOINT: z.string().optional(),
     LOG_LEVEL: z
       .enum(["fatal", "error", "warn", "info", "debug", "trace"])

@@ -2,27 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "netnynja.fullname" . }}-web-ui
+  name: {{ include "gridwatch.fullname" . }}-web-ui
   labels:
-    {{- include "netnynja.labels" . | nindent 4 }}
+    {{- include "gridwatch.labels" . | nindent 4 }}
     app.kubernetes.io/component: web-ui
 spec:
   replicas: {{ .Values.webUI.replicaCount }}
   selector:
     matchLabels:
-      {{- include "netnynja.selectorLabels" . | nindent 6 }}
+      {{- include "gridwatch.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: web-ui
   template:
     metadata:
       labels:
-        {{- include "netnynja.selectorLabels" . | nindent 8 }}
+        {{- include "gridwatch.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: web-ui
     spec:
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "netnynja.serviceAccountName" . }}
+      serviceAccountName: {{ include "gridwatch.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.security.podSecurityContext | nindent 8 }}
       containers:
@@ -65,9 +65,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "netnynja.fullname" . }}-web-ui
+  name: {{ include "gridwatch.fullname" . }}-web-ui
   labels:
-    {{- include "netnynja.labels" . | nindent 4 }}
+    {{- include "gridwatch.labels" . | nindent 4 }}
     app.kubernetes.io/component: web-ui
 spec:
   type: {{ .Values.webUI.service.type }}
@@ -77,6 +77,6 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "netnynja.selectorLabels" . | nindent 4 }}
+    {{- include "gridwatch.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: web-ui
 {{- end }}

@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Project Status
+# GridWatch NetEnterprise - Project Status
 
 **Version**: 0.2.15
 **Last Updated**: 2026-02-13 20:30 UTC
@@ -15,7 +15,7 @@
 
 ## Executive Summary
 
-NetNynja Enterprise consolidates three network management applications (IPAM, NPM, STIG Manager) into a unified platform with shared infrastructure, authentication, and observability. Target platforms: macOS, RHEL 9.x, Windows 11/Server.
+GridWatch NetEnterprise consolidates three network management applications (IPAM, NPM, STIG Manager) into a unified platform with shared infrastructure, authentication, and observability. Target platforms: macOS, RHEL 9.x, Windows 11/Server.
 
 ---
 
@@ -297,7 +297,7 @@ Key Changes:
 - SSH Credentials management with sudo/privilege escalation support
 - STIG CredentialsPage for CRUD operations on SSH credentials
 - Improved text readability against dark backgrounds (brighter colors + text-shadow)
-- ISSO Executive Summary document (docs/NetNynja_Executive_Summary_ISSO.html)
+- ISSO Executive Summary document (docs/GridWatch_Executive_Summary_ISSO.html)
 - Updated COMMIT.md with ISSO deliverable reference
 
 New Features:
@@ -335,20 +335,20 @@ Security Findings (Docker Scout):
 
 Container Images (v0.2.4):
 
-- netnynja-enterprise-gateway
-- netnynja-enterprise-web-ui
-- netnynja-enterprise-ipam-service
-- netnynja-enterprise-ipam-scanner
-- netnynja-enterprise-npm-service
-- netnynja-enterprise-npm-collector
-- netnynja-enterprise-npm-alerts
-- netnynja-enterprise-stig-service
-- netnynja-enterprise-stig-collector
-- netnynja-enterprise-stig-reports
-- netnynja-enterprise-auth-service
-- netnynja-enterprise-syslog-service
-- netnynja-enterprise-syslog-collector
-- netnynja-enterprise-syslog-forwarder
+- gridwatch-net-enterprise-gateway
+- gridwatch-net-enterprise-web-ui
+- gridwatch-net-enterprise-ipam-service
+- gridwatch-net-enterprise-ipam-scanner
+- gridwatch-net-enterprise-npm-service
+- gridwatch-net-enterprise-npm-collector
+- gridwatch-net-enterprise-npm-alerts
+- gridwatch-net-enterprise-stig-service
+- gridwatch-net-enterprise-stig-collector
+- gridwatch-net-enterprise-stig-reports
+- gridwatch-net-enterprise-auth-service
+- gridwatch-net-enterprise-syslog-service
+- gridwatch-net-enterprise-syslog-collector
+- gridwatch-net-enterprise-syslog-forwarder
 
 Compliance:
 
@@ -536,8 +536,8 @@ Files Modified:
 | [docs/PHASES_DETAIL.md](docs/PHASES_DETAIL.md)                                         | Detailed phase implementation                 |
 | [archive/session-history/SESSION_HISTORY.md](archive/session-history/SESSION_HISTORY.md) | Development session logs (archived)           |
 | [docs/DOCKER_STRUCTURE.md](docs/DOCKER_STRUCTURE.md)                                   | Container architecture                        |
-| [docs/NetNynja_Executive_Summary_ISSO.html](docs/NetNynja_Executive_Summary_ISSO.html) | ISSO Executive Summary (Word-compatible)      |
+| [docs/GridWatch_Executive_Summary_ISSO.html](docs/GridWatch_Executive_Summary_ISSO.html) | ISSO Executive Summary (Word-compatible)      |
 | [docs/CODE_SIGNING_GUIDE.md](docs/CODE_SIGNING_GUIDE.md)                               | Container & code signing with Cosign/GPG      |
 | [docs/reports/Docker_Scout_Security_Report.pdf](docs/reports/Docker_Scout_Security_Report.pdf) | Container vulnerability assessment            |
-| [docs/reports/NetNynja_ISSO_Report.pdf](docs/reports/NetNynja_ISSO_Report.pdf)                | DoD-style ISSO report with ATO recommendation |
+| [docs/reports/GridWatch_ISSO_Report.pdf](docs/reports/GridWatch_ISSO_Report.pdf)                | DoD-style ISSO report with ATO recommendation |
 | [IssuesTracker.md](IssuesTracker.md)                                                   | Issue tracking                                |

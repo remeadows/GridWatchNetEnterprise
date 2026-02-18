@@ -1,6 +1,6 @@
 #!/bin/bash
 # ===========================================
-# NetNynja Enterprise - PostgreSQL Backup Script
+# GridWatch NetEnterprise - PostgreSQL Backup Script
 # ===========================================
 # Creates compressed backups of the PostgreSQL database.
 #
@@ -35,8 +35,8 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 # Database connection defaults
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_DB="${POSTGRES_DB:-netnynja}"
-POSTGRES_USER="${POSTGRES_USER:-netnynja}"
+POSTGRES_DB="${POSTGRES_DB:-GridWatch}"
+POSTGRES_USER="${POSTGRES_USER:-GridWatch}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -72,7 +72,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${GREEN}NetNynja Enterprise - PostgreSQL Backup${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - PostgreSQL Backup${NC}"
 echo "============================================"
 echo ""
 echo "Database: $POSTGRES_DB@$POSTGRES_HOST:$POSTGRES_PORT"
@@ -84,7 +84,7 @@ echo ""
 mkdir -p "$OUTPUT_DIR"
 
 # Build backup filename
-BACKUP_FILE="$OUTPUT_DIR/netnynja_${POSTGRES_DB}_${TIMESTAMP}"
+BACKUP_FILE="$OUTPUT_DIR/GridWatch_${POSTGRES_DB}_${TIMESTAMP}"
 
 # Build pg_dump options
 PG_DUMP_OPTS=(
@@ -113,11 +113,11 @@ echo -e "${YELLOW}Starting backup...${NC}"
 export PGPASSWORD="${POSTGRES_PASSWORD:-}"
 
 # Check if running in Docker context
-if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "netnynja-postgres"; then
+if command -v docker &> /dev/null && docker ps --format '{{.Names}}' | grep -q "GridWatch-postgres"; then
   echo "Using Docker container for backup..."
 
   # Run pg_dump inside the container
-  docker exec -e PGPASSWORD="$PGPASSWORD" netnynja-postgres \
+  docker exec -e PGPASSWORD="$PGPASSWORD" GridWatch-postgres \
     pg_dump \
     --username="$POSTGRES_USER" \
     --dbname="$POSTGRES_DB" \
@@ -156,8 +156,8 @@ ln -sf "$(basename "$BACKUP_FILE")" "$OUTPUT_DIR/latest"
 echo ""
 echo -e "${YELLOW}Cleaning up old backups (keeping $KEEP_BACKUPS)...${NC}"
 cd "$OUTPUT_DIR"
-ls -t netnynja_*.dump* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -f
-REMAINING=$(ls -1 netnynja_*.dump* 2>/dev/null | wc -l)
+ls -t GridWatch_*.dump* 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -f
+REMAINING=$(ls -1 GridWatch_*.dump* 2>/dev/null | wc -l)
 echo "Remaining backups: $REMAINING"
 
 # Generate backup manifest
@@ -173,7 +173,7 @@ cat > "$OUTPUT_DIR/manifest.json" << EOF
   "compressed": $COMPRESS,
   "retention": $KEEP_BACKUPS,
   "backups": [
-$(ls -1t netnynja_*.dump* 2>/dev/null | head -$KEEP_BACKUPS | while read f; do
+$(ls -1t GridWatch_*.dump* 2>/dev/null | head -$KEEP_BACKUPS | while read f; do
   size=$(du -h "$f" | cut -f1)
   echo "    {\"file\": \"$f\", \"size\": \"$size\"},"
 done | sed '$ s/,$//')

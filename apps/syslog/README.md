@@ -1,6 +1,6 @@
-# NetNynja Syslog Service
+# GridWatch Syslog Service
 
-Centralized syslog collection service for NetNynja Enterprise.
+Centralized syslog collection service for GridWatch NetEnterprise.
 
 ## Features
 

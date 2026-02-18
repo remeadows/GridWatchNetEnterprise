@@ -1,4 +1,4 @@
-# NetNynja Enterprise - Grafana Datasources Provisioning
+# GridWatch NetEnterprise - Grafana Datasources Provisioning
 
 apiVersion: 1
 
@@ -88,7 +88,7 @@ datasources:
     secureJsonData:
       password: ${POSTGRES_PASSWORD}
     jsonData:
-      database: netnynja
+      database: gridwatch
       user: ${POSTGRES_USER}
       sslmode: disable
       maxOpenConns: 5

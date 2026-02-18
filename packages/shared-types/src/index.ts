@@ -1,5 +1,5 @@
 /**
- * NetNynja Enterprise - Shared Type Definitions
+ * GridWatch NetEnterprise - Shared Type Definitions
  * Common types used across all modules
  */
 

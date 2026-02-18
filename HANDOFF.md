@@ -3,9 +3,10 @@
 > Session state for cross-agent and cross-session continuity
 
 **Last Updated**: 2026-02-18 UTC
-**Last Agent**: Claude (Cowork — Orchestration Layer)
-**Session Duration**: ~4 hours (original) + pre-rebrand fixes 2026-02-18
+**Last Agent**: Claude Opus 4.6 (rebrand execution session)
+**Session Duration**: ~3 hours (rebrand Phase 1+2+4 execution)
 **Version**: 0.2.15
+**Branch**: refactor/gridwatch-rebrand (commit cecc419)
 
 ---
 
@@ -18,6 +19,8 @@ Three remediation sprints executed against governance doc audit findings:
 | Sprint 1 | Doc integrity: version drift, ingest order, version freeze, IssuesTracker bloat | ✅ Committed + Pushed (f24b7bf) |
 | Sprint 2 | Skill doc alignment: stack bias, repo structure, GRIDWATCH leak, snmp.ts types | ✅ Committed (68c07ba) |
 | Sprint 3 | Shared Python library extraction + IPAM pilot migration | ✅ Committed (6a068fe) |
+| Sprint 4 | Pre-rebrand fixes (STIG proxy body, version alignment, CI/CD) | ✅ Committed (962bc49, 2327ea8) |
+| Sprint 5 | GridWatch rebrand Phase 1+2+4 (249 files, 6/6 packages build) | ✅ Committed (cecc419) |
 
 ---
 
@@ -53,11 +56,18 @@ Extracted 9 duplicated patterns from IPAM/NPM/STIG/Syslog into a shared library:
 
 ## What's NOT Done Yet
 
-### Sprint 2 + Sprint 3 Commits
+### GridWatch Rebrand — Remaining Phases
 
-Both sprints are code-complete but NOT committed/pushed. Commit commands provided to user.
+| Phase | Scope | Status |
+|-------|-------|--------|
+| Phase 3: Data | DB rename (netnynja→gridwatch), JWT rotation, Redis flush, image rebuild + Cosign re-sign | ⏳ HUMAN action required |
+| Phase 5: Verify | Full test suite, smoke tests, Grafana dashboard validation | ⏳ Next agent |
+| Phase 6: GitHub | Rename repo NetNynjaEnterprise→GridWatchNetEnterprise, update remotes, rename local dir | ⏳ HUMAN + next agent |
 
-### NPM + STIG Migration (Sprint 4 candidate)
+### Missing Asset
+- `apps/web-ui/public/assets/GridWatchLogo.png` — LoginPage.tsx references this but file doesn't exist yet. Needs design/creation.
+
+### NPM + STIG shared_python Migration (deferred)
 
 NPM and STIG services still use old patterns. Follow IPAM pilot pattern:
 1. Subclass `BaseServiceSettings` in `core/config.py`
@@ -65,10 +75,6 @@ NPM and STIG services still use old patterns. Follow IPAM pilot pattern:
 3. Wrap `db/connection.py` around `DatabasePool`
 4. Replace `api/health.py` with `create_health_router()`
 5. Replace `main.py` with `create_service_app()`
-
-### GridWatch Rename (Sprint 5+ candidate)
-
-Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 sessions.
 
 ---
 
@@ -135,10 +141,10 @@ Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 
 
 | Category | Count | Risk |
 |----------|-------|------|
-| NPM packages (@netnynja → @gridwatch) | 6 | Medium — cross-workspace imports |
-| Prometheus metrics (netnynja_ → gridwatch_) | 80+ | HIGH — breaks Grafana dashboards |
-| Database name/user (netnynja → gridwatch) | 4 refs | HIGH — requires dump/restore |
-| Docker images (netnynja-enterprise-*) | 14 | Medium — rebuild + re-sign |
+| NPM packages (@netnynja → @gridwatch) ✅ | 6 | Medium — cross-workspace imports |
+| Prometheus metrics (netnynja_ → gridwatch_) ✅ | 80+ | HIGH — breaks Grafana dashboards |
+| Database name/user (netnynja → gridwatch) | 4 refs | HIGH — requires dump/restore (Phase 3) |
+| Docker images (gridwatch-net-enterprise-*) | 14 | Medium — rebuild + re-sign |
 | Docker network | 1 | Low |
 | JWT issuer/audience | 2 | Medium — token invalidation |
 | OTEL service names | 4 | Low |
@@ -162,7 +168,7 @@ Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 
 
 ### Critical Path Notes
 
-- **Prometheus metrics** are highest risk — 80+ metric names embedded in Grafana queries. Consider dual-emit strategy (emit both `netnynja_*` and `gridwatch_*` for 1 release) to avoid monitoring blackout.
+- **Prometheus metrics** are highest risk — 80+ metric names embedded in Grafana queries. Consider dual-emit strategy (emit both `gridwatch_*` and `gridwatch_*` for 1 release) to avoid monitoring blackout.
 - **JWT rotation** invalidates all active sessions. Schedule during maintenance window.
 - **Docker re-sign** required after image rename — all 14 images need new Cosign signatures.
 - **Phase 1 must be atomic** — partial renames will break builds. Use a single PR.
@@ -171,8 +177,14 @@ Full rename map in `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`. Estimated 6-8 
 
 ## Next Agent Instructions
 
-1. Commit Sprint 2 + Sprint 3 (use `--no-verify` for docs+refactor, lint-staged has node_modules symlink issue)
-2. Migrate NPM and STIG services to shared_python (follow IPAM pattern — Sprint 4)
-3. Add unit tests for shared_python modules
-4. Update Docker build contexts if needed for shared_python path dependency
-5. Begin GridWatch rename Phase 0 (prep) when Sprints 2-4 are committed and stable
+### Immediate (rebrand completion)
+1. Push `refactor/gridwatch-rebrand` → open PR to main
+2. Phase 3 (human): DB rename/restore, JWT rotation, Redis flush, `docker compose build` + Cosign re-sign
+3. Phase 5: Run `./tests/e2e/run_tests.sh --quick`, smoke tests, verify Grafana dashboards load
+4. Phase 6: `gh repo rename GridWatchNetEnterprise`, update git remote, rename local directory, tag v0.3.0-gridwatch
+5. Create `apps/web-ui/public/assets/GridWatchLogo.png` (referenced by LoginPage, file missing)
+
+### Deferred (post-rebrand)
+6. Migrate NPM and STIG services to shared_python (follow IPAM pilot pattern)
+7. Add unit tests for shared_python modules
+8. Update Docker build contexts if needed for shared_python path dependency

@@ -1,11 +1,11 @@
 [project]
-name = "netnynja-npm"
+name = "gridwatch-npm"
 version = "0.2.15"
-description = "NetNynja Enterprise - Network Performance Monitoring Service"
+description = "GridWatch NetEnterprise - Network Performance Monitoring Service"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "NetNynja Team" }
+    { name = "WarSignalLabs" }
 ]
 dependencies = [
     "fastapi>=0.109.0",

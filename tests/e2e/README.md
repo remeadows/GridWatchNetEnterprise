@@ -1,6 +1,6 @@
-# NetNynja Enterprise - E2E Test Suite
+# GridWatch NetEnterprise - E2E Test Suite
 
-Comprehensive end-to-end test suite for validating NetNynja Enterprise after Phases 1-7 completion.
+Comprehensive end-to-end test suite for validating GridWatch NetEnterprise after Phases 1-7 completion.
 
 ## Overview
 
@@ -83,9 +83,9 @@ export GATEWAY_URL=http://localhost:3000
 # PostgreSQL
 export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
-export POSTGRES_DB=netnynja
-export POSTGRES_USER=netnynja
-export POSTGRES_PASSWORD=netnynja
+export POSTGRES_DB=gridwatch
+export POSTGRES_USER=gridwatch
+export POSTGRES_PASSWORD=gridwatch
 
 # Redis
 export REDIS_HOST=localhost
@@ -308,7 +308,7 @@ docker compose logs nats
 
 ```bash
 # Verify test users exist
-psql -h localhost -U netnynja -d netnynja -c "SELECT username, role FROM shared.users WHERE username LIKE 'e2e_%'"
+psql -h localhost -U gridwatch -d gridwatch -c "SELECT username, role FROM shared.users WHERE username LIKE 'e2e_%'"
 
 # Check auth service logs
 docker compose logs auth-service
@@ -353,4 +353,4 @@ When adding new tests:
 
 ## License
 
-Internal use only - NetNynja Enterprise
+Internal use only - GridWatch NetEnterprise

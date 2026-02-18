@@ -9,9 +9,9 @@ import {
   DataTable,
   Badge,
   Input,
-} from "@netnynja/shared-ui";
+} from "@gridwatch/shared-ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Network, ScanJob } from "@netnynja/shared-types";
+import type { Network, ScanJob } from "@gridwatch/shared-types";
 import { useIPAMStore } from "../../../stores/ipam";
 import { api } from "../../../lib/api";
 

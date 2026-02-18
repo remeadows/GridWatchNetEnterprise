@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# NetNynja Enterprise - JWT RSA Key Generation Script
+# GridWatch NetEnterprise - JWT RSA Key Generation Script
 # Generates RS256 key pair for production JWT signing
 #
 # Usage:
@@ -23,7 +23,7 @@ NC='\033[0m' # No Color
 # Default output directory
 OUTPUT_DIR="${1:-./keys}"
 
-echo -e "${GREEN}NetNynja Enterprise - JWT RSA Key Generator${NC}"
+echo -e "${GREEN}GridWatch NetEnterprise - JWT RSA Key Generator${NC}"
 echo "=============================================="
 echo ""
 
@@ -84,12 +84,12 @@ echo ""
 echo -e "${YELLOW}To store in HashiCorp Vault:${NC}"
 echo ""
 echo "  # Store private key"
-echo "  vault kv put secret/netnynja/jwt \\"
+echo "  vault kv put secret/GridWatch/jwt \\"
 echo "    private_key=@$OUTPUT_DIR/jwt-private.pem \\"
 echo "    public_key=@$OUTPUT_DIR/jwt-public.pem"
 echo ""
 echo "  # Or with CLI:"
-echo "  vault kv put secret/netnynja/jwt \\"
+echo "  vault kv put secret/GridWatch/jwt \\"
 echo "    private_key=\"\$(cat $OUTPUT_DIR/jwt-private.pem)\" \\"
 echo "    public_key=\"\$(cat $OUTPUT_DIR/jwt-public.pem)\""
 echo ""
