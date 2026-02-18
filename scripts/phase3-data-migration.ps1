@@ -1,19 +1,10 @@
 # GridWatch NetEnterprise - Phase 3: Data Migration
-# Run AFTER the refactor/gridwatch-rebrand PR is merged to main.
+# Run with the gridwatch stack UP.
 #
-# PREREQUISITES:
-#   - Docker Desktop running
-#   - Stack currently UP with the OLD netnynja DB/user
-#   - .env file updated with POSTGRES_DB=gridwatch, POSTGRES_USER=gridwatch
-#
-# WHAT THIS DOES:
-#   1. Dumps the live netnynja database from the running postgres container
-#   2. Flushes Redis (invalidates cached sessions)
-#   3. Stops the stack
-#   4. Removes the old postgres data volume
-#   5. Rebuilds all Docker images with the new gridwatch brand
-#   6. Starts the stack (postgres re-inits with new gridwatch DB/user)
-#   7. Restores the dump into the new gridwatch database
+# WHAT THIS DOES (fresh stack — no old netnynja data to migrate):
+#   1. Takes a safety backup of the current gridwatch database
+#   2. Flushes Redis (invalidates any cached sessions from old JWT secret)
+#   3. Prints manual steps for JWT rotation in Vault
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = "C:\Users\rmeadows\Code Development\dev\NetNynja\NetNynjaEnterprise"
@@ -29,14 +20,8 @@ Write-Host "==================================================" -ForegroundColor
 Write-Host ""
 
 # Step 1: Find postgres container
-Write-Host "[1/7] Checking postgres container..." -ForegroundColor Yellow
-$pgContainer = docker ps --filter "name=gridwatch-postgres" --format "{{.Names}}" 2>&1
-if (-not $pgContainer) {
-    $pgContainer = docker ps --filter "name=netnynja-postgres" --format "{{.Names}}" 2>&1
-}
-if (-not $pgContainer) {
-    $pgContainer = docker ps --filter "name=postgres" --format "{{.Names}}" 2>&1 | Select-Object -First 1
-}
+Write-Host "[1/3] Checking postgres container..." -ForegroundColor Yellow
+$pgContainer = docker ps --filter "name=gridwatch-postgres" --format "{{.Names}}" 2>&1 | Select-Object -First 1
 if (-not $pgContainer) {
     Write-Host "ERROR: No postgres container found. Is the stack running?" -ForegroundColor Red
     Write-Host "Run: docker compose --profile ipam up -d" -ForegroundColor Yellow
@@ -44,24 +29,27 @@ if (-not $pgContainer) {
 }
 Write-Host "  Found container: $pgContainer" -ForegroundColor Green
 
-# Step 2: Dump the database
-Write-Host "[2/7] Dumping database from '$pgContainer'..." -ForegroundColor Yellow
-$dumpResult = docker exec $pgContainer pg_dump -U netnynja -d netnynja 2>&1
+# Step 2: Backup current gridwatch database
+Write-Host "[2/3] Backing up gridwatch database..." -ForegroundColor Yellow
+# Detect the actual Postgres user from the running container
+$pgUser = docker exec $pgContainer sh -c 'echo $POSTGRES_USER' 2>&1
+$pgDb   = docker exec $pgContainer sh -c 'echo $POSTGRES_DB' 2>&1
+if (-not $pgUser) { $pgUser = "gridwatch" }
+if (-not $pgDb)   { $pgDb   = "gridwatch" }
+Write-Host "  Using user=$pgUser db=$pgDb" -ForegroundColor Gray
+$dumpResult = docker exec $pgContainer pg_dump -U $pgUser -d $pgDb 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "  netnynja DB not found, trying gridwatch..." -ForegroundColor Yellow
-    $dumpResult = docker exec $pgContainer pg_dump -U gridwatch -d gridwatch 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "ERROR: Could not dump database. Check credentials." -ForegroundColor Red
-        exit 1
-    }
+    Write-Host "ERROR: Could not dump database." -ForegroundColor Red
+    Write-Host $dumpResult
+    exit 1
 }
 [System.IO.File]::WriteAllText($BackupFile, ($dumpResult -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
 $backupSizeKB = [Math]::Round((Get-Item $BackupFile).Length / 1KB, 1)
 Write-Host "  Backup saved: $BackupFile ($backupSizeKB KB)" -ForegroundColor Green
 
-# Step 3: Flush Redis
-Write-Host "[3/7] Flushing Redis session cache..." -ForegroundColor Yellow
-$redisContainer = docker ps --filter "name=redis" --format "{{.Names}}" 2>&1 | Select-Object -First 1
+# Step 3: Flush Redis (invalidate any sessions signed with old JWT secret)
+Write-Host "[3/3] Flushing Redis session cache..." -ForegroundColor Yellow
+$redisContainer = docker ps --filter "name=gridwatch-redis" --format "{{.Names}}" 2>&1 | Select-Object -First 1
 if ($redisContainer) {
     docker exec $redisContainer redis-cli FLUSHALL | Out-Null
     Write-Host "  Redis flushed: $redisContainer" -ForegroundColor Green
@@ -69,59 +57,16 @@ if ($redisContainer) {
     Write-Host "  WARNING: Redis container not found - skipping flush" -ForegroundColor Yellow
 }
 
-# Step 4: Stop the stack
-Write-Host "[4/7] Stopping stack..." -ForegroundColor Yellow
-docker compose down | Out-Null
-Write-Host "  Stack stopped." -ForegroundColor Green
-
-# Step 5: Migrate critical netnynja-* volumes to gridwatch-* (safe copy, no data loss)
-Write-Host "[5/7] Migrating Docker volumes (netnynja-* to gridwatch-*)..." -ForegroundColor Yellow
-$volumeMappings = @(
-    @{ From = "netnynja-postgres-data"; To = "gridwatch-postgres-data" },
-    @{ From = "netnynja-redis-data";    To = "gridwatch-redis-data" },
-    @{ From = "netnynja-nats-data";     To = "gridwatch-nats-data" }
-)
-$existingVolumes = docker volume ls --format "{{.Name}}" 2>&1
-foreach ($mapping in $volumeMappings) {
-    if ($existingVolumes -contains $mapping.From) {
-        Write-Host "  Copying $($mapping.From) -> $($mapping.To)..." -ForegroundColor Yellow
-        docker volume create $mapping.To | Out-Null
-        docker run --rm -v "$($mapping.From):/from" -v "$($mapping.To):/to" alpine sh -c "cp -av /from/. /to/" | Out-Null
-        Write-Host "  Done. (old volume kept as backup)" -ForegroundColor Green
-    } else {
-        Write-Host "  $($mapping.From) not found - skipping (will init fresh)" -ForegroundColor Yellow
-    }
-}
-
-# Step 6: Rebuild images
-Write-Host "[6/7] Rebuilding Docker images..." -ForegroundColor Yellow
-docker compose build --no-cache 2>&1 | Where-Object { $_ -match "Successfully|error" }
-Write-Host "  Images rebuilt." -ForegroundColor Green
-
-# Step 7: Start stack and restore
-Write-Host "[7/7] Starting stack and restoring database..." -ForegroundColor Yellow
-docker compose --profile ipam --profile npm --profile stig --profile syslog up -d | Out-Null
-Write-Host "  Waiting 15s for postgres to initialize..." -ForegroundColor Yellow
-Start-Sleep -Seconds 15
-
-Write-Host "  Restoring backup into gridwatch database..." -ForegroundColor Yellow
-Get-Content $BackupFile | docker exec -i gridwatch-postgres psql -U gridwatch -d gridwatch | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "  Database restored successfully." -ForegroundColor Green
-} else {
-    Write-Host "  WARNING: Restore had errors. Verify manually:" -ForegroundColor Yellow
-    Write-Host "  docker exec -it gridwatch-postgres psql -U gridwatch -d gridwatch" -ForegroundColor Gray
-}
-
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Green
 Write-Host "  Phase 3 Complete!" -ForegroundColor Green
 Write-Host "==================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "Manual steps remaining:" -ForegroundColor Cyan
 Write-Host "  1. Verify stack health:  docker compose ps" -ForegroundColor White
-Write-Host "  2. Check gateway:        curl http://localhost:3000/health" -ForegroundColor White
+Write-Host "  2. Check gateway:        curl http://localhost:3001/healthz" -ForegroundColor White
 Write-Host "  3. Rotate JWT secret in Vault (invalidates all existing tokens)" -ForegroundColor White
+Write-Host "     vault kv put secret/gridwatch/jwt secret=`$(openssl rand -hex 32)" -ForegroundColor Gray
 Write-Host "  4. All users must re-login (sessions were flushed from Redis)" -ForegroundColor White
 Write-Host "  5. Run Phase 6: scripts\phase6-repo-rename.ps1" -ForegroundColor White
 Write-Host ""
