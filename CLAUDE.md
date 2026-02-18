@@ -158,20 +158,34 @@ Required environment variables (see `.env.example`):
 
 ## Current State (2026-02-18)
 
-- **Version**: 0.2.15 (bump to 0.3.0 is next task)
+- **Version**: 0.3.0 (bumped from 0.2.15 — commit 4949eb4)
 - **Repo**: https://github.com/remeadows/GridWatchNetEnterprise
 - **Local path**: `C:\Users\rmeadows\Code Development\dev\GridWatchNetEnterprise`
 - **Rebrand**: Complete — NetNynja → GridWatch fully merged to main (commit ccb336d)
 - **Stack**: Running on Docker Desktop / WSL2. Start with `docker compose --profile ipam up -d`
 - **Gateway health**: `curl http://localhost:3001/healthz` → `{"status":"healthy","services":{"database":"up","redis":"up"}}`
-- **Known broken**: ipam-service + ipam-scanner crash (`ModuleNotFoundError: No module named 'shared_python'`) — pre-existing
+- **All services healthy**: IPAM shared_python fixed (commit 29d33b5), all containers up
 - **gh CLI**: Installed at `C:\Program Files\GitHub CLI` — run `$env:PATH += ";C:\Program Files\GitHub CLI"` each session
 
-### Pending Tasks (priority order):
-1. Bump version 0.2.15 → 0.3.0 (7 package.json + 5 pyproject.toml files)
-2. Rotate JWT secret in Vault
-3. Fix `shared_python` missing module for IPAM/syslog
-4. Create `apps/web-ui/public/assets/GridWatchLogo.png`
+### Infrastructure Notes
+
+- **CoreDNS**: Running at `172.30.0.17` on gridwatch-network (NOT `.2` — Windows mDNS blocks port 5353, `.2` already occupied)
+  - Resolves `*.local.gridwatch` from `infrastructure/coredns/hosts.local`
+  - Gateway and IPAM scanner use `dns: [172.30.0.17]`
+  - No host port binding — internal DNS only. Test: `docker exec gridwatch-gateway nslookup postgres.local.gridwatch 172.30.0.17`
+- **`.env`**: Must exist at repo root (not committed — gitignored). Auto-reconstruct from running containers via `docker inspect` if missing.
+- **`.gitignore`**: SQL backup patterns added (`*_backup_*.sql`, `*.dump.sql`, `*.pg_dump`)
+
+### Recent Commits (main)
+
+- `415e331` — feat: UI overhaul tasks 1-7 (modal contrast, compact stats, NPM discovery removed, CoreDNS)
+- `d17a768` — fix: remove unused DensityToggle from MainLayout
+- `4e7992f` — fix: CoreDNS port 5353 / IP conflict → use 172.30.0.17, no host ports
+- `4ede803` — chore: .gitignore SQL backups
+
+### No Pending Tasks
+
+All tasks from the previous sprint complete as of 2026-02-18. See HANDOFF.md for full session history.
 
 ## Working with This Codebase
 
