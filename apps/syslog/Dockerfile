@@ -2,20 +2,15 @@
 # Multi-stage build for development and production
 
 # ============================================
-# Base stage with Python 3.13 (security update)
+# Base stage with Python 3.13 (Alpine - CDN accessible)
 # ============================================
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.13-alpine AS base
 
-# Security: Update system packages
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+# Security: Update system packages and install build deps
+RUN apk upgrade --no-cache && \
+    apk add --no-cache gcc musl-dev postgresql-dev
 
 WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies
 COPY pyproject.toml ./
@@ -48,7 +43,7 @@ ENV LOG_LEVEL=INFO
 ENV PYTHONPATH=/app/src
 
 # Run as non-root for security (port 514 requires capabilities)
-RUN useradd -m -u 1000 syslog
+RUN adduser -u 1000 -D syslog
 USER syslog
 
 CMD ["python", "-m", "syslog.collector"]
@@ -62,7 +57,7 @@ ENV PYTHONUNBUFFERED=1
 ENV LOG_LEVEL=INFO
 ENV PYTHONPATH=/app/src
 
-RUN useradd -m -u 1000 syslog
+RUN adduser -u 1000 -D syslog
 USER syslog
 
 CMD ["python", "-m", "syslog.forwarder"]
@@ -70,14 +65,12 @@ CMD ["python", "-m", "syslog.forwarder"]
 # ============================================
 # Production stage
 # ============================================
-FROM python:3.13-slim-bookworm AS production
+FROM python:3.13-alpine AS production
 
 WORKDIR /app
 
 # Install runtime dependencies only
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache libpq
 
 # Copy installed packages from base
 COPY --from=base /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
@@ -87,7 +80,7 @@ COPY --from=base /usr/local/bin /usr/local/bin
 COPY src/ ./src/
 
 # Create non-root user
-RUN useradd -m -u 1000 syslog
+RUN adduser -u 1000 -D syslog
 USER syslog
 
 ENV PYTHONUNBUFFERED=1

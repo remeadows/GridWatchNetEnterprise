@@ -1,13 +1,13 @@
 # GridWatch NPM Service - Multi-stage Dockerfile
-# Build: docker build --target production -t GridWatch-npm .
+# Build: docker build --target production -t gridwatch-npm .
 
 # ==================================================
-# Base image with Python 3.13 (security update)
+# Base image with Python 3.13 (Alpine - CDN accessible)
 # ==================================================
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.13-alpine AS base
 
 # Security: Update system packages
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -16,22 +16,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on
 
-# Enable non-free repository for snmp-mibs-downloader and install system dependencies
-# Debian bookworm uses DEB822 format, so we modify the existing sources file
-RUN sed -i 's/Components: main/Components: main non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources && \
-    apt-get update && apt-get install -y --no-install-recommends \
-    # SNMP tools
-    snmp \
-    libsnmp-dev \
-    snmp-mibs-downloader \
+# Install system dependencies
+# Note: Alpine net-snmp-mibs installs standard IANA/RFC MIBs to /usr/share/snmp/mibs
+RUN apk add --no-cache \
+    # SNMP tools and libraries
+    net-snmp-tools \
+    net-snmp-dev \
+    net-snmp-mibs \
     # Network tools
-    iputils-ping \
+    iputils \
     net-tools \
     # Build dependencies
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && download-mibs
+    build-base \
+    postgresql-dev \
+    musl-dev
 
 WORKDIR /app
 
@@ -95,18 +93,17 @@ RUN pip wheel --no-deps --wheel-dir /app/wheels .
 # ==================================================
 # Production stage
 # ==================================================
-FROM python:3.13-slim-bookworm AS production
+FROM python:3.13-alpine AS production
 
 # Non-root user for security
-RUN groupadd --gid 1000 npm && \
-    useradd --uid 1000 --gid npm --shell /bin/bash --create-home npm
+RUN addgroup -g 1000 npm && \
+    adduser -u 1000 -G npm -s /bin/sh -D npm
 
 # Install minimal runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    snmp \
-    libsnmp40 \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    net-snmp \
+    net-snmp-libs \
+    libpq
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

@@ -376,7 +376,6 @@ services:
       context: ./apps/ipam
       dockerfile: Dockerfile
       target: development
-      network: host
     profiles: ["ipam"]
     container_name: gridwatch-ipam-service
     restart: unless-stopped
@@ -423,7 +422,6 @@ services:
       context: ./apps/ipam
       dockerfile: Dockerfile
       target: scanner
-      network: host
     profiles: ["ipam"]
     container_name: gridwatch-ipam-scanner
     restart: unless-stopped
@@ -462,7 +460,6 @@ services:
       context: ./apps/npm
       dockerfile: Dockerfile
       target: development
-      network: host
     profiles: ["npm"]
     container_name: gridwatch-npm-service
     restart: unless-stopped
@@ -510,7 +507,6 @@ services:
       context: ./apps/npm
       dockerfile: Dockerfile
       target: collector
-      network: host
     profiles: ["npm"]
     container_name: gridwatch-npm-collector
     restart: unless-stopped
@@ -541,7 +537,6 @@ services:
       context: ./apps/npm
       dockerfile: Dockerfile
       target: alerts
-      network: host
     profiles: ["npm"]
     container_name: gridwatch-npm-alerts
     restart: unless-stopped
@@ -573,7 +568,6 @@ services:
       context: ./apps/stig
       dockerfile: Dockerfile
       target: development
-      network: host
     profiles: ["stig"]
     container_name: gridwatch-stig-service
     restart: unless-stopped
@@ -623,7 +617,6 @@ services:
       context: ./apps/stig
       dockerfile: Dockerfile
       target: collector
-      network: host
     profiles: ["stig"]
     container_name: gridwatch-stig-collector
     restart: unless-stopped
@@ -651,7 +644,6 @@ services:
       context: ./apps/stig
       dockerfile: Dockerfile
       target: reports
-      network: host
     profiles: ["stig"]
     container_name: gridwatch-stig-reports
     restart: unless-stopped
@@ -684,7 +676,6 @@ services:
       context: ./apps/syslog
       dockerfile: Dockerfile
       target: development
-      network: host
     profiles: ["syslog"]
     container_name: gridwatch-syslog-service
     restart: unless-stopped
@@ -727,7 +718,6 @@ services:
       context: ./apps/syslog
       dockerfile: Dockerfile
       target: collector
-      network: host
     profiles: ["syslog"]
     container_name: gridwatch-syslog-collector
     restart: unless-stopped
@@ -766,7 +756,6 @@ services:
       context: ./apps/syslog
       dockerfile: Dockerfile
       target: forwarder
-      network: host
     profiles: ["syslog"]
     container_name: gridwatch-syslog-forwarder
     restart: unless-stopped

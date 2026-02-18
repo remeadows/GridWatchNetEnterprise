@@ -1,13 +1,13 @@
 # GridWatch IPAM Service - Multi-stage Dockerfile
-# Build: docker build --target production -t GridWatch-ipam .
+# Build: docker build --target production -t gridwatch-ipam .
 
 # ==================================================
-# Base image with Python 3.13 (security update)
+# Base image with Python 3.13 (Alpine - CDN accessible)
 # ==================================================
-FROM python:3.13-slim-bookworm AS base
+FROM python:3.13-alpine AS base
 
 # Security: Update system packages
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,18 +17,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
     # Network tools for scanning
-    iputils-ping \
+    iputils \
     nmap \
+    nmap-scripts \
     arp-scan \
     net-tools \
     # Build dependencies
-    build-essential \
-    libpq-dev \
+    build-base \
+    postgresql-dev \
+    musl-dev \
     # Runtime dependencies
-    libpcap0.8 \
-    && rm -rf /var/lib/apt/lists/*
+    libpcap-dev
 
 WORKDIR /app
 
@@ -81,18 +82,17 @@ RUN pip wheel --no-deps --wheel-dir /app/wheels .
 # ==================================================
 # Production stage
 # ==================================================
-FROM python:3.13-slim-bookworm AS production
+FROM python:3.13-alpine AS production
 
 # Non-root user for security
-RUN groupadd --gid 1000 ipam && \
-    useradd --uid 1000 --gid ipam --shell /bin/bash --create-home ipam
+RUN addgroup -g 1000 ipam && \
+    adduser -u 1000 -G ipam -s /bin/sh -D ipam
 
 # Install minimal runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    iputils-ping \
-    libpq5 \
-    libpcap0.8 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    iputils \
+    libpq \
+    libpcap
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
