@@ -42,7 +42,7 @@ COPY apps/gateway ./apps/gateway
 COPY --from=deps /app/node_modules ./node_modules
 
 # Ensure workspace package symlinks are correct in node_modules
-RUN mkdir -p node_modules/@GridWatch && \
+RUN mkdir -p node_modules/@gridwatch && \
     rm -rf node_modules/@gridwatch/shared-types node_modules/@gridwatch/shared-auth && \
     ln -s ../../packages/shared-types node_modules/@gridwatch/shared-types && \
     ln -s ../../packages/shared-auth node_modules/@gridwatch/shared-auth
@@ -68,7 +68,7 @@ RUN apk add --no-cache nmap nmap-scripts && \
 COPY apps/gateway/package.json ./
 
 # Remove workspace dependencies and install
-RUN cat package.json | sed 's/"@GridWatch\/shared-auth": "\*",//g' | sed 's/"@GridWatch\/shared-types": "\*",//g' > package.temp.json && mv package.temp.json package.json
+RUN cat package.json | sed 's/"@gridwatch\/shared-auth": "\*",//g' | sed 's/"@gridwatch\/shared-types": "\*",//g' > package.temp.json && mv package.temp.json package.json
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
@@ -78,7 +78,7 @@ ENV NODE_ENV=development
 ENV PORT=3001
 
 # Create symlinks at runtime for shared packages and their dependencies, then start tsx
-CMD ["sh", "-c", "mkdir -p /app/node_modules/@GridWatch && ln -sf /packages/shared-auth/dist /app/node_modules/@gridwatch/shared-auth && ln -sf /packages/shared-types/dist /app/node_modules/@gridwatch/shared-types && ln -sf /app/node_modules /packages/shared-auth/node_modules && ln -sf /app/node_modules /packages/shared-types/node_modules && tsx watch src/index.ts"]
+CMD ["sh", "-c", "mkdir -p /app/node_modules/@gridwatch && ln -sf /packages/shared-auth/dist /app/node_modules/@gridwatch/shared-auth && ln -sf /packages/shared-types/dist /app/node_modules/@gridwatch/shared-types && ln -sf /app/node_modules /packages/shared-auth/node_modules && ln -sf /app/node_modules /packages/shared-types/node_modules && tsx watch src/index.ts"]
 
 # ============================================
 # Production stage

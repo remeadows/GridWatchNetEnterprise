@@ -41,7 +41,7 @@ COPY apps/web-ui ./apps/web-ui
 COPY --from=deps /app/node_modules ./node_modules
 
 # Ensure workspace package symlinks are correct in node_modules
-RUN mkdir -p node_modules/@GridWatch && \
+RUN mkdir -p node_modules/@gridwatch && \
     rm -rf node_modules/@gridwatch/shared-types node_modules/@gridwatch/shared-ui && \
     ln -s ../../packages/shared-types node_modules/@gridwatch/shared-types && \
     ln -s ../../packages/shared-ui node_modules/@gridwatch/shared-ui
@@ -65,7 +65,7 @@ WORKDIR /app
 COPY apps/web-ui/package.json ./
 
 # Create a modified package.json without workspace dependencies for container build
-RUN cat package.json | sed 's/"@GridWatch\/shared-types": "\*",//g' | sed 's/"@GridWatch\/shared-ui": "\*",//g' > package.temp.json && mv package.temp.json package.json
+RUN cat package.json | sed 's/"@gridwatch\/shared-types": "\*",//g' | sed 's/"@gridwatch\/shared-ui": "\*",//g' > package.temp.json && mv package.temp.json package.json
 
 # Install all dependencies including dev deps
 RUN npm install --legacy-peer-deps
