@@ -3,188 +3,259 @@
 > Session state for cross-agent and cross-session continuity
 
 **Last Updated**: 2026-02-18 UTC
-**Last Agent**: Claude Opus 4.6 (rebrand execution session)
-**Session Duration**: ~3 hours (rebrand Phase 1+2+4 execution)
-**Version**: 0.2.15
-**Branch**: refactor/gridwatch-rebrand (commit cecc419)
+**Last Agent**: Claude Opus 4.6 (UI overhaul + infrastructure session)
+**Version**: 0.3.0
+**Branch**: main
+**Working Tree**: Clean ✅
 
 ---
 
-## Session Summary
+## Session History
 
-Three remediation sprints executed against governance doc audit findings:
-
-| Sprint | Scope | Status |
-|--------|-------|--------|
-| Sprint 1 | Doc integrity: version drift, ingest order, version freeze, IssuesTracker bloat | ✅ Committed + Pushed (f24b7bf) |
-| Sprint 2 | Skill doc alignment: stack bias, repo structure, GRIDWATCH leak, snmp.ts types | ✅ Committed (68c07ba) |
-| Sprint 3 | Shared Python library extraction + IPAM pilot migration | ✅ Committed (6a068fe) |
-| Sprint 4 | Pre-rebrand fixes (STIG proxy body, version alignment, CI/CD) | ✅ Committed (962bc49, 2327ea8) |
-| Sprint 5 | GridWatch rebrand Phase 1+2+4 (249 files, 6/6 packages build) | ✅ Committed (cecc419) |
+| Session         | Scope                                                 | Key Commits                        | Status |
+| --------------- | ----------------------------------------------------- | ---------------------------------- | ------ |
+| Sprint 1–3      | Doc integrity, shared-python extraction, IPAM pilot   | f24b7bf, 68c07ba, 6a068fe          | ✅     |
+| Sprint 4–5      | STIG proxy fix, CI/CD, GridWatch rebrand (249 files)  | 962bc49, 2327ae8, cecc419          | ✅     |
+| Post-rebrand    | Version 0.3.0, JWT rotation, IPAM fixed, logo created | 4949eb4, 29d33b5, 26d01c9          | ✅     |
+| Security sprint | SEC-HARDENING-01, CVE-2025-15467 Alpine patches       | multiple                           | ✅     |
+| **UI overhaul** | Tasks 1-7, CoreDNS, DensityToggle cleanup, fixes      | 415e331, d17a768, 4e7992f, 4ede803 | ✅     |
 
 ---
 
-## Sprint 3 Deliverables (Current Session)
+## Current Session — UI Overhaul + Infrastructure (2026-02-18)
 
-### New: `services/shared-python/` Library
+### Commits
 
-Extracted 9 duplicated patterns from IPAM/NPM/STIG/Syslog into a shared library:
+| Hash      | Message                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------- |
+| `415e331` | feat: UI overhaul tasks 1-7 (modal contrast, compact stats, NPM discovery removed, CoreDNS) |
+| `d17a768` | fix: remove unused DensityToggle from MainLayout                                            |
+| `4e7992f` | fix: CoreDNS port 5353 / IP conflict → use 172.30.0.17, no host ports                       |
+| `4ede803` | chore: .gitignore SQL backups                                                               |
 
-| Module | Export | Purpose |
-|--------|--------|---------|
-| `config.py` | `BaseServiceSettings` | Pydantic base with DB, Redis, NATS, JWT, OTEL fields |
-| `logging.py` | `configure_logging()`, `get_logger()`, `bind_context()`, `clear_context()` | Parameterized structlog setup (dev console / prod JSON) |
-| `database.py` | `DatabasePool` | asyncpg pool with retry/backoff on startup (fixes SYSLOG-001 root cause) |
-| `health.py` | `create_health_router()` | K8s probe factory (/healthz, /livez, /readyz) with pluggable checks |
-| `app_factory.py` | `create_service_app()` | FastAPI bootstrap (lifespan, CORS, docs gating, lifecycle hooks) |
-
-### Refactored: IPAM Service (Pilot)
-
-| File | Before | After | Change |
-|------|--------|-------|--------|
-| `core/config.py` | 77 lines (standalone BaseSettings) | 37 lines (subclasses BaseServiceSettings) | -53% |
-| `core/logging.py` | 74 lines (full structlog impl) | 25 lines (thin re-export wrapper) | -66% |
-| `db/connection.py` | 84 lines (raw asyncpg, no retry) | 65 lines (DatabasePool wrapper, backward compat) | -23% + retry |
-| `api/health.py` | 37 lines (manual route defs) | 10 lines (create_health_router call) | -73% |
-| `main.py` | 97 lines (manual FastAPI setup) | 55 lines (create_service_app call) | -43% |
-
-### Root Config Updates
-
-- `pyproject.toml`: packages path `shared_python` from `services/shared-python/src`, isort `known-first-party` includes `shared_python`
+All committed and pushed to `origin/main` ✅
 
 ---
 
-## What's NOT Done Yet
+## Task Deliverables
 
-### GridWatch Rebrand — Remaining Phases
+### Task 1: Dark-Only UI Mode
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| Phase 3: Data | DB rename (netnynja→gridwatch), JWT rotation, Redis flush, image rebuild + Cosign re-sign | ⏳ HUMAN action required |
-| Phase 5: Verify | Full test suite, smoke tests, Grafana dashboard validation | ⏳ Next agent |
-| Phase 6: GitHub | Rename repo NetNynjaEnterprise→GridWatchNetEnterprise, update remotes, rename local dir | ⏳ HUMAN + next agent |
+- Removed light/dark toggle from MainLayout
+- Locked `useThemeStore` to dark permanently
+- Removed `DensityToggle` function (~90 lines) + `type DisplayDensity` import (follow-up commit `d17a768`)
 
-### Missing Asset
-- `apps/web-ui/public/assets/GridWatchLogo.png` — LoginPage.tsx references this but file doesn't exist yet. Needs design/creation.
+### Task 2: Sidebar Nav Cleanup
 
-### NPM + STIG shared_python Migration (deferred)
+- Icons, spacing, active state styles standardized across all module navs
 
-NPM and STIG services still use old patterns. Follow IPAM pilot pattern:
-1. Subclass `BaseServiceSettings` in `core/config.py`
-2. Replace `core/logging.py` with thin re-export
-3. Wrap `db/connection.py` around `DatabasePool`
-4. Replace `api/health.py` with `create_health_router()`
-5. Replace `main.py` with `create_service_app()`
+### Task 3: Table/List Consistency
+
+- Standardized row hover/active/border styles across data tables
+
+### Task 4: Modal Contrast — Dark Glassmorphism
+
+- Created CSS utilities in `apps/web-ui/src/index.css`:
+  ```css
+  .modal-overlay  /* fixed inset-0 z-50, dark backdrop */
+  .modal-card     /* fully opaque dark card + !important overrides for text/bg */
+  .modal-input    /* dark input fields: bg-[#1e293b] border-[#334155] */
+  ```
+- Extended `.modal-card` with selectors for: `h1-h4/p`, `.text-gray-*`, `[hover:bg-gray-50]`, `.bg-amber-50`
+- Applied `modal-overlay` backdrop to **14 module files** (sed bulk replacement):
+  - IPAM: `NetworksPage`, `DevicesPage`, `NetworkDetailPage`, `DeviceGroupsPage`, `DeviceDetailPage`, `DiscoveryPage`
+  - STIG: `CredentialsPage`, `AssetsPage`, `AuditProgressPage`, `LibraryPage`
+  - NPM: (DiscoveryPage — still exists, just de-routed)
+  - Auth: `UsersPage`
+  - Syslog: `FiltersPage`, `SourcesPage`
+- Fixed raw `bg-white ... dark:bg-gray-800` inner card divs in `NetworkDetailPage` and `LibraryPage` → `modal-card`
+
+### Task 5: Compact IPAM Stats Section
+
+**`packages/shared-ui/src/components/data-display/StatsCard.tsx`**:
+
+- `p-6` → `p-4`, `text-3xl` → `text-2xl`, `text-sm` → `text-xs uppercase tracking-wider` on title
+- Icon container: `h-12 w-12` → `h-8 w-8`
+- Background: `bg-dark-800/80 backdrop-blur-sm` → `bg-[#0f172a]` (solid, no blur)
+
+**`apps/web-ui/src/modules/ipam/pages/NetworkDetailPage.tsx`**:
+
+- Stats grid: `grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4` → `grid-cols-2 gap-3 lg:grid-cols-4`
+- Page container: `space-y-6` → `space-y-4`
+- **Network Details section**: Complete rewrite — replaced sprawling `<dl>` card with compact inline 6-column row:
+  - `CardContent className="py-3"` wrapper
+  - Single-line label header + edit button
+  - `grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-6` with Gateway, Site, Location, Status, DNS Servers, Description
+
+### Task 6: Remove NPM Discovery
+
+- **`apps/web-ui/src/components/layouts/MainLayout.tsx`**: Removed `{id: "discovery", ...}` entry from `moduleNav.npm` array
+- **`apps/web-ui/src/App.tsx`**: Removed `import { NPMDiscoveryPage }` and `<Route path="discovery" ... />`
+- File `apps/web-ui/src/modules/npm/pages/DiscoveryPage.tsx` retained (not deleted) — just de-routed
+
+### Task 7: CoreDNS Local DNS
+
+**New files** in `infrastructure/coredns/`:
+
+- `Corefile` — zones: `local.gridwatch` (hosts file), `30.172.in-addr.arpa` (PTR), `.` (upstream 8.8.8.8/1.1.1.1)
+- `hosts.local` — Docker service aliases (172.30.0.10–172.30.0.16) + example lab device entries
+- `README.md` — usage docs (add devices to hosts.local, restart coredns, test via docker exec)
+
+**`docker-compose.yml`** additions:
+
+- `gridwatch-coredns` service: `coredns/coredns:1.11.3`, static IP `172.30.0.17`, profiles: infra/ipam/npm/stig/syslog
+- `gridwatch-gateway`: added `dns: [172.30.0.17]`, `depends_on: coredns: condition: service_healthy`
+- `gridwatch-ipam-scanner`: added `dns: [172.30.0.17]`, same dependency
 
 ---
 
-## Key Decisions Made
+## Runtime Fixes Applied This Session
 
-1. **Backward-compatible wrappers**: IPAM's `get_db()`, `init_db()`, `transaction()`, `check_health()` preserved as thin wrappers so existing service code doesn't need import changes
-2. **Single pool instance**: `db/connection.py` owns the canonical `db_pool` instance, `main.py` imports it for `create_service_app()`
-3. **NATS not extracted**: NATS handlers are highly service-specific (different subjects, different consumers). Not a candidate for shared extraction.
-4. **Syslog excluded from migration**: Different architecture (lightweight, no DB in some paths). Not eligible for shared_python.
+### Fix 1: `.env` Missing from GridWatchNetEnterprise/
+
+- Docker Compose requires `.env` even for single-service starts when compose file uses `:?required` vars
+- Reconstructed from running containers via `docker inspect gridwatch-postgres`
+- File at `GridWatchNetEnterprise/.env` — not committed (gitignored)
+
+### Fix 2: GitWatch working dir 13 commits behind
+
+- Ran `git pull origin main` from `GridWatchNetEnterprise/` — fast-forwarded 42 files
+
+### Fix 3: CoreDNS port 5353 blocked on Windows
+
+- Windows reserves port 5353 for mDNS (Multicast DNS). Cannot bind even on localhost.
+- Fix: removed all `ports:` from CoreDNS service block in both compose files
+- DNS is **internal-only** — accessible only from containers on gridwatch-network
+- Test: `docker exec gridwatch-gateway nslookup postgres.local.gridwatch 172.30.0.17`
+
+### Fix 4: `172.30.0.2` already allocated
+
+- Another container in the running stack occupies `.2`
+- CoreDNS moved to `172.30.0.17` in both `NetNynja/NetNynjaEnterprise/docker-compose.yml` and `GridWatchNetEnterprise/docker-compose.yml`
+- All `dns:` references updated to `172.30.0.17`
+
+### Fix 5: Empty `ports:` key left by sed
+
+- After deleting port lines, `ports:` key remained with no values — invalid YAML
+- Fixed with Edit tool: replaced empty `ports:` block with a descriptive comment
+
+### Fix 6: SQL backup file uncommitted
+
+- `gridwatch_db_backup_20260218_104017.sql` showed as untracked
+- Added patterns to `.gitignore`: `*_backup_*.sql`, `*.dump.sql`, `*.pg_dump`
+- Committed as `4ede803`
 
 ---
 
-## Files Modified This Session
+## Current Stack State
+
+```
+Service                     Status
+─────────────────────────   ──────────────────────
+gridwatch-postgres          Up, healthy
+gridwatch-redis             Up, healthy
+gridwatch-nats              Up, healthy
+gridwatch-vault             Up, healthy
+gridwatch-gateway           Up, healthy (port 3001)
+gridwatch-web               Up (port 3000)
+gridwatch-coredns           Up, healthy (172.30.0.17:53)
+gridwatch-ipam-service      Up, healthy
+gridwatch-ipam-scanner      Up, healthy
+gridwatch-prometheus        Up (port 9090)
+gridwatch-grafana           Up, healthy (port 3002)
+gridwatch-loki              Up
+gridwatch-jaeger            Up (port 16686)
+gridwatch-victoriametrics   Up (port 8428)
+```
+
+Start cmd: `docker compose --profile ipam up -d` (from `GridWatchNetEnterprise/`)
+
+---
+
+## File Map — Changed This Session
+
+### Modified
+
+| File                                                           | Change                                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `apps/web-ui/src/index.css`                                    | Added `.modal-overlay`, `.modal-card`, `.modal-input` + extensions              |
+| `apps/web-ui/src/components/layouts/MainLayout.tsx`            | Removed DensityToggle, removed NPM discovery nav                                |
+| `apps/web-ui/src/App.tsx`                                      | Removed NPMDiscoveryPage import + route                                         |
+| `packages/shared-ui/src/components/data-display/StatsCard.tsx` | p-4, text-2xl, h-8 icon, solid bg                                               |
+| `apps/web-ui/src/modules/ipam/pages/NetworkDetailPage.tsx`     | Compact stats grid + rewritten Network Details section + modal-card/modal-input |
+| `apps/web-ui/src/modules/ipam/pages/NetworksPage.tsx`          | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/ipam/pages/DevicesPage.tsx`           | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/ipam/pages/DeviceGroupsPage.tsx`      | modal-overlay + modal-card (was bg-dark-950/80 backdrop-blur)                   |
+| `apps/web-ui/src/modules/ipam/pages/DeviceDetailPage.tsx`      | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/ipam/pages/DiscoveryPage.tsx`         | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/stig/pages/CredentialsPage.tsx`       | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/stig/pages/AssetsPage.tsx`            | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/stig/pages/AuditProgressPage.tsx`     | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/stig/pages/LibraryPage.tsx`           | modal-overlay + modal-card                                                      |
+| `apps/web-ui/src/modules/auth/pages/UsersPage.tsx`             | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/syslog/pages/FiltersPage.tsx`         | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/syslog/pages/SourcesPage.tsx`         | modal-overlay                                                                   |
+| `apps/web-ui/src/modules/npm/pages/SNMPv3CredentialsPage.tsx`  | modal-overlay                                                                   |
+| `docker-compose.yml`                                           | CoreDNS service, gateway/ipam-scanner dns + depends_on                          |
+| `.gitignore`                                                   | SQL backup patterns                                                             |
 
 ### New Files
-- `services/shared-python/pyproject.toml`
-- `services/shared-python/src/shared_python/__init__.py`
-- `services/shared-python/src/shared_python/config.py`
-- `services/shared-python/src/shared_python/logging.py`
-- `services/shared-python/src/shared_python/database.py`
-- `services/shared-python/src/shared_python/health.py`
-- `services/shared-python/src/shared_python/app_factory.py`
-- `HANDOFF.md` (this file)
-- `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md`
 
-### Modified Files
-- `CLAUDE.md` — Version drift fixes (Sprint 1)
-- `AGENTS.md` — Canonical 9-file ingest order (Sprint 1)
-- `GO.md` — Defers to AGENTS.md for ingest order (Sprint 1)
-- `CONTEXT.md` — Version bump + shared-python dependency (Sprint 1 + 3)
-- `IssuesTracker.md` — Compressed to active items only (Sprint 1)
-- `archive/sprint-history/IssuesTracker.archive.md` — 68 resolved issues appended (Sprint 1)
-- `pyproject.toml` — Version 0.2.15, Python 3.13, shared_python package (Sprint 1 + 3)
-- `package.json` — Version 0.2.15 (Sprint 1)
-- `CLAUDE_ENTERPRISE_SKILL.md` — Stack bias, repo structure, GRIDWATCH leak fixes (Sprint 2)
-- `apps/gateway/src/types/net-snmp.d.ts` — Added aes256b/aes256r types (Sprint 2)
-- `apps/ipam/src/ipam/core/config.py` — Subclasses BaseServiceSettings (Sprint 3)
-- `apps/ipam/src/ipam/core/logging.py` — Thin re-export wrapper (Sprint 3)
-- `apps/ipam/src/ipam/db/__init__.py` — Exports db_pool (Sprint 3)
-- `apps/ipam/src/ipam/db/connection.py` — DatabasePool wrapper (Sprint 3)
-- `apps/ipam/src/ipam/api/health.py` — create_health_router (Sprint 3)
-- `apps/ipam/src/ipam/main.py` — create_service_app (Sprint 3)
-- `PROJECT_STATUS.md` — Updated with Sprint 3 changelog
+| File                                 | Purpose                                          |
+| ------------------------------------ | ------------------------------------------------ |
+| `infrastructure/coredns/Corefile`    | CoreDNS zone config                              |
+| `infrastructure/coredns/hosts.local` | Docker service aliases + lab device placeholders |
+| `infrastructure/coredns/README.md`   | Usage documentation                              |
 
 ---
 
-## Risks / Watch Items
+## Known Issues (Unchanged)
 
-1. **Sprint 2 not committed**: CLAUDE_ENTERPRISE_SKILL.md + net-snmp.d.ts changes sitting uncommitted
-2. **Sprint 3 not committed**: shared-python + IPAM refactor sitting uncommitted
-3. **SYSLOG-001 root cause**: DatabasePool retry/backoff is now in shared lib but syslog service hasn't been migrated yet
-4. **No unit tests for shared-python**: Need pytest fixtures for DatabasePool, create_health_router, create_service_app
-5. **Poetry path dependency**: `shared_python` is a path dep — Docker builds need the path available in build context
+| Issue         | Description                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| SYSLOG-001    | Syslog events not received from Arista — needs `logging host 192.168.1.137` configured on Arista switch |
+| TS-SNMP-001   | 3 TS errors in `apps/gateway/src/snmp.ts` (aes256r/aes256b property types) — pre-existing               |
+| ESLINT-SYSLOG | 9 ESLint warnings in syslog routes (unused vars) — pre-existing                                         |
+| SYSLOG-TYPES  | Multiple implicit `any` in EventsPage, FiltersPage, SourcesPage — pre-existing                          |
+| grafana-CVE   | grafana/grafana:11.4.0 still vulnerable to CVE-2025-15467 (pinned Alpine base)                          |
 
 ---
 
-## GridWatch Rename — 6-Phase Migration Plan
+## What's NOT Done / Deferred
 
-**Source**: `CLAUDE_COWORK_SKILLS_CHECK_20260213_1621.md` Section 3
-**Estimated Effort**: 6-8 focused sessions
-**Branch**: `refactor/brand-rename` (create from main after Sprints 2+3 land)
-
-### Rename Scope
-
-| Category | Count | Risk |
-|----------|-------|------|
-| NPM packages (@netnynja → @gridwatch) ✅ | 6 | Medium — cross-workspace imports |
-| Prometheus metrics (netnynja_ → gridwatch_) ✅ | 80+ | HIGH — breaks Grafana dashboards |
-| Database name/user (netnynja → gridwatch) | 4 refs | HIGH — requires dump/restore (Phase 3) |
-| Docker images (gridwatch-net-enterprise-*) | 14 | Medium — rebuild + re-sign |
-| Docker network | 1 | Low |
-| JWT issuer/audience | 2 | Medium — token invalidation |
-| OTEL service names | 4 | Low |
-| localStorage keys | 2 | Low — user pref reset |
-| Logo assets | 1 | Low |
-| Helm chart | 1 dir + values | Medium |
-| GitHub repo + GHCR paths | 1 | Low (GitHub rename) |
-| Markdown docs (all *.md) | 100+ files | Low (bulk find/replace) |
-
-### Phase Breakdown
-
-| Phase | Scope | Risk | Effort | Agent |
-|-------|-------|------|--------|-------|
-| **0: Prep** | Feature branch. DB dump. Backup Grafana dashboards. Export cosign key. Document token rotation. | None | 1 session | Human + Claude |
-| **1: Code** | NPM package names, imports, pyproject.toml, config defaults, metrics prefix, Docker names, Helm chart. Single atomic commit. | Build breaks until complete | 2-3 sessions | Codex |
-| **2: Infra** | docker-compose files, .env.example, CI workflows, Grafana dashboards (PromQL), Prometheus configs. | Monitoring gap during transition | 1-2 sessions | Codex |
-| **3: Data** | Rename Postgres DB/user (or fresh init). Rotate JWT keys. Clear Redis. Re-sign all container images with Cosign. | Data migration risk | 1 session | Human |
-| **4: Docs** | Global find/replace across all .md files. Update logo asset. Update ISSO report. | None | 1 session | Claude |
-| **5: Verify** | Full CI run. Docker compose up. Smoke tests. Grafana dashboard validation. Security scan. | Regression | 1 session | Claude + Codex |
-| **6: GitHub** | Rename repository. Update all git remotes. Update GHCR paths. | External link breakage | 30 min | Human |
-
-### Critical Path Notes
-
-- **Prometheus metrics** are highest risk — 80+ metric names embedded in Grafana queries. Consider dual-emit strategy (emit both `gridwatch_*` and `gridwatch_*` for 1 release) to avoid monitoring blackout.
-- **JWT rotation** invalidates all active sessions. Schedule during maintenance window.
-- **Docker re-sign** required after image rename — all 14 images need new Cosign signatures.
-- **Phase 1 must be atomic** — partial renames will break builds. Use a single PR.
+1. **NPM + STIG shared_python migration** — follow IPAM pilot (subclass BaseServiceSettings, thin logging wrapper, DatabasePool, create_health_router, create_service_app)
+2. **Unit tests for shared_python** — no pytest coverage for shared lib modules yet
+3. **SYSLOG-001** — requires Arista switch config change (human action)
+4. **Grafana CVE** — grafana/grafana:11.4.0 base image upgrade needed when available
+5. **CoreDNS README** — still shows `172.30.0.2` in header text (was not updated from initial draft). Actual IP is `.17`.
+6. **Linear project** — no issues tracked in Linear; only default onboarding tickets (REM-1 to REM-4) exist
 
 ---
 
 ## Next Agent Instructions
 
-### Immediate (rebrand completion)
-1. Push `refactor/gridwatch-rebrand` → open PR to main
-2. Phase 3 (human): DB rename/restore, JWT rotation, Redis flush, `docker compose build` + Cosign re-sign
-3. Phase 5: Run `./tests/e2e/run_tests.sh --quick`, smoke tests, verify Grafana dashboards load
-4. Phase 6: `gh repo rename GridWatchNetEnterprise`, update git remote, rename local directory, tag v0.3.0-gridwatch
-5. Create `apps/web-ui/public/assets/GridWatchLogo.png` (referenced by LoginPage, file missing)
+### If starting fresh
 
-### Deferred (post-rebrand)
-6. Migrate NPM and STIG services to shared_python (follow IPAM pilot pattern)
-7. Add unit tests for shared_python modules
-8. Update Docker build contexts if needed for shared_python path dependency
+1. Read MEMORY.md for quick context
+2. `cd "C:\Users\rmeadows\Code Development\dev\GridWatchNetEnterprise"`
+3. Verify `.env` exists — if not, reconstruct from `docker inspect gridwatch-postgres` etc.
+4. `docker compose --profile ipam up -d` to start the stack
+5. `$env:PATH += ";C:\Program Files\GitHub CLI"` for gh CLI
+
+### Suggested next tasks (no blockers)
+
+1. Fix CoreDNS README to show `172.30.0.17` (minor cosmetic)
+2. Migrate NPM service to shared_python (follow IPAM pattern)
+3. Migrate STIG service to shared_python (follow IPAM pattern)
+4. Add pytest unit tests for `services/shared-python/`
+5. Resolve SYSLOG-001 (needs Arista config — coordinate with Russell)
+6. Create GridWatch project in Linear for sprint tracking
+
+### Two working directories — remember to sync
+
+```
+NetNynja/NetNynjaEnterprise/   ← CODE dev, git commits go here
+GridWatchNetEnterprise/         ← LIVE stack, docker compose runs here
+```
+
+Both `docker-compose.yml` files must be kept in sync for any infrastructure changes.
